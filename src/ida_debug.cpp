@@ -158,12 +158,16 @@ inline static void toggle_pause()
 
 static void pause_execution()
 {
+	M68kDW.DummyHWnd = (HWND)0;
+
 	if (Paused) return;
 	toggle_pause();
 }
 
 static void continue_execution()
 {
+	M68kDW.DummyHWnd = (HWND)0;
+
 	if (!Paused) return;
 	toggle_pause();
 }
@@ -376,10 +380,12 @@ static int do_step(dbg_notification_t idx)
 	switch (idx)
 	{
 	case dbg_step_into:
-		SendMessage(M68kDW.HWnd, WM_COMMAND, IDC_STEP_INTO, 0);
+		M68kDW.StepInto = 1;
+		M68kDW.DummyHWnd = (HWND)0;
 		break;
 	case dbg_step_over:
-		SendMessage(M68kDW.HWnd, WM_COMMAND, IDC_STEP_OVER, 0);
+		M68kDW.DoStepOver();
+		M68kDW.DummyHWnd = (HWND)0;
 		break;
 	}
 	
@@ -634,65 +640,6 @@ static int idaapi update_bpts(update_bpt_info_t *bpts, int nadd, int ndel)
 {
 	CHECK_FOR_START(0);
 
-	/*M68kDW.DummyHWnd = (HWND)1;
-	M68kDW.Window();
-
-	int i;
-	int cnt = 0;
-
-	for (i = 0; i < ndel; i++)
-	{
-		bpts[nadd + i].code = BPT_OK;
-		cnt++;
-
-		Breakpoint bpt;
-		bpt.start = bpts[nadd + i].ea;
-		bpt.end = bpts[nadd + i].ea + bpts[nadd + i].size;
-		bpt.type = 0;
-		bpt.enabled = true;
-
-		int idx;
-		switch (bpts[nadd + i].type)
-		{
-		case BPT_EXEC:
-			bpt.type |= 1;
-			break;
-
-		case BPT_READ:
-			bpt.type |= 2;
-			break;
-
-		case BPT_WRITE:
-			bpt.type |= 4;
-			break;
-
-		case BPT_RDWR:
-			bpt.type |= 6;
-			break;
-		}
-
-		int n = find_breakpoint(bpt);
-
-		if (n != -1)
-			SendDlgItemMessage(M68kDW.HWnd, IDC_BREAK_LIST, LB_SETCURSEL, (WPARAM)n, NULL);
-	}
-
-	for (i = 0; i < nadd; ++i)
-	{
-		switch (bpts[i].type)
-		{
-		case BPT_EXEC:
-		case BPT_READ:
-		case BPT_WRITE:
-		case BPT_RDWR:
-			SendMessage(M68kDW.HWnd, WM_COMMAND, IDC_ADD_BREAK, 0);
-			bpts[i].code = BPT_OK;
-			cnt++;
-			break;
-		}
-	}
-
-	return cnt;*/
 	return (ndel + nadd);
 }
 

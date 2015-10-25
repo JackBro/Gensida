@@ -48,8 +48,6 @@
 #define IDD_EDITWATCH1                  150
 #define IDD_ARCHIVEFILECHOOSER          150
 #define IDD_RAMDUMP                     153
-#define IDD_DEBUG                       154
-#define IDD_EDIT_BREAK                  156
 #define IDD_VDPRAM                      157
 #define IDD_VDP_SPRITES                 158
 #define IDD_PLANEEXPLORER               159
@@ -176,7 +174,6 @@
 #define IDC_BUTTON2                     1126
 #define IDC_DISABLEKEY                  1126
 #define IDC_SAVE                        1126
-#define IDC_STEP_OVER                   1126
 #define IDC_BUTTON_STATE_BROWSE         1127
 #define IDC_USEDEFAULTKEY               1127
 #define IDC_BUTTON11                    1127
@@ -205,7 +202,6 @@
 #define IDC_REASSIGNKEY                 1146
 #define IDC_BUTTON_LUABROWSE            1146
 #define IDC_BTN_HELP                    1146
-#define IDC_RUN                         1146
 #define IDC_BUTTON_LUAEDIT              1147
 #define IDC_STATIC_WARNING_EXIST        1147
 #define IDC_BUTTON8                     1147
@@ -262,8 +258,6 @@
 #define ID_FILE_AUTO                    1217
 #define IDC_CHECK1                      1217
 #define INPUT_FRAMEADVSKIPLAG           1217
-#define IDC_ENABLE                      1217
-#define IDC_IDA_CHECK                   1217
 #define IDC_STATIC_WATCH                1218
 #define RAMMENU_FILE_AUTOLOAD           1218
 #define IDC_EDIT_WATCH                  1219
@@ -678,27 +672,12 @@
 #define ID_LUA_OPENRECENTSCRIPT0        44200
 #define ID_LUA_OPENRECENTSCRIPTMAX      44299
 #define IDC_SCROLLBAR1                  50001
-#define IDC_STEP_INTO                   50002
-#define IDC_DEBUG_REGS                  50003
 #define IDC_BUTTON3                     50004
 #define IDC_SET_BREAK                   50005
-#define IDC_ADD_BREAK                   50006
-#define IDC_EDIT_BREAK                  50007
-#define IDC_DEL_BREAK                   50008
-#define IDC_BREAK_LIST                  50009
-#define IDC_EDIT_RANGE                  50010
-#define IDC_PC                          50011
-#define IDC_READ                        50012
-#define IDC_WRITE                       50013
-#define IDC_CALL_STACK                  50014
 #define IDC_BUTTON4                     50016
-#define IDC_LOAD_MAP                    50017
-#define IDC_SAVE_MAP                    50018
-#define IDC_WHY_BREAK                   50019
 #define IDC_BUTTON5                     50020
 #define IDC_BUTTON6                     50021
 #define IDC_BUTTON7                     50022
-#define IDC_FORBID                      50024
 #define IDC_SPRITES_LIST                50025
 #define IDC_SPRITES_PREVIEW             50026
 #define IDC_SPRITES_PREVIEW2            50027
@@ -712,7 +691,7 @@
 #define IDC_PLANEEXPLORER_PLANE_B       54005
 
 // Next default values for new objects
-//
+// 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        160

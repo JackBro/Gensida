@@ -32,40 +32,6 @@ extern debugger_t debugger;
 static bool plugin_inited;
 static bool dbg_started;
 
-static int idaapi hook_idp(void *user_data, int notification_code, va_list va)
-{
-	switch (notification_code)
-	{
-	case processor_t::custom_ana:
-	{
-		(*ph.u_ana)();
-
-		op_t &op = cmd.Operands[0];
-
-		switch (op.type)
-		{
-		case o_near:
-		{
-			if (op.phrase == 8 && op.specflag1 == 0)
-			{
-				op.type = o_mem;
-				op.phrase = 9;
-				return 2;
-			}
-			else if (op.phrase == 10 && op.specflag1 == 2) // with PC
-			{
-				op.type = o_displ;
-				op.phrase = 91;
-				cmd.Operands[1].type = o_void;
-				return 2;
-			}
-		}
-		}
-	} break;
-	}
-	return 0;
-}
-
 static int find_breakpoint(uint32 start, uint32 end, uint8 type)
 {
 	for (int i = 0; i < M68kDW.Breakpoints.size(); ++i)
@@ -358,7 +324,6 @@ static int idaapi init(void)
 		dbg_started = false;
 		hook_to_notification_point(HT_UI, hook_ui, NULL);
 		hook_to_notification_point(HT_DBG, hook_dbg, NULL);
-		hook_to_notification_point(HT_IDP, hook_idp, NULL);
 
 		print_version();
 		return PLUGIN_KEEP;
@@ -375,7 +340,6 @@ static void idaapi term(void)
 		//term_plugin();
 		unhook_from_notification_point(HT_UI, hook_ui, NULL);
 		unhook_from_notification_point(HT_DBG, hook_dbg, NULL);
-		unhook_from_notification_point(HT_IDP, hook_idp, NULL);
 		plugin_inited = false;
 		dbg_started = false;
 	}

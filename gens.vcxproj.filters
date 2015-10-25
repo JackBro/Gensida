@@ -303,9 +303,6 @@
     <ClCompile Include="src\m68k_debugwindow.cpp">
       <Filter>C/C++ Sources</Filter>
     </ClCompile>
-    <ClCompile Include="src\z80_debugwindow.cpp">
-      <Filter>C/C++ Sources</Filter>
-    </ClCompile>
     <ClCompile Include="src\debugwindow.cpp">
       <Filter>C/C++ Sources</Filter>
     </ClCompile>
@@ -683,9 +680,6 @@
       <Filter>Headers</Filter>
     </ClInclude>
     <ClInclude Include="src\ram_dump.h">
-      <Filter>Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="src\z80_debugwindow.h">
       <Filter>Headers</Filter>
     </ClInclude>
     <ClInclude Include="src\debugwindow.h">

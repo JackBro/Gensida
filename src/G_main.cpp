@@ -56,7 +56,6 @@
 #include "7zip.h"
 #include "OpenArchive.h"
 #include "m68k_debugwindow.h"
-#include "z80_debugwindow.h"
 #include "plane_explorer_kmod.h"
 
 #include "ida_debmod.h"
@@ -1959,22 +1958,6 @@ void Handle_Gens_Messages()
                 SendMessage(RamWatchHWnd, msg.message, msg.wParam, msg.lParam);
             continue;
         }
-        if (M68kDW.HWnd && IsDialogMessage(M68kDW.HWnd, &msg))
-        {
-            if (msg.message == WM_KEYDOWN ||
-                msg.message == WM_KEYUP)
-                SendMessage(M68kDW.HWnd, msg.message, msg.wParam, msg.lParam);
-            //DispatchMessage(&msg);
-            continue;
-        }
-        if (z80DW.HWnd && IsDialogMessage(z80DW.HWnd, &msg))
-        {
-            if (msg.message == WM_KEYDOWN ||
-                msg.message == WM_KEYUP)
-                SendMessage(z80DW.HWnd, msg.message, msg.wParam, msg.lParam);
-            //DispatchMessage(&msg);
-            continue;
-        }
         if (VolControlHWnd && IsDialogMessage(VolControlHWnd, &msg))
             continue;
         bool docontinue = false;
@@ -2648,8 +2631,6 @@ void GensReplayMovie()
 int GensLoadRom(const char* filename)
 {
     Clear_Sound_Buffer();
-    M68kDW.ResetMap();
-    z80DW.ResetMap();
 
     int loaded;
     if (!filename)
@@ -2832,10 +2813,6 @@ long PASCAL WinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 CloseMovieFile(&MainMovie);
             if ((Check_If_Kaillera_Running()))
                 return 0;
-            if (M68kDW.HWnd != NULL)
-                SendMessage(M68kDW.HWnd, WM_CLOSE, 0, 0);
-            if (z80DW.HWnd != NULL)
-                SendMessage(z80DW.HWnd, WM_CLOSE, 0, 0);
             if (HexEditors.size() > 0)
                 for (int i = (int)HexEditors.size() - 1; i >= 0; i--)
                     HexDestroyDialog(HexEditors[i]);
@@ -3224,14 +3201,6 @@ long PASCAL WinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
             case ID_HEX_EDITOR:
                 HexCreateDialog();
-                break;
-
-            case ID_M68K_DEBUG_WINDOW:
-                M68kDW.Window();
-                break;
-
-            case ID_Z80_DEBUG_WINDOW:
-                z80DW.Window();
                 break;
 
             case ID_PLANE_EXPLORER:
@@ -5716,10 +5685,6 @@ HMENU Build_Main_Menu(void)
         ID_VDP_SPRITES, "VDP Sprites", "", "VDP Sprites");
     MENU_L(TAS_Tools, i++, Flags,
         ID_PLANE_EXPLORER, "Plane Explorer", "", "Plane Explorer");
-    MENU_L(TAS_Tools, i++, Flags,
-        ID_M68K_DEBUG_WINDOW, "M68k Debug", "", "M68k Debug");
-    MENU_L(TAS_Tools, i++, Flags,
-        ID_Z80_DEBUG_WINDOW, "z80 Debug", "", "z80 Debug");
 
     // MOVIES //
 

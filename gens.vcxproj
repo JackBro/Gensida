@@ -115,7 +115,7 @@
       <AdditionalLibraryDirectories Condition="'$(Configuration)'=='Release64'">$(IDA_SDK)\lib\x86_win_vc_64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>ida.lib;advapi32.lib;ComDlg32.Lib;gdi32.lib;user32.lib;wsock32.lib;shell32.lib;oleaut32.lib;dependencies/directx/ddraw.lib;dependencies/directx/dsound.lib;dependencies/directx/dinput.lib;dependencies/directx/dxguid.lib;winmm.lib;dependencies/libs/zlib.lib;dependencies/libs/libpng.lib;htmlhelp.lib;vfw32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
-      <IgnoreSpecificDefaultLibraries>LIBC.lib;libcmt.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <IgnoreSpecificDefaultLibraries>LIBC.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
       <OptimizeReferences Condition="'$(Configuration)'=='Release'">true</OptimizeReferences>
       <OptimizeReferences Condition="'$(Configuration)'=='Release64'">true</OptimizeReferences>
       <EnableCOMDATFolding Condition="'$(Configuration)'=='Release'">true</EnableCOMDATFolding>
@@ -298,7 +298,6 @@
     <ClCompile Include="src\HacksCommon.cpp" />
     <ClCompile Include="src\RKABoxHack.cpp" />
     <ClCompile Include="src\SonicHackSuite.cpp" />
-    <ClCompile Include="src\z80_debugwindow.cpp" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="src\blit.asm">
@@ -518,7 +517,6 @@
     <ClInclude Include="src\ym2612.h" />
     <ClInclude Include="src\z80.h" />
     <ClInclude Include="src\z80dis.h" />
-    <ClInclude Include="src\z80_debugwindow.h" />
     <ClInclude Include="src\zconf.h" />
     <ClInclude Include="src\zlib.h" />
     <ClInclude Include="dependencies\mp3_dec\huffman.h" />
