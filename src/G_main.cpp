@@ -59,6 +59,9 @@
 #include "z80_debugwindow.h"
 #include "plane_explorer_kmod.h"
 
+#include "ida_debmod.h"
+extern eventlist_t g_events;
+
 extern "C" void Read_To_68K_Space(int adr);
 extern void HexDestroyDialog();
 #define MAPHACK
@@ -2228,6 +2231,24 @@ int PASCAL WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR lpCmdLine, int nC
     Init_Genesis_Bios();
 
     if (lpCmdLine[0])ParseCmdLine(lpCmdLine, HWnd);
+
+	debug_event_t ev;
+	ev.eid = PROCESS_START;
+	ev.pid = 1;
+	ev.tid = 1;
+	ev.ea = BADADDR;
+	ev.handled = true;
+
+	ev.modinfo.name[0] = 'G';
+	ev.modinfo.name[1] = 'E';
+	ev.modinfo.name[2] = 'N';
+	ev.modinfo.name[3] = 'S';
+	ev.modinfo.name[4] = '\0';
+	ev.modinfo.base = 0;
+	ev.modinfo.size = 0;
+	ev.modinfo.rebase_to = BADADDR;
+
+	g_events.enqueue(ev, IN_BACK);
 
     while (Gens_Running)
     {
@@ -4660,6 +4681,15 @@ long PASCAL WinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                     Pause_Screen();
                     Clear_Sound_Buffer();
                     Flip(HWnd);
+
+					debug_event_t ev;
+					ev.pid = 1;
+					ev.tid = 1;
+					ev.ea = M68kDW.last_pc;
+					ev.handled = true;
+					ev.eid = PROCESS_SUSPEND;
+
+					g_events.enqueue(ev, IN_BACK);
                 }
                 return 0;
             }

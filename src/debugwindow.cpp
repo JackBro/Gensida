@@ -7,6 +7,12 @@
 #include "G_ddraw.h"
 #include <vector>
 
+#include <dbg.hpp>
+#include "ida_debmod.h"
+#include "ida_debug.h"
+extern eventlist_t g_events;
+bool handled_ida_event;
+
 void Handle_Gens_Messages();
 LRESULT CALLBACK EditBreakProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
 extern int Gens_Running;
@@ -1128,9 +1134,9 @@ void IdaGo(int dest)
 void DebugWindow::Window()
 {
     if (!HWnd)
-        CreateDialog(NULL, MAKEINTRESOURCE(IDD_DEBUG), NULL, DebugProc);
-    else
-        SetForegroundWindow(HWnd);
+        CreateDialog(GetHInstance(), MAKEINTRESOURCE(IDD_DEBUG), NULL, DebugProc);
+    /*else
+        SetForegroundWindow(HWnd);*/
 }
 
 void DebugWindow::ShowAddress(int dest)
@@ -1161,28 +1167,29 @@ void DebugWindow::UpdateBreak(int n)
 }
 
 void DebugWindow::Breakpoint(int pc)
-{
-    Update_RAM_Watch();
+{	
+	if (!handled_ida_event)
+	{
+		debug_event_t ev;
+		ev.pid = 1;
+		ev.tid = 1;
+		ev.ea = pc;
+		ev.handled = true;
+		ev.eid = PROCESS_SUSPEND;
+		g_events.enqueue(ev, IN_BACK);
+	}
+
+	Update_RAM_Watch();
     Clear_Sound_Buffer();
     Put_Info((char*)(whyBreakpoint.c_str()));
     ShowAddress(pc);
+
     if (!DummyHWnd)
     {
         DummyHWnd = (HWND)1;
         MSG msg = { 0 };
         for (; Gens_Running&&DummyHWnd;)
         {
-            /*if (PeekMessage(&msg, NULL, 0, 0, PM_NOREMOVE))
-            {
-            if (msg.hwnd==DebugWindowHWnd&&msg.message==WM_DEBUG_DUMMY_EXIT)
-            {
-            GetMessage(&msg, NULL, 0, 0);
-            DispatchMessage(&msg);
-            break;
-            }
-            else
-            Handle_Gens_Messages();
-            }*/
             Handle_Gens_Messages();
         }
         //DebugDummyHWnd=(HWND)0;
@@ -1192,8 +1199,10 @@ void DebugWindow::Breakpoint(int pc)
 void DebugWindow::SetWhyBreak(LPCSTR lpString)
 {
     whyBreakpoint = lpString;
-    if (HWnd)
-        SetDlgItemText(HWnd, IDC_WHY_BREAK, lpString);
+	if (HWnd)
+		SetDlgItemText(HWnd, IDC_WHY_BREAK, lpString);
+
+	msg("%s\n", lpString);
 }
 
 LRESULT CALLBACK DebugWindow::Proc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -1302,7 +1311,7 @@ LRESULT CALLBACK DebugWindow::Proc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM l
             break;
 
         case IDC_ADD_BREAK: {
-            int n = Breakpoints.size();
+			int n = Breakpoints.size();
             Breakpoints.resize(n + 1);
             ::Breakpoint &b = Breakpoints[n];
             memset(&b, 0, sizeof(::Breakpoint));
@@ -1315,7 +1324,7 @@ LRESULT CALLBACK DebugWindow::Proc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM l
             int n = SendDlgItemMessage(HWnd, IDC_BREAK_LIST, LB_GETCURSEL, NULL, NULL);
             if (n != LB_ERR)
             {
-                DialogBoxParam(NULL, MAKEINTRESOURCE(IDD_EDIT_BREAK), HWnd, (DLGPROC)EditBreakProc, (LPARAM)&Breakpoints[n]);
+                DialogBoxParam(GetHInstance(), MAKEINTRESOURCE(IDD_EDIT_BREAK), HWnd, (DLGPROC)EditBreakProc, (LPARAM)&Breakpoints[n]);
                 UpdateBreak(n);
             }
         }	break;
@@ -1484,7 +1493,7 @@ LRESULT CALLBACK DebugWindow::Proc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM l
         DeleteObject(MemBMP);
         DeleteObject(Fonts[1]);
         DeleteObject(MemDC);
-        EndDialog(hDlg, true);
+        DestroyWindow(hDlg);
         HWnd = NULL;
         return true;
     case WM_DEBUG_DUMMY_EXIT:

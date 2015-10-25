@@ -6,8 +6,8 @@
 
 #define WM_DEBUG_DUMMY_EXIT (WM_USER+1000)
 
-#define uint32 unsigned int
-#define uint8 unsigned char
+typedef unsigned int uint32;
+typedef unsigned char uint8;
 
 struct Breakpoint
 {

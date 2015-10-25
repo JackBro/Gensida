@@ -3,7 +3,7 @@
 
 #include <vector>
 
-#define u8 UINT8
+typedef UINT8 u8;
 
 extern "C" {
     void __fastcall WatchPointZ80(UINT Start, UINT Size);

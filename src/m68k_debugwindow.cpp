@@ -5,6 +5,11 @@
 #include "ram_dump.h"
 #include "resource.h"
 
+#include "ida_debmod.h"
+extern codemap_t g_codemap;
+extern eventlist_t g_events;
+extern bool handled_ida_event;
+
 M68kDebugWindow M68kDW;
 
 LRESULT CALLBACK M68kDebugProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -38,7 +43,12 @@ unsigned int Next_Long_T(void);
 
 void M68kDebugWindow::TracePC(int pc)
 {
-    prev_pc = last_pc;
+	handled_ida_event = false;
+	
+	if (hook_pc >= 0 && hook_pc < MAX_ROM_SIZE)
+		g_codemap[hook_pc] = std::pair<uint32, bool>(last_pc, true);
+	
+	prev_pc = last_pc;
     last_pc = hook_pc;
     if (last_pc >= 0 &&
         (last_pc >> 3) < dismap.size()
@@ -55,6 +65,16 @@ void M68kDebugWindow::TracePC(int pc)
             SetWhyBreak("StepInto");
         else
             SetWhyBreak("StepOver");
+
+		debug_event_t ev;
+		ev.eid = STEP;
+		ev.pid = 1;
+		ev.tid = 1;
+		ev.ea = hook_pc;
+		ev.handled = true;
+		g_events.enqueue(ev, IN_BACK);
+
+		handled_ida_event = true;
     }
 
     if (!br)
@@ -94,7 +114,8 @@ void M68kDebugWindow::TracePC(int pc)
 
 void M68kDebugWindow::TraceRead(uint32 start, uint32 stop)
 {
-    if (BreakRead(last_pc, start, stop))
+	handled_ida_event = false;
+	if (BreakRead(last_pc, start, stop))
     {
         char bwhy[33];
         sprintf(bwhy, "Read: %08X-%08X", start, stop);
@@ -105,6 +126,7 @@ void M68kDebugWindow::TraceRead(uint32 start, uint32 stop)
 
 void M68kDebugWindow::TraceWrite(uint32 start, uint32 stop)
 {
+	handled_ida_event = false;
     if (BreakWrite(last_pc, start, stop))
     {
         char bwhy[33];

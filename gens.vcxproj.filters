@@ -34,6 +34,9 @@
     <Filter Include="LibLua">
       <UniqueIdentifier>{50462c4b-faf5-4918-b0db-160d56d3e4bb}</UniqueIdentifier>
     </Filter>
+    <Filter Include="gensida">
+      <UniqueIdentifier>{09a91638-6d20-49ab-92cd-4fedef5ca43a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\7zip.cpp">
@@ -314,6 +317,12 @@
     </ClCompile>
     <ClCompile Include="src\plane_explorer_kmod.cpp">
       <Filter>C/C++ Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ida_debug.cpp">
+      <Filter>gensida</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ida_plugin.cpp">
+      <Filter>gensida</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -690,6 +699,15 @@
     </ClInclude>
     <ClInclude Include="src\plane_explorer_kmod.h">
       <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ida_debug.h">
+      <Filter>gensida</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ida_registers.h">
+      <Filter>gensida</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ida_debmod.h">
+      <Filter>gensida</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

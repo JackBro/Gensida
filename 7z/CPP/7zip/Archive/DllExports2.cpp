@@ -32,9 +32,9 @@ static bool IsItWindowsNT()
 #endif
 #endif
 
-extern "C"
-BOOL WINAPI DllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID /*lpReserved*/)
-{
+//extern "C"
+//BOOL WINAPI DllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID /*lpReserved*/)
+/*{
   if (dwReason == DLL_PROCESS_ATTACH)
   {
     g_hInstance = hInstance;
@@ -45,7 +45,7 @@ BOOL WINAPI DllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID /*lpReserved*/)
     #endif
   }
   return TRUE;
-}
+}*/
 
 DEFINE_GUID(CLSID_CArchiveHandler,
 0x23170F69, 0x40C1, 0x278A, 0x10, 0x00, 0x00, 0x01, 0x10, 0x00, 0x00, 0x00);
