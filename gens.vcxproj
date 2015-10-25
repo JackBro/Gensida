@@ -21,6 +21,7 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{BCD798AC-DD36-450E-BFE9-269C182290CC}</ProjectGuid>
     <RootNamespace>gensida</RootNamespace>
+    <ProjectName>gensida</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)'=='Debug'" Label="Configuration">
@@ -36,7 +37,7 @@
     <UseDebugLibraries>false</UseDebugLibraries>
   </PropertyGroup>
   <PropertyGroup Label="Configuration">
-    <PlatformToolset>v120</PlatformToolset>
+    <PlatformToolset>v120_xp</PlatformToolset>
     <ConfigurationType>DynamicLibrary</ConfigurationType>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
@@ -191,9 +192,6 @@
     <ClCompile Include="src\Cpu_Z80.c">
       <PreprocessorDefinitions>%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
-    <ClCompile Include="src\Debug.cpp">
-      <PreprocessorDefinitions>%(PreprocessorDefinitions)</PreprocessorDefinitions>
-    </ClCompile>
     <ClCompile Include="src\debugwindow.cpp" />
     <ClCompile Include="src\drawutil.cpp" />
     <ClCompile Include="src\G_ddraw.cpp">
@@ -271,9 +269,6 @@
       <PreprocessorDefinitions>%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <ClCompile Include="src\ym2612.c">
-      <PreprocessorDefinitions>%(PreprocessorDefinitions)</PreprocessorDefinitions>
-    </ClCompile>
-    <ClCompile Include="src\z80dis.c">
       <PreprocessorDefinitions>%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <ClCompile Include="dependencies\mp3_dec\common.c">
@@ -457,7 +452,6 @@
     <ClInclude Include="src\Cpu_68k.h" />
     <ClInclude Include="src\Cpu_SH2.h" />
     <ClInclude Include="src\Cpu_Z80.h" />
-    <ClInclude Include="src\Debug.h" />
     <ClInclude Include="src\debugwindow.h" />
     <ClInclude Include="src\drawutil.h" />
     <ClInclude Include="src\G_ddraw.h" />
@@ -516,7 +510,6 @@
     <ClInclude Include="src\wave.h" />
     <ClInclude Include="src\ym2612.h" />
     <ClInclude Include="src\z80.h" />
-    <ClInclude Include="src\z80dis.h" />
     <ClInclude Include="src\zconf.h" />
     <ClInclude Include="src\zlib.h" />
     <ClInclude Include="dependencies\mp3_dec\huffman.h" />

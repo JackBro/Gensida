@@ -8,7 +8,6 @@
 #include "G_ddraw.h"
 #include "G_dsound.h"
 #include "G_Input.h"
-#include "Debug.h"
 #include "rom.h"
 #include "save.h"
 #include "resource.h"
@@ -468,29 +467,6 @@ int Set_Sprite_Over(HWND hWnd, int Num)
 
     Build_Main_Menu();
     return(1);
-}
-
-int Change_Debug(HWND hWnd, int Debug_Mode)
-{
-    if (!Game) return 0;
-
-    Clear_Sound_Buffer();
-
-    if (Debug_Mode == Debug)
-    {
-        // Restore Game Screen
-        Debug = 0;
-        Show_Genesis_Screen(hWnd);
-    }
-    else
-    {
-        // Clear Screen
-        Flag_Clr_Scr = 1;
-        Debug = Debug_Mode;
-    }
-
-    Build_Main_Menu();
-    return 1;
 }
 
 int Change_Fast_Blur(HWND hWnd)
@@ -1748,7 +1724,6 @@ void CC_End_Callback(char mess[256])
     MessageBox(HWnd, mess, "Console Classix", MB_OK);
 
     if (Sound_Initialised) Clear_Sound_Buffer();
-    Debug = 0;
     Free_Rom(Game);
     Build_Main_Menu();
 }
@@ -1801,7 +1776,6 @@ BOOL Init(HINSTANCE hInst, int nCmdShow)
     Genesis_Started = 0;
     SegaCD_Started = 0;
     _32X_Started = 0;
-    Debug = 0;
     CPU_Mode = 0;
     Window_Pos.x = 0;
     Window_Pos.y = 0;
@@ -2237,192 +2211,184 @@ int PASCAL WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR lpCmdLine, int nC
     {
         Handle_Gens_Messages();
 
-#ifdef GENS_DEBUG
-        if (Debug)						// DEBUG
+        if (Game)
         {
-            Update_Debug_Screen();
-            Flip(HWnd);
-        }
-        else
-#endif
-            if (Game)
+            Check_Misc_Key();
+            //Update_Input(); // disabled because we just called it in Handle_Gens_Messages
+
+            if (MustUpdateMenu)
             {
-                Check_Misc_Key();
-                //Update_Input(); // disabled because we just called it in Handle_Gens_Messages
+                Build_Main_Menu();
+                MustUpdateMenu = 0;
+            }
 
-                if (MustUpdateMenu)
+            int frameAdvanceKeyJustReleased = ((GetActiveWindow() == HWnd) || BackgroundInput) ? Check_Skip_Key_Released() : 0;
+            static int frameAdvanceKeyWasJustPressed = 0;
+            bool skipOptionEnabled = frameadvSkipLag;
+            bool frameadvSkipLag = skipOptionEnabled && !frameadvSkipLagForceDisable;
+            TurboMode = TurboToggle || (FastForwardKeyDown && (GetActiveWindow() == HWnd || BackgroundInput));
+
+            if (!(frameadvSkipLag && skipLagNow && !Paused))
+            {
+                skipLagNow = false;
+
+                if (frameadvSkipLag && (frameAdvanceKeyJustReleased || frameAdvanceKeyWasJustPressed) && !lastFrameAdvancePaused && frameadvSkipLag_Rewind_State_Buffer_Valid)
                 {
-                    Build_Main_Menu();
-                    MustUpdateMenu = 0;
+                    // activate lag skip checking
+                    skipLagNow = true;
+                    Paused = 0; // so the pause button can re-pause while skipping lag frames
                 }
-
-                int frameAdvanceKeyJustReleased = ((GetActiveWindow() == HWnd) || BackgroundInput) ? Check_Skip_Key_Released() : 0;
-                static int frameAdvanceKeyWasJustPressed = 0;
-                bool skipOptionEnabled = frameadvSkipLag;
-                bool frameadvSkipLag = skipOptionEnabled && !frameadvSkipLagForceDisable;
-                TurboMode = TurboToggle || (FastForwardKeyDown && (GetActiveWindow() == HWnd || BackgroundInput));
-
-                if (!(frameadvSkipLag && skipLagNow && !Paused))
+                else if (((GetActiveWindow() == HWnd) || BackgroundInput) && Check_Skip_Key())
                 {
-                    skipLagNow = false;
+                    // handle frame advance key
+                    if (Paused)
+                    {
+                        if (frameadvSkipLag)
+                        {
+                            frameadvSkipLag_Rewind_Input_Buffer[frameadvSkipLag_Rewind_State_Buffer_Index % 2] = GetLastInputCondensed();
+                            Save_State_To_Buffer(frameadvSkipLag_Rewind_State_Buffer[frameadvSkipLag_Rewind_State_Buffer_Index++ % 2]);
+                            frameadvSkipLag_Rewind_State_Buffer_Valid = true;
+                        }
 
-                    if (frameadvSkipLag && (frameAdvanceKeyJustReleased || frameAdvanceKeyWasJustPressed) && !lastFrameAdvancePaused && frameadvSkipLag_Rewind_State_Buffer_Valid)
-                    {
-                        // activate lag skip checking
-                        skipLagNow = true;
-                        Paused = 0; // so the pause button can re-pause while skipping lag frames
+                        Update_Emulation_One(HWnd);
+                        soundCleared = false;
+                        tgtime = timeGetTime();
+                        lastFrameAdvancePaused = false;
                     }
-                    else if (((GetActiveWindow() == HWnd) || BackgroundInput) && Check_Skip_Key())
+                    else
                     {
-                        // handle frame advance key
+                        // if the game isn't paused yet then the first press of the frame advance key only pauses the game
+                        Paused = 1;
+                        Clear_Sound_Buffer();
+                        soundCleared = true;
+                        lastFrameAdvancePaused = true;
+                    }
+                }
+                else // normal emulation
+                {
+                    if ((Active) && (!Paused))	// EMULATION
+                    {
+                        Update_Emulation(HWnd);
+                    }
+                    else		// EMULATION PAUSED
+                    {
+                        if (!soundCleared && timeGetTime() - tgtime >= 125) //eliminate stutter
+                        {
+                            Clear_Sound_Buffer();
+                            soundCleared = true;
+                        }
+                    }
+
+                    //Modif N - don't hog 100% of CPU power:
+                    // (this is in addition to a sleep of Sleep_Time elsewhere, because sometimes that code is not running)
+                    if (Sleep_Time)
+                    {
                         if (Paused)
                         {
-                            if (frameadvSkipLag)
-                            {
-                                frameadvSkipLag_Rewind_Input_Buffer[frameadvSkipLag_Rewind_State_Buffer_Index % 2] = GetLastInputCondensed();
-                                Save_State_To_Buffer(frameadvSkipLag_Rewind_State_Buffer[frameadvSkipLag_Rewind_State_Buffer_Index++ % 2]);
-                                frameadvSkipLag_Rewind_State_Buffer_Valid = true;
-                            }
-
-                            Update_Emulation_One(HWnd);
-                            soundCleared = false;
-                            tgtime = timeGetTime();
-                            lastFrameAdvancePaused = false;
+                            Sleep(1);
                         }
                         else
                         {
-                            // if the game isn't paused yet then the first press of the frame advance key only pauses the game
-                            Paused = 1;
-                            Clear_Sound_Buffer();
-                            soundCleared = true;
-                            lastFrameAdvancePaused = true;
-                        }
-                    }
-                    else // normal emulation
-                    {
-                        if ((Active) && (!Paused))	// EMULATION
-                        {
-                            Update_Emulation(HWnd);
-                        }
-                        else		// EMULATION PAUSED
-                        {
-                            if (!soundCleared && timeGetTime() - tgtime >= 125) //eliminate stutter
-                            {
-                                Clear_Sound_Buffer();
-                                soundCleared = true;
-                            }
-                        }
-
-                        //Modif N - don't hog 100% of CPU power:
-                        // (this is in addition to a sleep of Sleep_Time elsewhere, because sometimes that code is not running)
-                        if (Sleep_Time)
-                        {
-                            if (Paused)
-                            {
-                                Sleep(1);
-                            }
-                            else
-                            {
-                                static int count = 0;
-                                count++;
-                                if (!TurboMode)
-                                    if ((count % ((Frame_Skip < 0 ? 0 : Frame_Skip) + 2)) == 0)
-                                        Sleep(1);
-                            }
+                            static int count = 0;
+                            count++;
+                            if (!TurboMode)
+                                if ((count % ((Frame_Skip < 0 ? 0 : Frame_Skip) + 2)) == 0)
+                                    Sleep(1);
                         }
                     }
                 }
-                else //if(frameadvSkipLag && skipLagNow && !Paused)
+            }
+            else //if(frameadvSkipLag && skipLagNow && !Paused)
+            {
+                if (FrameCount == 0 || !frameadvSkipLag_Rewind_State_Buffer_Valid)
                 {
-                    if (FrameCount == 0 || !frameadvSkipLag_Rewind_State_Buffer_Valid)
+                    // this case is to interrupt the auto-frame skipping if the game or movie is reset or reloaded
+                    Paused = 1;
+                    skipLagNow = false;
+                    frameadvSkipLag_Rewind_State_Buffer_Valid = false;
+                }
+                else
+                {
+                    // perform lag skip checking
+
+                    frameadvSkipLag_Rewind_Input_Buffer[frameadvSkipLag_Rewind_State_Buffer_Index % 2] = GetLastInputCondensed();
+                    SetNextInputCondensed(frameadvSkipLag_Rewind_Input_Buffer[frameadvSkipLag_Rewind_State_Buffer_Index % 2]); // to reduce user confusion, this line prevents the input display from changing more than once per frame advance by applying the initially accepted input to all following auto-skipped lag frames
+                    Save_State_To_Buffer(frameadvSkipLag_Rewind_State_Buffer[frameadvSkipLag_Rewind_State_Buffer_Index++ % 2]);
+                    frameadvSkipLag_Rewind_State_Buffer_Valid = true;
+
+                    // update the graphics in case they're changing during non-input frames
+                    int Temp_Frame_Skip = Frame_Skip;
+                    if (TurboMode)
+                        Temp_Frame_Skip = 8;
+                    if (Lag_Frame && Frame_Number + 1 >= Temp_Frame_Skip)
+                        Do_VDP_Refresh(); // better than nothing for showing skipped frames
+                    if (!Lag_Frame)
+                        disableSound2 = true;
+
+                    Update_Emulation_One_Before(HWnd);
+                    Update_Frame_Fast();
+                    disableSound2 = false;
+                    soundCleared = false;
+                    tgtime = timeGetTime();
+                    if (Lag_Frame)
                     {
-                        // this case is to interrupt the auto-frame skipping if the game or movie is reset or reloaded
+                        // keep going, because the frame ignored user input
+                        Update_Emulation_After_Fast(HWnd);
+                    }
+                    else
+                    {
+                        // stop skipping, the next frame will accept user input
+#if 0
+                        // works most of the time but certain cases won't look right
+                        Do_VDP_Only();
+#else
+                        // re-run the last frame to generate its graphics properly
+                        Load_State_From_Buffer(frameadvSkipLag_Rewind_State_Buffer[frameadvSkipLag_Rewind_State_Buffer_Index % 2]);
+                        SetNextInputCondensed(frameadvSkipLag_Rewind_Input_Buffer[(frameadvSkipLag_Rewind_State_Buffer_Index + 1) % 2]); // being careful to re-run the last frame with the same input as before
+                        Update_Emulation_One(HWnd);
+#endif
                         Paused = 1;
                         skipLagNow = false;
                         frameadvSkipLag_Rewind_State_Buffer_Valid = false;
                     }
-                    else
-                    {
-                        // perform lag skip checking
-
-                        frameadvSkipLag_Rewind_Input_Buffer[frameadvSkipLag_Rewind_State_Buffer_Index % 2] = GetLastInputCondensed();
-                        SetNextInputCondensed(frameadvSkipLag_Rewind_Input_Buffer[frameadvSkipLag_Rewind_State_Buffer_Index % 2]); // to reduce user confusion, this line prevents the input display from changing more than once per frame advance by applying the initially accepted input to all following auto-skipped lag frames
-                        Save_State_To_Buffer(frameadvSkipLag_Rewind_State_Buffer[frameadvSkipLag_Rewind_State_Buffer_Index++ % 2]);
-                        frameadvSkipLag_Rewind_State_Buffer_Valid = true;
-
-                        // update the graphics in case they're changing during non-input frames
-                        int Temp_Frame_Skip = Frame_Skip;
-                        if (TurboMode)
-                            Temp_Frame_Skip = 8;
-                        if (Lag_Frame && Frame_Number + 1 >= Temp_Frame_Skip)
-                            Do_VDP_Refresh(); // better than nothing for showing skipped frames
-                        if (!Lag_Frame)
-                            disableSound2 = true;
-
-                        Update_Emulation_One_Before(HWnd);
-                        Update_Frame_Fast();
-                        disableSound2 = false;
-                        soundCleared = false;
-                        tgtime = timeGetTime();
-                        if (Lag_Frame)
-                        {
-                            // keep going, because the frame ignored user input
-                            Update_Emulation_After_Fast(HWnd);
-                        }
-                        else
-                        {
-                            // stop skipping, the next frame will accept user input
-#if 0
-                            // works most of the time but certain cases won't look right
-                            Do_VDP_Only();
-#else
-                            // re-run the last frame to generate its graphics properly
-                            Load_State_From_Buffer(frameadvSkipLag_Rewind_State_Buffer[frameadvSkipLag_Rewind_State_Buffer_Index % 2]);
-                            SetNextInputCondensed(frameadvSkipLag_Rewind_Input_Buffer[(frameadvSkipLag_Rewind_State_Buffer_Index + 1) % 2]); // being careful to re-run the last frame with the same input as before
-                            Update_Emulation_One(HWnd);
-#endif
-                            Paused = 1;
-                            skipLagNow = false;
-                            frameadvSkipLag_Rewind_State_Buffer_Valid = false;
-                        }
-                    }
                 }
+            }
 
-                frameAdvanceKeyWasJustPressed = ((GetActiveWindow() == HWnd) || BackgroundInput) ? Check_Skip_Key_Pressed() : 0;
-            }
-            else if (GYM_Playing)			// PLAY GYM
+            frameAdvanceKeyWasJustPressed = ((GetActiveWindow() == HWnd) || BackgroundInput) ? Check_Skip_Key_Pressed() : 0;
+        }
+        else if (GYM_Playing)			// PLAY GYM
+        {
+            Play_GYM();
+            Update_Gens_Logo(HWnd);
+        }
+        else if (Intro_Style == 1)		// GENS LOGO EFFECT
+        {
+            Update_Gens_Logo(HWnd);
+            Sleep(20);
+        }
+        else if (Intro_Style == 2)		// STRANGE EFFECT
+        {
+            Update_Crazy_Effect(HWnd);
+            Sleep(20);
+        }
+        else if (Intro_Style == 3)		// GENESIS BIOS
+        {
+            Do_Genesis_Frame();
+            Flip(HWnd);
+            Sleep(20);
+        }
+        else							// BLANK SCREEN (MAX IDLE)
+        {
+            // Modif N. -- reduced sleep time without increasing clear frequency
+            // to make non-accelerator hotkeys more responsive when no game is running
+            static int clearCounter = 0;
+            if (++clearCounter % 10 == 0)
             {
-                Play_GYM();
-                Update_Gens_Logo(HWnd);
-            }
-            else if (Intro_Style == 1)		// GENS LOGO EFFECT
-            {
-                Update_Gens_Logo(HWnd);
-                Sleep(20);
-            }
-            else if (Intro_Style == 2)		// STRANGE EFFECT
-            {
-                Update_Crazy_Effect(HWnd);
-                Sleep(20);
-            }
-            else if (Intro_Style == 3)		// GENESIS BIOS
-            {
-                Do_Genesis_Frame();
+                Clear_Back_Screen(HWnd);
                 Flip(HWnd);
-                Sleep(20);
             }
-            else							// BLANK SCREEN (MAX IDLE)
-            {
-                // Modif N. -- reduced sleep time without increasing clear frequency
-                // to make non-accelerator hotkeys more responsive when no game is running
-                static int clearCounter = 0;
-                if (++clearCounter % 10 == 0)
-                {
-                    Clear_Back_Screen(HWnd);
-                    Flip(HWnd);
-                }
-                Sleep(20);
-            }
+            Sleep(20);
+        }
     }
 
     End_Sound(); //Modif N - making sure sound doesn't stutter upon exit
@@ -3569,7 +3535,6 @@ long PASCAL WinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 if (MainMovie.File != NULL)
                     CloseMovieFile(&MainMovie);
                 if (Sound_Initialised) Clear_Sound_Buffer();
-                Debug = 0;
                 if (Net_Play)
                 {
                     if (Full_Screen) Set_Render(hWnd, 0, -1, true);
@@ -3963,43 +3928,7 @@ long PASCAL WinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 Put_Info(Str_Tmp);
             }
             break;
-#ifdef GENS_DEBUG
-            case ID_CPU_DEBUG_GENESIS_68000:
-                Change_Debug(hWnd, 1);
-                return 0;
 
-            case ID_CPU_DEBUG_GENESIS_Z80:
-                Change_Debug(hWnd, 2);
-                return 0;
-
-            case ID_CPU_DEBUG_GENESIS_VDP:
-                Change_Debug(hWnd, 3);
-                return 0;
-
-            case ID_CPU_DEBUG_SEGACD_68000:
-                Change_Debug(hWnd, 4);
-                return 0;
-
-            case ID_CPU_DEBUG_SEGACD_CDC:
-                Change_Debug(hWnd, 5);
-                return 0;
-
-            case ID_CPU_DEBUG_SEGACD_GFX:
-                Change_Debug(hWnd, 6);
-                return 0;
-
-            case ID_CPU_DEBUG_32X_MAINSH2:
-                Change_Debug(hWnd, 7);
-                return 0;
-
-            case ID_CPU_DEBUG_32X_SUBSH2:
-                Change_Debug(hWnd, 8);
-                return 0;
-
-            case ID_CPU_DEBUG_32X_VDP:
-                Change_Debug(hWnd, 9);
-                return 0;
-#endif
             case ID_LAG_RESET:
                 LagCount = 0;
                 // note: the whole point of LagCountPersistent is that it doesn't get reset here
@@ -4634,13 +4563,7 @@ long PASCAL WinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             }
 
             case ID_EMULATION_PAUSED:
-                if (Debug)
-                {
-                    Change_Debug(HWnd, 0);
-                    Paused = 0;
-                    Build_Main_Menu();
-                }
-                else if (Paused)
+                if (Paused)
                 {
                     Paused = 0;
                 }
@@ -4671,12 +4594,6 @@ long PASCAL WinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                     ASPI_Mechanism_State(0, NULL);
                     break;
                     */
-
-#ifdef GENS_DEBUG
-    case WM_KEYDOWN:
-        if (Debug) Debug_Event((lParam >> 16) & 0x7F);
-        break;
-#endif
 
     case WM_KNUX:
         MESSAGE_L("Communicating", "Communicating ...")
@@ -4970,9 +4887,7 @@ HMENU Build_Main_Menu(void)
     HMENU GraphicsLayersS;
     HMENU GraphicsFrameSkip;
     HMENU GraphicsLatencyCompensation;
-#ifdef GENS_DEBUG
-    HMENU CPUDebug;
-#endif
+
     HMENU CPUCountry;
     HMENU CPUCountryOrder;
     HMENU CPUSlowDownSpeed;
@@ -5021,9 +4936,7 @@ HMENU Build_Main_Menu(void)
     GraphicsLayersS = CreatePopupMenu();
     GraphicsFrameSkip = CreatePopupMenu();
     GraphicsLatencyCompensation = CreatePopupMenu();
-#ifdef GENS_DEBUG
-    CPUDebug = CreatePopupMenu();
-#endif
+
     CPUCountry = CreatePopupMenu();
     CPUCountryOrder = CreatePopupMenu();
     CPUSlowDownSpeed = CreatePopupMenu();
@@ -5410,13 +5323,6 @@ HMENU Build_Main_Menu(void)
 
     i = 0;
 
-#ifdef GENS_DEBUG
-    MENU_L(CPU, i++, Flags | MF_POPUP,
-        (UINT)CPUDebug, "Debug", "", "&Debug");
-
-    InsertMenu(CPU, i++, MF_SEPARATOR, NULL, NULL);
-#endif
-
     MENU_L(CPU, i++, Flags | MF_POPUP,
         (UINT)CPUCountry, "Country", "", "&Country");
 
@@ -5457,89 +5363,6 @@ HMENU Build_Main_Menu(void)
     }
 
     //	InsertMenu(CPU, i++, MF_SEPARATOR, NULL, NULL);
-
-    // DEBUG //
-
-#ifdef GENS_DEBUG
-    if (Debug == 1)
-        Flags |= MF_CHECKED;
-    else
-        Flags &= ~MF_CHECKED;
-
-    MENU_L(CPUDebug, 0, Flags,
-        ID_CPU_DEBUG_GENESIS_68000, "Genesis - 68000", "", "&Genesis - 68000");
-
-    if (Debug == 2)
-        Flags |= MF_CHECKED;
-    else
-        Flags &= ~MF_CHECKED;
-
-    MENU_L(CPUDebug, 1, Flags,
-        ID_CPU_DEBUG_GENESIS_Z80, "Genesis - Z80", "", "Genesis - &Z80");
-
-    if (Debug == 3)
-        Flags |= MF_CHECKED;
-    else
-        Flags &= ~MF_CHECKED;
-
-    MENU_L(CPUDebug, 2, Flags,
-        ID_CPU_DEBUG_GENESIS_VDP, "Genesis - VDP", "", "Genesis - &VDP");
-
-    i = 3;
-
-    if (SegaCD_Started)
-    {
-        if (Debug == (i + 1))
-            Flags |= MF_CHECKED;
-        else
-            Flags &= ~MF_CHECKED;
-
-        MENU_L(CPUDebug, i++, Flags,
-            ID_CPU_DEBUG_SEGACD_68000, "SegaCD - 68000", "", "&SegaCD - 68000");
-
-        if (Debug == (i + 1))
-            Flags |= MF_CHECKED;
-        else
-            Flags &= ~MF_CHECKED;
-
-        MENU_L(CPUDebug, i++, Flags,
-            ID_CPU_DEBUG_SEGACD_CDC, "SegaCD - CDC", "", "SegaCD - &CDC");
-
-        if (Debug == (i + 1))
-            Flags |= MF_CHECKED;
-        else
-            Flags &= ~MF_CHECKED;
-
-        MENU_L(CPUDebug, i++, Flags,
-            ID_CPU_DEBUG_SEGACD_GFX, "SegaCD - GFX", "", "SegaCD - GF&X");
-    }
-    if (_32X_Started)
-    {
-        if (Debug == (i + 1))
-            Flags |= MF_CHECKED;
-        else
-            Flags &= ~MF_CHECKED;
-
-        MENU_L(CPUDebug, i++, Flags,
-            ID_CPU_DEBUG_32X_MAINSH2, "32X - main SH2", "", "32X - main SH2");
-
-        if (Debug == (i + 1))
-            Flags |= MF_CHECKED;
-        else
-            Flags &= ~MF_CHECKED;
-
-        MENU_L(CPUDebug, i++, Flags,
-            ID_CPU_DEBUG_32X_SUBSH2, "32X - sub SH2", "", "32X - sub SH2");
-
-        if (Debug == (i + 1))
-            Flags |= MF_CHECKED;
-        else
-            Flags &= ~MF_CHECKED;
-
-        MENU_L(CPUDebug, i++, Flags,
-            ID_CPU_DEBUG_32X_VDP, "32X - VDP", "", "32X - VDP");
-    }
-#endif
 
     // COUNTRY //
 

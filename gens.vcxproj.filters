@@ -75,9 +75,6 @@
     <ClCompile Include="src\Cpu_Z80.c">
       <Filter>C/C++ Sources</Filter>
     </ClCompile>
-    <ClCompile Include="src\Debug.cpp">
-      <Filter>C/C++ Sources</Filter>
-    </ClCompile>
     <ClCompile Include="src\drawutil.cpp">
       <Filter>C/C++ Sources</Filter>
     </ClCompile>
@@ -172,9 +169,6 @@
       <Filter>C/C++ Sources</Filter>
     </ClCompile>
     <ClCompile Include="src\ym2612.c">
-      <Filter>C/C++ Sources</Filter>
-    </ClCompile>
-    <ClCompile Include="src\z80dis.c">
       <Filter>C/C++ Sources</Filter>
     </ClCompile>
     <ClCompile Include="src\EccoBoxHack.cpp">
@@ -436,9 +430,6 @@
     <ClInclude Include="src\Cpu_Z80.h">
       <Filter>Headers</Filter>
     </ClInclude>
-    <ClInclude Include="src\Debug.h">
-      <Filter>Headers</Filter>
-    </ClInclude>
     <ClInclude Include="src\drawutil.h">
       <Filter>Headers</Filter>
     </ClInclude>
@@ -578,9 +569,6 @@
       <Filter>Headers</Filter>
     </ClInclude>
     <ClInclude Include="src\z80.h">
-      <Filter>Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="src\z80dis.h">
       <Filter>Headers</Filter>
     </ClInclude>
     <ClInclude Include="src\zconf.h">

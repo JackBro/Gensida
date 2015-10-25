@@ -23,9 +23,6 @@ extern "C" {
 #define CLOCK_NTSC 53693175
 #define CLOCK_PAL  53203424
 
-#define GENS_DEBUG
-
-    extern int Debug;
     extern int Frame_Skip;
     extern int Frame_Number;
     extern int Inside_Frame;
