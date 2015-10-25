@@ -7,6 +7,12 @@
 #include "G_ddraw.h"
 #include <vector>
 
+#include <dbg.hpp>
+#include "ida_debmod.h"
+#include "ida_debug.h"
+extern eventlist_t g_events;
+bool handled_ida_event;
+
 void Handle_Gens_Messages();
 LRESULT CALLBACK EditBreakProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
 extern int Gens_Running;
@@ -1040,149 +1046,46 @@ char * MsgName[] = {
     "WM_USER"
 };
 
-char *GetMsgName(int x)
-{
-    if (x<0 || x>sizeof(MsgName) / sizeof(MsgName[0]))
-        return "UNKNOWN";
-    return MsgName[x];
-}
-
 DebugWindow::DebugWindow()
 {
     DummyHWnd = HWnd = NULL;
     DLGPROC DebugProc = NULL;
-    memset(Fonts, 0, sizeof(Fonts));
-    LastBMP = NULL;
-    MemBMP = NULL;
-    MemDC = NULL;
-
-    ScrollMin = 0;
-    ScrollMax = 5;
 
     StepInto = false;
-    IdaSync = false;
     StepOver = -1;
-    SelectedLine = -1;
-    Title = "Debug";
-    whyBreakpoint.clear();
 }
 
 DebugWindow::~DebugWindow()
 {
 }
 
-bool DebugWindow::IsShowedAddress(int pc)
-{
-    return false;
-}
-
-void DebugWindow::Update() {}
 void DebugWindow::TracePC(int pc) {}
 void DebugWindow::TraceRead(uint32 start, uint32 stop) {}
 void DebugWindow::TraceWrite(uint32 start, uint32 stop) {}
-int DebugWindow::DisasmLen(int pc) { return 1; }
 void DebugWindow::DoStepOver() {}
 
-int DebugWindow::GetNearestScroll(int x)
-{
-    int i;
-    for (i = 0; i < 10; ++i)
-    {
-        if (((x - i) >> 3) >= (int)dismap.size() ||
-            x - i < 0)
-            continue;
-        if (dismap[(x - i) >> 3] &
-            (1 << ((x - i) & 7))
-            )
-            break;
-    }
-    if (i != 10)
-    {
-        if (DisasmLen(x - i) > i)
-            x -= i;
-    }
-    return x;
-}
-
-void IdaGo(int dest)
-{
-    char address[15];
-    sprintf(address, "%X", dest);
-    FILE *fida = fopen("for ida.txt", "w+");
-    fprintf(fida, address);
-    fclose(fida);
-    HWND ida1 = NULL, ida;
-    for (;;)
-    {
-        ida1 = FindWindowEx(NULL, ida1, "TIdaWindow", NULL);
-        if (!ida1)
-            break;
-        ida = FindWindowEx(ida1, NULL, "MDIClient", NULL);
-        ida = FindWindowEx(ida, NULL, "TMDIForm", NULL);
-        ida = FindWindowEx(ida, NULL, "IdaView", NULL);
-        PostMessage(ida, WM_KEYDOWN, 'Z', NULL);
-        PostMessage(ida, WM_KEYUP, 'Z', NULL);
-    }
-}
-
-void DebugWindow::Window()
-{
-    if (!HWnd)
-        CreateDialog(NULL, MAKEINTRESOURCE(IDD_DEBUG), NULL, DebugProc);
-    else
-        SetForegroundWindow(HWnd);
-}
-
-void DebugWindow::ShowAddress(int dest)
-{
-    Window();
-    if (!IsShowedAddress(dest))
-        SetDisasmPos(dest);
-    //else if (IdaSync)
-    //	IdaGo(dest);
-    Update();
-}
-
-void DebugWindow::SetDisasmPos(int x)
-{
-    if (IdaSync)
-        IdaGo(x);
-    SetScrollPos(GetDlgItem(HWnd, IDC_SCROLLBAR1), SB_CTL, x, FALSE);
-}
-
-void DebugWindow::UpdateBreak(int n)
-{
-    SendDlgItemMessage(HWnd, IDC_BREAK_LIST, LB_DELETESTRING, (WPARAM)n, NULL);
-    char buff[20];
-    ::Breakpoint &b = Breakpoints[n];
-    sprintf(buff, "%c %06X-%06X %c%c%c", (b.enabled ? 'x' : ' '), b.start, b.end, (b.type & 1 ? 'p' : ' '), (b.type & 2 ? 'r' : ' '), (b.type & 4 ? 'w' : ' '));
-    SendDlgItemMessage(HWnd, IDC_BREAK_LIST, LB_INSERTSTRING, (WPARAM)n, (LPARAM)buff);
-    SendDlgItemMessage(HWnd, IDC_BREAK_LIST, LB_SETCURSEL, (WPARAM)n, NULL);
-}
-
 void DebugWindow::Breakpoint(int pc)
-{
-    Update_RAM_Watch();
+{	
+	if (!handled_ida_event)
+	{
+		debug_event_t ev;
+		ev.pid = 1;
+		ev.tid = 1;
+		ev.ea = pc;
+		ev.handled = true;
+		ev.eid = PROCESS_SUSPEND;
+		g_events.enqueue(ev, IN_BACK);
+	}
+
+	Update_RAM_Watch();
     Clear_Sound_Buffer();
-    Put_Info((char*)(whyBreakpoint.c_str()));
-    ShowAddress(pc);
+
     if (!DummyHWnd)
     {
         DummyHWnd = (HWND)1;
         MSG msg = { 0 };
         for (; Gens_Running&&DummyHWnd;)
         {
-            /*if (PeekMessage(&msg, NULL, 0, 0, PM_NOREMOVE))
-            {
-            if (msg.hwnd==DebugWindowHWnd&&msg.message==WM_DEBUG_DUMMY_EXIT)
-            {
-            GetMessage(&msg, NULL, 0, 0);
-            DispatchMessage(&msg);
-            break;
-            }
-            else
-            Handle_Gens_Messages();
-            }*/
             Handle_Gens_Messages();
         }
         //DebugDummyHWnd=(HWND)0;
@@ -1191,415 +1094,7 @@ void DebugWindow::Breakpoint(int pc)
 
 void DebugWindow::SetWhyBreak(LPCSTR lpString)
 {
-    whyBreakpoint = lpString;
-    if (HWnd)
-        SetDlgItemText(HWnd, IDC_WHY_BREAK, lpString);
-}
-
-LRESULT CALLBACK DebugWindow::Proc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
-{
-    RECT r;
-
-    switch (uMsg)
-    {
-    case WM_INITDIALOG: {
-        RECT r2;
-        int dx1, dy1, dx2, dy2;
-
-        HDC hdc = GetDC(hDlg);
-        MemDC = CreateCompatibleDC(hdc);
-        MemBMP = CreateCompatibleBitmap(hdc, DEBUG_DISASM_WIDTH, DEBUG_DISASM_HEIGHT);
-        LOGFONT lf;
-        memset(&lf, 0, sizeof(lf));
-        lf.lfHeight = -MulDiv(10, GetDeviceCaps(hdc, LOGPIXELSY), 72);
-        lf.lfWeight = 700;
-        lf.lfCharSet = DEFAULT_CHARSET;
-        lf.lfOutPrecision = OUT_DEFAULT_PRECIS;
-        lf.lfClipPrecision = CLIP_DEFAULT_PRECIS;
-        lf.lfQuality = DEFAULT_QUALITY;
-        lf.lfPitchAndFamily = DEFAULT_PITCH;
-        strcpy(lf.lfFaceName, "Courier New");
-        Fonts[1] = CreateFontIndirect(&lf);
-        LastBMP = (HBITMAP)SelectObject(MemDC, MemBMP);
-        Fonts[0] = (HFONT)SelectObject(MemDC, Fonts[1]);
-
-        HWnd = hDlg;
-
-        for (dx1 = 0; dx1 < (int)Breakpoints.size(); ++dx1)
-        {
-            SendDlgItemMessage(hDlg, IDC_BREAK_LIST, LB_INSERTSTRING, (WPARAM)-1, (LPARAM)"");
-            UpdateBreak(dx1);
-        }
-
-        if (Full_Screen)
-        {
-            while (ShowCursor(false) >= 0);
-            while (ShowCursor(true) < 0);
-        }
-
-        GetWindowRect(::HWnd, &r);
-        dx1 = (r.right - r.left) / 2;
-        dy1 = (r.bottom - r.top) / 2;
-
-        GetWindowRect(hDlg, &r2);
-        dx2 = (r2.right - r2.left) / 2;
-        dy2 = (r2.bottom - r2.top) / 2;
-
-        // push it away from the main window if we can
-        const int width = (r.right - r.left);
-        const int width2 = (r2.right - r2.left);
-        if (r.left + width2 + width < GetSystemMetrics(SM_CXSCREEN))
-        {
-            r.right += width;
-            r.left += width;
-        }
-        else if ((int)r.left - (int)width2 > 0)
-        {
-            r.right -= width2;
-            r.left -= width2;
-        }
-
-        SetWindowText(hDlg, Title);
-        SetWindowPos(hDlg, NULL, r.left, r.top, NULL, NULL, SWP_NOSIZE | SWP_NOZORDER | SWP_SHOWWINDOW);
-        SendDlgItemMessage(hDlg, IDC_IDA_CHECK, BM_SETCHECK, (WPARAM)IdaSync, NULL);
-        SetScrollRange(GetDlgItem(hDlg, IDC_SCROLLBAR1), SB_CTL, ScrollMin, ScrollMax, TRUE);
-        SetDisasmPos(0);
-        SetDlgItemText(hDlg, IDC_WHY_BREAK, whyBreakpoint.c_str());
-        Update();
-        return true;
-    }	break;
-
-    case WM_KEYDOWN: {
-        switch (wParam)
-        {
-        case VK_F6:
-            PostMessage(hDlg, WM_COMMAND, IDC_STEP_OVER, NULL);
-            break;
-        case VK_F7:
-            PostMessage(hDlg, WM_COMMAND, IDC_STEP_INTO, NULL);
-            break;
-        case VK_F5:
-            PostMessage(hDlg, WM_COMMAND, IDC_RUN, NULL);
-            break;
-        }
-    }	break;
-
-    case WM_COMMAND: {
-        int msg = HIWORD(wParam);
-        int id = LOWORD(wParam);
-        switch (id)
-        {
-        case IDC_STEP_INTO:
-            StepInto = true;
-        case IDC_RUN:
-            if (DummyHWnd)
-                PostMessage(HWnd, WM_DEBUG_DUMMY_EXIT, NULL, NULL);
-            break;
-
-        case IDC_STEP_OVER:
-            DoStepOver();
-            PostMessage(HWnd, WM_DEBUG_DUMMY_EXIT, NULL, NULL);
-            break;
-
-        case IDC_ADD_BREAK: {
-            int n = Breakpoints.size();
-            Breakpoints.resize(n + 1);
-            ::Breakpoint &b = Breakpoints[n];
-            memset(&b, 0, sizeof(::Breakpoint));
-            SendDlgItemMessage(HWnd, IDC_BREAK_LIST, LB_INSERTSTRING, (WPARAM)-1, (LPARAM)"");
-            UpdateBreak(n);
-            SendDlgItemMessage(HWnd, IDC_BREAK_LIST, LB_SETCURSEL, (WPARAM)n, NULL);
-        }	//WARNING WITHOUT BREAK
-
-        case IDC_EDIT_BREAK: {
-            int n = SendDlgItemMessage(HWnd, IDC_BREAK_LIST, LB_GETCURSEL, NULL, NULL);
-            if (n != LB_ERR)
-            {
-                DialogBoxParam(NULL, MAKEINTRESOURCE(IDD_EDIT_BREAK), HWnd, (DLGPROC)EditBreakProc, (LPARAM)&Breakpoints[n]);
-                UpdateBreak(n);
-            }
-        }	break;
-
-        case IDC_DEL_BREAK: {
-            int n = SendDlgItemMessage(HWnd, IDC_BREAK_LIST, LB_GETCURSEL, NULL, NULL);
-            if (n != LB_ERR)
-            {
-                SendDlgItemMessage(HWnd, IDC_BREAK_LIST, LB_DELETESTRING, n, NULL);
-                Breakpoints.erase(Breakpoints.begin() + n);
-                if (n < (int)Breakpoints.size())
-                    SendDlgItemMessage(HWnd, IDC_BREAK_LIST, LB_SETCURSEL, (WPARAM)n, NULL);
-                else if (Breakpoints.size())
-                    SendDlgItemMessage(HWnd, IDC_BREAK_LIST, LB_SETCURSEL, (WPARAM)n - 1, NULL);
-            }
-        }	break;
-
-        case IDC_BREAK_LIST: {
-            if (msg == LBN_DBLCLK)
-            {
-                int n = SendDlgItemMessage(HWnd, IDC_BREAK_LIST, LB_GETCURSEL, NULL, NULL);
-                if (n != LB_ERR)
-                {
-                    Breakpoints[n].enabled = !Breakpoints[n].enabled;
-                    UpdateBreak(n);
-                }
-            }
-        }	break;
-
-        case IDC_CALL_STACK: {
-            if (msg == LBN_DBLCLK)
-            {
-                int n = SendDlgItemMessage(HWnd, IDC_CALL_STACK, LB_GETCURSEL, NULL, NULL);
-                if (n != LB_ERR)
-                {
-                    SetDisasmPos(callstack[callstack.size() - 1 - n]);
-                    Update();
-                }
-            }
-        }	break;
-
-        case IDC_LOAD_MAP: {
-            char fname[2048];
-            strcpy(fname, Rom_Name);
-            strcat(fname, ".map");
-            if (Change_File_L(fname, ".", "Save Code Map As...", "All Files\0*.*\0\0", "*.*", hDlg))
-            {
-                LoadMap(fname);
-            }
-        }	break;
-
-        case IDC_SAVE_MAP: {
-            char fname[2048];
-            strcpy(fname, Rom_Name);
-            strcat(fname, ".map");
-            if (Change_File_S(fname, ".", "Save Code Map As...", "All Files\0*.*\0\0", "*.*", hDlg))
-            {
-                SaveMap(fname);
-            }
-        }	break;
-
-        case IDC_IDA_CHECK: {
-            IdaSync = !IdaSync;
-            SendDlgItemMessage(hDlg, IDC_IDA_CHECK, BM_SETCHECK, (WPARAM)IdaSync, NULL);
-        }	break;
-        }
-    }	break;
-
-    case WM_LBUTTONDOWN:
-    {
-        short x = LOWORD(lParam);
-        short y = HIWORD(lParam);
-        SelectedLine = (y - 5) / 18;
-        Update();
-        SetForegroundWindow(hDlg);
-        /*if(!SetFocus(hDlg))
-        {
-        DWORD xz=GetLastError();
-        char buuf[20];
-        sprintf(buuf,"%x",xz);
-        MessageBox(NULL,buuf,"asd",MB_OK);
-        }
-        if (GetFocus()!=hDlg)
-        hDlg=(HWND)1;*/
-    }	break;
-
-    case WM_VSCROLL:
-    {
-        int CurPos = GetScrollPos(GetDlgItem(hDlg, IDC_SCROLLBAR1), SB_CTL);
-        int nSBCode = LOWORD(wParam);
-        int nPos = HIWORD(wParam);
-        switch (nSBCode)
-        {
-        case SB_LEFT:      // Scroll to far left.
-            CurPos = 0;
-            break;
-
-        case SB_RIGHT:      // Scroll to far right.
-            CurPos = 10000000;
-            break;
-
-        case SB_ENDSCROLL:   // End scroll.
-            break;
-
-        case SB_LINELEFT:      // Scroll left.
-            CurPos = GetNearestScroll(GetNearestScroll(CurPos) - 1);
-            break;
-
-        case SB_LINERIGHT:   // Scroll right.
-            CurPos = GetNearestScroll(CurPos);
-            if (CurPos >= 0 &&
-                (CurPos >> 3) < (int)dismap.size() &&
-                (dismap[CurPos >> 3] & (1 << (CurPos & 7)))
-                )
-                CurPos += DisasmLen(CurPos);
-            else
-                ++CurPos;
-            break;
-
-        case SB_PAGELEFT:    // Scroll one page left.
-            if (CurPos - 15 > 0)
-                CurPos -= 15;
-            break;
-
-        case SB_PAGERIGHT:      // Scroll one page righ
-            CurPos += 15;
-            break;
-
-        case SB_THUMBTRACK:   // Drag scroll box to specified position. nPos is the
-        case SB_THUMBPOSITION: // Scroll to absolute position. nPos is the position
-        {
-            SCROLLINFO si;
-            ZeroMemory(&si, sizeof(si));
-            si.cbSize = sizeof(si);
-            si.fMask = SIF_TRACKPOS;
-
-            // Call GetScrollInfo to get current tracking
-            //    position in si.nTrackPos
-
-            if (!GetScrollInfo(GetDlgItem(hDlg, IDC_SCROLLBAR1), SB_CTL, &si))
-                return 1; // GetScrollInfo failed
-            CurPos = si.nTrackPos;
-        }	break;
-        }
-        SetDisasmPos(CurPos);
-        Update();
-    }	break;
-
-    case WM_PAINT:
-    {
-        PAINTSTRUCT ps;
-        BeginPaint(hDlg, &ps);
-        BitBlt(ps.hdc, 5, 5, DEBUG_DISASM_WIDTH, DEBUG_DISASM_HEIGHT, MemDC, 0, 0, SRCCOPY);
-        EndPaint(hDlg, &ps);
-        return true;
-    }	break;
-
-    case WM_CLOSE:
-        if (Full_Screen)
-        {
-            while (ShowCursor(true) < 0);
-            while (ShowCursor(false) >= 0);
-        }
-        SelectObject(MemDC, Fonts[0]);
-        SelectObject(MemDC, LastBMP);
-        DeleteObject(MemBMP);
-        DeleteObject(Fonts[1]);
-        DeleteObject(MemDC);
-        EndDialog(hDlg, true);
-        HWnd = NULL;
-        return true;
-    case WM_DEBUG_DUMMY_EXIT:
-        DummyHWnd = NULL;
-        return true;
-    }
-
-    return false;
-}
-
-void DebugWindow::ResetMap()
-{
-    memset(&dismap[0], 0, dismap.size());
-}
-
-void DebugWindow::LoadMap(char *fname)
-{
-    FILE *in = fopen(fname, "rb");
-    fread(&dismap[0], 1, dismap.size(), in);
-    fclose(in);
-}
-
-void DebugWindow::SaveMap(char *fname)
-{
-    remove(fname);
-    FILE *out = fopen(fname, "wb");
-    fclose(out);
-    out = fopen(fname, "wb");
-    fwrite(&dismap[0], 1, dismap.size(), out);
-    fclose(out);
-}
-
-LRESULT CALLBACK EditBreakProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
-{
-    RECT r;
-    static Breakpoint *b = 0;
-
-    switch (uMsg)
-    {
-    case WM_INITDIALOG: {
-        RECT r2;
-        int dx1, dy1, dx2, dy2;
-
-        b = (Breakpoint *)lParam;
-        char buff[15];
-        sprintf(buff, "%06X-%06X", b->start, b->end);
-        SetDlgItemText(hDlg, IDC_EDIT_RANGE, buff);
-        CheckDlgButton(hDlg, IDC_ENABLE, (b->enabled ? BST_CHECKED : BST_UNCHECKED));
-        CheckDlgButton(hDlg, IDC_PC, (b->type & 1 ? BST_CHECKED : BST_UNCHECKED));
-        CheckDlgButton(hDlg, IDC_READ, (b->type & 2 ? BST_CHECKED : BST_UNCHECKED));
-        CheckDlgButton(hDlg, IDC_WRITE, (b->type & 4 ? BST_CHECKED : BST_UNCHECKED));
-        CheckDlgButton(hDlg, IDC_FORBID, (b->type & 8 ? BST_CHECKED : BST_UNCHECKED));
-
-        if (Full_Screen)
-        {
-            while (ShowCursor(false) >= 0);
-            while (ShowCursor(true) < 0);
-        }
-
-        GetWindowRect(HWnd, &r);
-        dx1 = (r.right - r.left) / 2;
-        dy1 = (r.bottom - r.top) / 2;
-
-        GetWindowRect(hDlg, &r2);
-        dx2 = (r2.right - r2.left) / 2;
-        dy2 = (r2.bottom - r2.top) / 2;
-
-        // push it away from the main window if we can
-        const int width = (r.right - r.left);
-        const int width2 = (r2.right - r2.left);
-        if (r.left + width2 + width < GetSystemMetrics(SM_CXSCREEN))
-        {
-            r.right += width;
-            r.left += width;
-        }
-        else if ((int)r.left - (int)width2 > 0)
-        {
-            r.right -= width2;
-            r.left -= width2;
-        }
-
-        SetWindowPos(hDlg, NULL, r.left, r.top, NULL, NULL, SWP_NOSIZE | SWP_NOZORDER | SWP_SHOWWINDOW);
-
-        return true;
-    }	break;
-    case WM_COMMAND: {
-        switch (wParam)
-        {
-        case IDOK: {
-            char buff[15];
-            GetDlgItemText(hDlg, IDC_EDIT_RANGE, buff, sizeof(buff));
-            if (sscanf(buff, "%x-%x", &(b->start), &(b->end)) == 1)
-                b->end = b->start;
-            if (b->end < b->start)
-                b->end = b->start;
-            b->enabled = (IsDlgButtonChecked(hDlg, IDC_ENABLE) == BST_CHECKED);
-            b->type = (IsDlgButtonChecked(hDlg, IDC_PC) == BST_CHECKED) +
-                ((IsDlgButtonChecked(hDlg, IDC_READ) == BST_CHECKED) * 2) +
-                ((IsDlgButtonChecked(hDlg, IDC_WRITE) == BST_CHECKED) * 4) +
-                ((IsDlgButtonChecked(hDlg, IDC_FORBID) == BST_CHECKED) * 8);
-            EndDialog(hDlg, true);
-        }	break;
-
-        case IDCANCEL:
-            EndDialog(hDlg, true);
-            break;
-        }
-        return true;
-    }	break;
-    case WM_CLOSE:
-        EndDialog(hDlg, true);
-        return true;
-        break;
-    }
-    return false;
+    msg("%s\n", lpString);
 }
 
 bool DebugWindow::BreakPC(int pc)

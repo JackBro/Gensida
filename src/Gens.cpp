@@ -239,7 +239,6 @@ BOOL IsAsyncAllowed(void)
 
 #endif // TEST_FOR_DESYNCS
 
-int Debug;
 int Frame_Skip;
 int Frame_Number;
 int Inside_Frame = 0;
@@ -811,7 +810,7 @@ int Init_Genesis(struct Rom *MD_Rom)
     char Str_Err[256];
 
     Flag_Clr_Scr = 1;
-    Debug = Paused = Frame_Number = 0;
+    Paused = Frame_Number = 0;
     SRAM_Start = SRAM_End = SRAM_ON = SRAM_Write = 0;
     Controller_1_COM = Controller_2_COM = 0;
 
@@ -1445,7 +1444,7 @@ int Init_32X(struct Rom *MD_Rom)
     Misc_Genesis_Init();
 
     Flag_Clr_Scr = 1;
-    Debug = Paused = Frame_Number = 0;
+    Paused = Frame_Number = 0;
     SRAM_Start = SRAM_End = SRAM_ON = SRAM_Write = 0;
     Controller_1_COM = Controller_2_COM = 0;
 
@@ -2075,7 +2074,7 @@ int Init_SegaCD(char *iso_name)
     SetWindowText(HWnd, Str_Err);
 
     Flag_Clr_Scr = 1;
-    Debug = Paused = Frame_Number = 0;
+    Paused = Frame_Number = 0;
     SRAM_Start = SRAM_End = SRAM_ON = SRAM_Write = 0;
     BRAM_Ex_State &= 0x100;
     Controller_1_COM = Controller_2_COM = 0;

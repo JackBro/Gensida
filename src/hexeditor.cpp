@@ -574,7 +574,6 @@ TextArea = {
 
         switch (uMsg) {
         case WM_CREATE: {
-            int LastFocus = -1;
             HexEditorMenu = GetMenu(hDlg);
             HexRegionsMenu = CreatePopupMenu();
             InsertMenu(HexEditorMenu, GetMenuItemCount(HexEditorMenu) + 1, MF_BYPOSITION | MF_POPUP | MF_STRING,
@@ -734,7 +733,7 @@ TextArea = {
                              if (Change_File_S(fname, ".", "Save Full Dump As...", "All Files\0*.*\0\0", "*.*", hDlg)) {
                                  FILE *out = fopen(fname, "wb+");
                                  int i;
-                                 for (i = 0; i < sizeof(Hex->CurrentRegion.Array); ++i) {
+								 for (i = 0; i < Hex->CurrentRegion.Size; ++i) {
                                      fname[i & 2047] = Hex->CurrentRegion.Array[i^Hex->CurrentRegion.Swap];
                                      if ((i & 2047) == 2047)
                                          fwrite(fname, 1, sizeof(fname), out);

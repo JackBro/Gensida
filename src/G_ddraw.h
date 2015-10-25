@@ -35,8 +35,8 @@ extern bool justlagged;
 #define VDP_REG_SET2 (FakeVDPScreen ? VDP_Reg.Set2 : VDP_Reg_Set2_Current)
 #define VDP_REG_SET4 (FakeVDPScreen ? VDP_Reg.Set4 : VDP_Reg_Set4_Current)
 
-#define IS_FULL_X_RESOLUTION ((VDP_REG_SET4 & 0x1) || Debug || !Game || !FrameCount)
-#define IS_FULL_Y_RESOLUTION (CPU_Mode && (VDP_REG_SET2 & 0x8) && !(Debug || !Game || !FrameCount))
+#define IS_FULL_X_RESOLUTION ((VDP_REG_SET4 & 0x1) || !Game || !FrameCount)
+#define IS_FULL_Y_RESOLUTION (CPU_Mode && (VDP_REG_SET2 & 0x8) && !(!Game || !FrameCount))
 
 #define FULL_X_RESOLUTION (IS_FULL_X_RESOLUTION ? 320 : 256)
 #define FULL_Y_RESOLUTION (IS_FULL_Y_RESOLUTION ? 240 : 224)

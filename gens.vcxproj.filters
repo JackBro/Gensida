@@ -34,6 +34,9 @@
     <Filter Include="LibLua">
       <UniqueIdentifier>{50462c4b-faf5-4918-b0db-160d56d3e4bb}</UniqueIdentifier>
     </Filter>
+    <Filter Include="gensida">
+      <UniqueIdentifier>{09a91638-6d20-49ab-92cd-4fedef5ca43a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\7zip.cpp">
@@ -70,9 +73,6 @@
       <Filter>C/C++ Sources</Filter>
     </ClCompile>
     <ClCompile Include="src\Cpu_Z80.c">
-      <Filter>C/C++ Sources</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Debug.cpp">
       <Filter>C/C++ Sources</Filter>
     </ClCompile>
     <ClCompile Include="src\drawutil.cpp">
@@ -169,9 +169,6 @@
       <Filter>C/C++ Sources</Filter>
     </ClCompile>
     <ClCompile Include="src\ym2612.c">
-      <Filter>C/C++ Sources</Filter>
-    </ClCompile>
-    <ClCompile Include="src\z80dis.c">
       <Filter>C/C++ Sources</Filter>
     </ClCompile>
     <ClCompile Include="src\EccoBoxHack.cpp">
@@ -300,9 +297,6 @@
     <ClCompile Include="src\m68k_debugwindow.cpp">
       <Filter>C/C++ Sources</Filter>
     </ClCompile>
-    <ClCompile Include="src\z80_debugwindow.cpp">
-      <Filter>C/C++ Sources</Filter>
-    </ClCompile>
     <ClCompile Include="src\debugwindow.cpp">
       <Filter>C/C++ Sources</Filter>
     </ClCompile>
@@ -314,6 +308,12 @@
     </ClCompile>
     <ClCompile Include="src\plane_explorer_kmod.cpp">
       <Filter>C/C++ Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ida_debug.cpp">
+      <Filter>gensida</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ida_plugin.cpp">
+      <Filter>gensida</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -428,9 +428,6 @@
       <Filter>Headers</Filter>
     </ClInclude>
     <ClInclude Include="src\Cpu_Z80.h">
-      <Filter>Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Debug.h">
       <Filter>Headers</Filter>
     </ClInclude>
     <ClInclude Include="src\drawutil.h">
@@ -574,9 +571,6 @@
     <ClInclude Include="src\z80.h">
       <Filter>Headers</Filter>
     </ClInclude>
-    <ClInclude Include="src\z80dis.h">
-      <Filter>Headers</Filter>
-    </ClInclude>
     <ClInclude Include="src\zconf.h">
       <Filter>Headers</Filter>
     </ClInclude>
@@ -676,9 +670,6 @@
     <ClInclude Include="src\ram_dump.h">
       <Filter>Headers</Filter>
     </ClInclude>
-    <ClInclude Include="src\z80_debugwindow.h">
-      <Filter>Headers</Filter>
-    </ClInclude>
     <ClInclude Include="src\debugwindow.h">
       <Filter>Headers</Filter>
     </ClInclude>
@@ -690,6 +681,15 @@
     </ClInclude>
     <ClInclude Include="src\plane_explorer_kmod.h">
       <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ida_debug.h">
+      <Filter>gensida</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ida_registers.h">
+      <Filter>gensida</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ida_debmod.h">
+      <Filter>gensida</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -1,1 +1,6 @@
+Debug/
 Release/
+7z/Debug
+7z/Release
+*.cfg
+*.opensdf
