@@ -1,5 +1,6 @@
-# Gens-r57shell-Mod-Plus
-My modification of r57shell's Gens mod
+# Gensida
+**IDA** debugger plugin for **Sega Genesis** / **Megadrive** based on **Gens r57shell mod** emulator.
 
 ## How to compile
-Use Visual Studio 2013 or newer to compile. See Output directory for output.
+1. Open **gens_vc10.vcxproj** in any text editor and edit paths to **IDA_DIR** and **IDA_SDK** accordingly to your real paths;
+2. Use Visual Studio 2013 or newer to compile.
