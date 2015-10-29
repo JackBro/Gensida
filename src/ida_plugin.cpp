@@ -12,7 +12,7 @@
 // A copy of the GPL 2.0 should have been included with the program.
 // If not, see http ://www.gnu.org/licenses/
 
-#define VERSION "1.0.0"
+#define VERSION "1.0.1"
 
 #include <Windows.h>
 
@@ -89,7 +89,7 @@ static int idaapi hook_dbg(void *user_data, int notification_code, va_list va)
 			char range[MAXSTR];
 			qsnprintf(range, sizeof(range), "%06X-%06X", bpt->ea, bpt->ea);
 
-			if (AskUsingForm_c(bpt_dialog, range, &chkFlags) == 1)
+			if (!dbg_started || AskUsingForm_c(bpt_dialog, range, &chkFlags) == 1)
 			{
 				n = M68kDW.Breakpoints.size();
 				M68kDW.Breakpoints.resize(n + 1);

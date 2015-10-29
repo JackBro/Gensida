@@ -102,7 +102,7 @@
       <Optimization Condition="'$(Configuration)'=='Release'">Full</Optimization>
       <Optimization Condition="'$(Configuration)'=='Release64'">Full</Optimization>
       <ProgramDataBaseFileName>$(OutDir)gensida.pdb</ProgramDataBaseFileName>
-      <WarningLevel>Level4</WarningLevel>
+      <WarningLevel>Level3</WarningLevel>
       <TreatWarningAsError>false</TreatWarningAsError>
       <MultiProcessorCompilation>false</MultiProcessorCompilation>
       <FunctionLevelLinking>true</FunctionLevelLinking>

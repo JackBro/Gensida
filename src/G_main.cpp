@@ -152,7 +152,6 @@ HWND RamWatchHWnd = NULL; // modeless dialog
 HWND PlaneExplorerHWnd = NULL; // modeless dialog
 HWND VDPRamHWnd = NULL; // modeless dialog
 HWND VDPSpritesHWnd = NULL; // modeless dialog
-HWND DebugWindowHWnd = NULL; // modeless dialog
 HWND RamCheatHWnd = NULL; // modeless dialog
 std::vector<HWND> LuaScriptHWnds; // modeless dialogs
 HWND VolControlHWnd = NULL;
@@ -359,11 +358,11 @@ int Change_VSync(HWND hWnd)
     else MESSAGE_L("Vertical Sync Disabled", "Vertical Sync Disabled")
 
     Build_Main_Menu();
-    if (Full_Screen) return Init_DDraw(HWnd);
+    if (Full_Screen) return Init_DDraw(hWnd);
     else return 1;
 }
 
-int Set_Frame_Skip(HWND hWnd, int Num)
+int Set_Frame_Skip(int Num)
 {
     Frame_Skip = Num;
 
@@ -390,8 +389,7 @@ int Set_Latency_Compensation(int Num)
     char msg[256];
     sprintf(msg, "Set to adjust for %d frame%s of video lag", VideoLatencyCompensation, VideoLatencyCompensation == 1 ? "" : "s");
     MESSAGE_L(msg, msg)
-
-        disableVideoLatencyCompensationCount = 0;
+		disableVideoLatencyCompensationCount = 0;
 
     Build_Main_Menu();
     return(1);
@@ -414,7 +412,7 @@ int Set_Current_State(int Num, bool showOccupiedMessage, bool showEmptyMessage)
 
     Current_State = Num;
 
-    if (f = Get_State_File())
+    if ((f = Get_State_File()) != NULL)
     {
         fclose(f);
         if (showOccupiedMessage)
@@ -435,10 +433,10 @@ int Change_Stretch(void)
 {
     Flag_Clr_Scr = 1;
 
-    if (Stretch = (1 - Stretch))
+    if ((Stretch = (1 - Stretch)) != 0)
         MESSAGE_L("Stretched mode", "Stretched mode")
     else
-    MESSAGE_L("Correct ratio mode", "Correct ratio mode")
+		MESSAGE_L("Correct ratio mode", "Correct ratio mode")
 
     Build_Main_Menu();
     return(1);
@@ -450,39 +448,39 @@ int Change_Blit_Style(void)
 
     Flag_Clr_Scr = 1;
 
-    if (Blit_Soft = (1 - Blit_Soft))
+    if ((Blit_Soft = (1 - Blit_Soft)) != NULL)
         MESSAGE_L("Force software blit for Full-Screen", "Force software blit for Full-Screen")
     else
-    MESSAGE_L("Enable hardware blit for Full-Screen", "Enable hardware blit for Full-Screen")
+		MESSAGE_L("Enable hardware blit for Full-Screen", "Enable hardware blit for Full-Screen")
 
     return(1);
 }
 
-int Set_Sprite_Over(HWND hWnd, int Num)
+int Set_Sprite_Over(int Num)
 {
-    if (Sprite_Over = Num)
+    if ((Sprite_Over = Num) != 0)
         MESSAGE_L("Sprite Limit Enabled", "Sprite Limit Enabled")
     else
-    MESSAGE_L("Sprite Limit Disabled", "Sprite Limit Disabled")
+		MESSAGE_L("Sprite Limit Disabled", "Sprite Limit Disabled")
 
     Build_Main_Menu();
     return(1);
 }
 
-int Change_Fast_Blur(HWND hWnd)
+int Change_Fast_Blur()
 {
     Flag_Clr_Scr = 1;
 
-    if (Fast_Blur = (1 - Fast_Blur))
+    if ((Fast_Blur = (1 - Fast_Blur)) != 0)
         MESSAGE_L("Fast Blur Enabled", "Fast Blur Enabled")
     else
-    MESSAGE_L("Fast Blur Disabled", "Fast Blur Disabled")
+		MESSAGE_L("Fast Blur Disabled", "Fast Blur Disabled")
 
     Build_Main_Menu();
     return(1);
 }
 
-int Change_Layer(HWND hWnd, int Num) //Nitsuja added this to allow for layer enabling and disabling.
+int Change_Layer(int Num) //Nitsuja added this to allow for layer enabling and disabling.
 {
     struct { char * val; char *name; } layers[] = {
         { &VScrollAl, "Scroll A Low" },
@@ -508,7 +506,7 @@ int Change_Layer(HWND hWnd, int Num) //Nitsuja added this to allow for layer ena
     return(1);
 }
 
-int Change_SpriteTop(HWND hWnd)
+int Change_SpriteTop()
 {
     Sprite_Always_Top = !Sprite_Always_Top;
 
@@ -520,7 +518,7 @@ int Change_SpriteTop(HWND hWnd)
     return (1);
 }
 
-int Change_SpriteBoxing(HWND hWnd)
+int Change_SpriteBoxing()
 {
     Sprite_Boxing = !Sprite_Boxing;
 
@@ -532,7 +530,7 @@ int Change_SpriteBoxing(HWND hWnd)
     return (1);
 }
 
-int Change_LayerSwap(HWND hWnd, int num)
+int Change_LayerSwap(int num)
 {
     char *Plane;
     switch (num)
@@ -562,7 +560,7 @@ int Change_LayerSwap(HWND hWnd, int num)
     return (1);
 }
 
-int Change_Plane(HWND hWnd, int num)
+int Change_Plane(int num)
 {
     char *Plane;
     char Layer[9];
@@ -763,7 +761,7 @@ tryAgain:
 
         End_DDraw();
 
-        if (Full_Screen = Full)
+        if ((Full_Screen = Full) != 0)
         {
             while (ShowCursor(true) < 1);
             while (ShowCursor(false) >= 0);
@@ -869,7 +867,7 @@ int Change_SegaCD_SRAM_Size(int num)
     return 1;
 }
 
-int Change_Z80(HWND hWnd)
+int Change_Z80()
 {
     if (Z80_State & 1)
     {
@@ -886,7 +884,7 @@ int Change_Z80(HWND hWnd)
     return(1);
 }
 
-int Change_DAC(HWND hWnd)
+int Change_DAC()
 {
     if (DAC_Enable)
     {
@@ -903,7 +901,7 @@ int Change_DAC(HWND hWnd)
     return(1);
 }
 
-int Change_DAC_Improv(HWND hWnd)
+int Change_DAC_Improv()
 {
     if (DAC_Improv)
     {
@@ -920,7 +918,7 @@ int Change_DAC_Improv(HWND hWnd)
     return(1);
 }
 
-int Change_YM2612(HWND hWnd)
+int Change_YM2612()
 {
     if (YM2612_Enable)
     {
@@ -937,7 +935,7 @@ int Change_YM2612(HWND hWnd)
     return(1);
 }
 
-int Change_YM2612_Improv(HWND hWnd)
+int Change_YM2612_Improv()
 {
     unsigned char Reg_1[0x200];
 
@@ -969,7 +967,7 @@ int Change_YM2612_Improv(HWND hWnd)
     return 1;
 }
 
-int Change_PSG(HWND hWnd)
+int Change_PSG()
 {
     if (PSG_Enable)
     {
@@ -986,7 +984,7 @@ int Change_PSG(HWND hWnd)
     return 1;
 }
 
-int Change_PSG_Improv(HWND hWnd)
+int Change_PSG_Improv()
 {
     if (PSG_Improv)
     {
@@ -1003,7 +1001,7 @@ int Change_PSG_Improv(HWND hWnd)
     return 1;
 }
 
-int Change_PCM(HWND hWnd)
+int Change_PCM()
 {
     if (PCM_Enable)
     {
@@ -1020,7 +1018,7 @@ int Change_PCM(HWND hWnd)
     return 1;
 }
 
-int Change_PWM(HWND hWnd)
+int Change_PWM()
 {
     if (PWM_Enable)
     {
@@ -1037,7 +1035,7 @@ int Change_PWM(HWND hWnd)
     return 1;
 }
 
-int Change_CDDA(HWND hWnd)
+int Change_CDDA()
 {
     if (CDDA_Enable)
     {
@@ -1088,7 +1086,7 @@ int	Change_Sound(HWND hWnd)
         Sound_Enable = 1;
         Play_Sound();
 
-        if (!(Z80_State & 1)) Change_Z80(hWnd);
+        if (!(Z80_State & 1)) Change_Z80();
 
         YM2612_Enable = 1;
         PSG_Enable = 1;
@@ -1235,7 +1233,7 @@ int Change_Sound_Soften(HWND hWnd)
 }
 
 // Modif N.
-int Change_Sound_Hog(HWND hWnd)
+int Change_Sound_Hog()
 {
     if (Sleep_Time)
     {
@@ -2178,7 +2176,6 @@ int PASCAL WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR lpCmdLine, int nC
     ///////////////////////////////////////////////////
 
     MSG msg;
-    long int OldFrame = -1;//Modif
 
     InitMovie(&MainMovie);
 
@@ -2206,6 +2203,22 @@ int PASCAL WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR lpCmdLine, int nC
 	ev.modinfo.rebase_to = BADADDR;
 
 	g_events.enqueue(ev, IN_BACK);
+
+	DestroyWindow(RamSearchHWnd); RamSearchHWnd = NULL; // modeless dialog
+	DestroyWindow(RamWatchHWnd); RamWatchHWnd = NULL; // modeless dialog
+	DestroyWindow(PlaneExplorerHWnd); PlaneExplorerHWnd = NULL; // modeless dialog
+	DestroyWindow(VDPRamHWnd); VDPRamHWnd = NULL; // modeless dialog
+	DestroyWindow(VDPSpritesHWnd); VDPSpritesHWnd = NULL; // modeless dialog
+	DestroyWindow(RamCheatHWnd); RamCheatHWnd = NULL; // modeless dialog
+	
+	for (int i = 0; i < LuaScriptHWnds.size(); ++i)
+	{
+		DestroyWindow(LuaScriptHWnds[i]);
+		LuaScriptHWnds[i] = NULL;
+	}
+	LuaScriptHWnds.clear();
+
+	DestroyWindow(VolControlHWnd); VolControlHWnd = NULL;
 
     while (Gens_Running)
     {
@@ -3684,29 +3697,29 @@ long PASCAL WinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             case ID_GRAPHICS_LAYERSPRITEHIGH:
             case ID_GRAPHICS_LAYER32X_LOW:
             case ID_GRAPHICS_LAYER32X_HIGH:
-                Change_Layer(hWnd, command - ID_GRAPHICS_LAYER0);
+                Change_Layer(command - ID_GRAPHICS_LAYER0);
                 return 0;
 
             case ID_GRAPHICS_SPRITEALWAYS:
-                Change_SpriteTop(hWnd);
+                Change_SpriteTop();
                 return 0;
 
             case ID_GRAPHICS_SPRITEBOXING:
-                Change_SpriteBoxing(hWnd);
+                Change_SpriteBoxing();
                 return 0;
 
             case ID_GRAPHICS_LAYERSWAPA:
             case ID_GRAPHICS_LAYERSWAPB:
             case ID_GRAPHICS_LAYERSWAPS:
             case ID_GRAPHICS_LAYERSWAP32X:
-                Change_LayerSwap(hWnd, command - ID_GRAPHICS_LAYERSWAPA);
+                Change_LayerSwap(command - ID_GRAPHICS_LAYERSWAPA);
                 return 0;
 
             case ID_GRAPHICS_TOGGLEA:
             case ID_GRAPHICS_TOGGLEB:
             case ID_GRAPHICS_TOGGLES:
             case ID_GRAPHICS_TOGGLE32X:
-                Change_Plane(hWnd, command - ID_GRAPHICS_TOGGLEA);
+                Change_Plane(command - ID_GRAPHICS_TOGGLEA);
                 return 0;
 
             case ID_GRAPHICS_PINKBG:
@@ -3766,7 +3779,7 @@ long PASCAL WinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 return 0;
 
             case ID_GRAPHICS_FRAMESKIP_AUTO:
-                Set_Frame_Skip(hWnd, -1);
+                Set_Frame_Skip(-1);
                 return 0;
 
             case ID_GRAPHICS_FRAMESKIP_0:
@@ -3778,7 +3791,7 @@ long PASCAL WinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             case ID_GRAPHICS_FRAMESKIP_6:
             case ID_GRAPHICS_FRAMESKIP_7:
             case ID_GRAPHICS_FRAMESKIP_8:
-                Set_Frame_Skip(hWnd, command - ID_GRAPHICS_FRAMESKIP_0);
+                Set_Frame_Skip(command - ID_GRAPHICS_FRAMESKIP_0);
                 return 0;
 
             case ID_LATENCY_COMPENSATION_0:
@@ -3792,20 +3805,20 @@ long PASCAL WinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
             case ID_GRAPHICS_FRAMESKIP_DECREASE:
                 if (Frame_Skip <= -1)
-                    Set_Frame_Skip(hWnd, 8);
+                    Set_Frame_Skip(8);
                 else
-                    Set_Frame_Skip(hWnd, Frame_Skip - 1);
+                    Set_Frame_Skip(Frame_Skip - 1);
                 return 0;
 
             case ID_GRAPHICS_FRAMESKIP_INCREASE:
                 if (Frame_Skip >= 8)
-                    Set_Frame_Skip(hWnd, -1);
+                    Set_Frame_Skip(-1);
                 else
-                    Set_Frame_Skip(hWnd, Frame_Skip + 1);
+                    Set_Frame_Skip(Frame_Skip + 1);
                 return 0;
 
             case ID_GRAPHICS_SPRITEOVER:
-                Set_Sprite_Over(hWnd, Sprite_Over ^ 1);
+                Set_Sprite_Over(Sprite_Over ^ 1);
                 return 0;
 
             case ID_GRAPHICS_SHOT:
@@ -4101,35 +4114,35 @@ long PASCAL WinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 return 0;
 
             case ID_SOUND_Z80ENABLE:
-                Change_Z80(hWnd);
+                Change_Z80();
                 return 0;
 
             case ID_SOUND_YM2612ENABLE:
-                Change_YM2612(hWnd);
+                Change_YM2612();
                 return 0;
 
             case ID_SOUND_PSGENABLE:
-                Change_PSG(hWnd);
+                Change_PSG();
                 return 0;
 
             case ID_SOUND_DACENABLE:
-                Change_DAC(hWnd);
+                Change_DAC();
                 return 0;
 
             case ID_SOUND_PCMENABLE:
-                Change_PCM(hWnd);
+                Change_PCM();
                 return 0;
 
             case ID_SOUND_PWMENABLE:
-                Change_PWM(hWnd);
+                Change_PWM();
                 return 0;
 
             case ID_SOUND_CDDAENABLE:
-                Change_CDDA(hWnd);
+                Change_CDDA();
                 return 0;
 
             case ID_SOUND_DACIMPROV:
-                Change_DAC_Improv(hWnd);
+                Change_DAC_Improv();
                 return 0;
 
             case ID_SOUND_PSGIMPROV:
@@ -4137,7 +4150,7 @@ long PASCAL WinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 return 0;
 
             case ID_SOUND_YMIMPROV:
-                Change_YM2612_Improv(hWnd);
+                Change_YM2612_Improv();
                 return 0;
 
             case ID_SOUND_ENABLE:
@@ -4165,7 +4178,7 @@ long PASCAL WinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 return 0;
 
             case ID_SOUND_HOG: //Nitsuja added this
-                Change_Sound_Hog(hWnd);
+                Change_Sound_Hog();
                 return 0;
 
             case ID_SOUND_STARTWAVDUMP:
@@ -4191,7 +4204,7 @@ long PASCAL WinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 return 0;
 
             case ID_OPTIONS_FASTBLUR:
-                Change_Fast_Blur(hWnd);
+                Change_Fast_Blur();
                 return 0;
 
             case ID_OPTIONS_SHOWFPS:

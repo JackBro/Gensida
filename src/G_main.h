@@ -100,7 +100,7 @@ extern "C" {
 #endif
 
 int Set_Render(HWND hWnd, int Full, int Num, int Force);
-int Change_Layer(HWND hWnd, int Num); //Nitsuja added this
+int Change_Layer(int Num); //Nitsuja added this
 int Change_68K_Type(HWND hWnd, int Num, int Reset_SND);
 int Change_Sound(HWND hWnd);
 int SaveFlags();
