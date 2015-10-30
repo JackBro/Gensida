@@ -34,7 +34,7 @@ void M68kDebugWindow::TracePC(int pc)
 {
 	handled_ida_event = false;
 	
-	if (hook_pc >= 0 && hook_pc < MAX_ROM_SIZE)
+	if (last_pc != 0 && hook_pc != 0 && hook_pc < MAX_ROM_SIZE)
 		g_codemap[hook_pc] = std::pair<uint32, bool>(last_pc, true);
 	
 	prev_pc = last_pc;
@@ -85,9 +85,7 @@ void M68kDebugWindow::TracePC(int pc)
     if ((OPC & 0xFFC0) == 0x4E80 ||//jsr
         (OPC & 0xFF00) == 0x6100)//bsr
     {
-        if (callstack.size() == 100)
-            callstack.erase(callstack.begin());
-        callstack.push_back(last_pc);
+		callstack.push_back(last_pc);
     }
 
     //(OPC & 0x7)==5 && ((OPC >> 3) & 0x7)==6 && ((OPC >> 6) & 0x3F)==57 && !(OPC & 0x100) && (OPC >> 12)==4

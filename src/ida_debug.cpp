@@ -643,6 +643,32 @@ static int idaapi update_bpts(update_bpt_info_t *bpts, int nadd, int ndel)
 	return (ndel + nadd);
 }
 
+// Calculate the call stack trace
+// This function is called when the process is suspended and should fill
+// the 'trace' object with the information about the current call stack.
+// Returns: true-ok, false-failed.
+// If this function is missing or returns false, IDA will use the standard
+// mechanism (based on the frame pointer chain) to calculate the stack trace
+// This function is called from the main thread
+static bool idaapi update_call_stack(thid_t tid, call_stack_t *trace)
+{
+	CHECK_FOR_START(0);
+	
+	trace->dirty = false;
+	size_t n = M68kDW.callstack.size();
+	trace->resize(n);
+	for (size_t i = 0; i < n; i++)
+	{
+		call_stack_info_t &ci = (*trace)[i];
+		ci.callea = M68kDW.callstack[i];
+		ci.funcea = BADADDR;
+		ci.fp = BADADDR;
+		ci.funcok = true;
+	}
+
+	return true;
+}
+
 //--------------------------------------------------------------------------
 //
 //	  DEBUGGER DESCRIPTION BLOCK
@@ -712,7 +738,7 @@ debugger_t debugger =
 
 	NULL, // set_dbg_options
 	NULL, // get_debmod_extensions
-	NULL, // update_call_stack
+	update_call_stack,
 
 	NULL, // appcall
 	NULL, // cleanup_appcall
