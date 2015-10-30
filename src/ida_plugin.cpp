@@ -34,7 +34,7 @@ static bool dbg_started;
 
 static int find_breakpoint(uint32 start, uint32 end, uint8 type)
 {
-	for (int i = 0; i < M68kDW.Breakpoints.size(); ++i)
+	for (size_t i = 0; i < M68kDW.Breakpoints.size(); ++i)
 	{
 		if (M68kDW.Breakpoints[i].start >= start &&
 			M68kDW.Breakpoints[i].end <= end &&
@@ -265,7 +265,7 @@ static int idaapi hook_ui(void *user_data, int notification_code, va_list va)
 
 						hint.cat_sprnt((COLSTR(SCOLOR_INV"OPERAND#%d (DISPLACEMENT: [$%s%X($%X", SCOLOR_DREF)),
 							op.n,
-							((int)op.addr < 0) ? "-" : "", ((int)op.addr < 0) ? -(uint32)op.addr : op.addr,
+							((int)op.addr < 0) ? "-" : "", ((int)op.addr < 0) ? -(int)op.addr : op.addr,
 							(uint32)main_reg.ival
 							);
 

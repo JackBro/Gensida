@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <memory.h>
+#include <vector>
 
 #include "Cpu_68k.h"
 #include "M68KD.h"
@@ -9,19 +10,13 @@
 #include "vdp_io.h"
 #include "luascript.h"
 
-#define uint32 unsigned int
+#include "tracer.h"
 
 extern FILE* fp_trace;
 extern FILE* fp_call;
 extern FILE* fp_hook;
 
-#define STATES 3
-extern unsigned int *rd_mode, *wr_mode, *ppu_mode, *pc_mode;
-extern unsigned int *rd_low, *rd_high;
-extern unsigned int *wr_low, *wr_high;
-extern unsigned int *ppu_low, *ppu_high;
-extern unsigned int *pc_low, *pc_high;
-extern unsigned int *pc_start;
+extern std::vector<HookList> rd_list, wr_list, ppu_list, pc_list;
 
 extern bool trace_map;
 extern bool hook_trace;
@@ -62,25 +57,10 @@ void DeInitDebug()
         fclose(fp_hook);
     }
 
-    if (rd_mode)
-    {
-        delete[] rd_mode;
-        delete[] wr_mode;
-        delete[] pc_mode;
-        delete[] ppu_mode;
-
-        delete[] rd_low;
-        delete[] wr_low;
-        delete[] pc_low;
-        delete[] ppu_low;
-
-        delete[] rd_high;
-        delete[] wr_high;
-        delete[] pc_high;
-        delete[] ppu_high;
-
-        delete[] pc_start;
-    }
+	pc_list.clear();
+	rd_list.clear();
+	wr_list.clear();
+	ppu_list.clear();
 
     if (fp_trace)
     {
@@ -185,17 +165,17 @@ void GensTrace()
     // Hook.txt
     if (hook_trace)
     {
-        for (int lcv = 0; lcv < STATES; lcv++)
+        for (size_t lcv = 0; lcv < pc_list.size(); lcv++)
         {
             FILE *out;
 
             // start-stop
-            if (pc_mode[lcv] & 1)
+			if (pc_list[lcv].mode & 1)
             {
-                if (hook_pc == pc_low[lcv])
-                    pc_start[lcv] = 1;
+				if (hook_pc == pc_list[lcv].low)
+					pc_list[lcv].start = 1;
 
-                if (!pc_start[lcv]) continue;
+				if (!pc_list[lcv].start) continue;
 
                 out = fp_hook;
             }
@@ -203,20 +183,20 @@ void GensTrace()
             else
             {
                 // fail: outside boundaries
-                if (hook_pc < pc_low[lcv]) continue;
-                if (hook_pc > pc_high[lcv]) continue;
+				if (hook_pc < pc_list[lcv].low) continue;
+				if (hook_pc > pc_list[lcv].high) continue;
             }
 
             // ------------------------------------------------------
 
-            if (pc_mode[lcv] >= 4 && pc_mode[lcv] < 8)
+			if (pc_list[lcv].mode >= 4 && pc_list[lcv].mode < 8)
             {
-                pc_mode[lcv] &= 3;
+				pc_list[lcv].mode &= 3;
                 trace_map = 1;
             }
 
             // output file mode
-            out = (pc_mode[lcv] <= 1) ? fp_hook : fp_trace;
+			out = (pc_list[lcv].mode <= 1) ? fp_hook : fp_trace;
 
             if (!out) continue;
             if (out == fp_trace)
@@ -225,11 +205,11 @@ void GensTrace()
             Print_Instruction(out);
 
             // end formatting
-            if (hook_pc == pc_high[lcv])
+			if (hook_pc == pc_list[lcv].high)
             {
-                pc_start[lcv] = 0;
+				pc_list[lcv].start = 0;
 
-                if (pc_low[lcv] != pc_high[lcv])
+				if (pc_list[lcv].low != pc_list[lcv].high)
                     fprintf(out, "\n");
             }
         } // end STATES
@@ -243,34 +223,34 @@ static void trace_read_byte_internal()
     start = hook_address;
     stop = start + 0;
 
-    for (int lcv = 0; lcv < STATES; lcv++)
+	for (size_t lcv = 0; lcv < rd_list.size(); lcv++)
     {
         FILE *out;
 
         // linear map
-        if (rd_mode[lcv] & 1)
+		if (rd_list[lcv].mode & 1)
         {
             // fail: outside boundaries
-            if (stop < rd_low[lcv]) continue;
-            if (start > rd_high[lcv]) continue;
+			if (stop < rd_list[lcv].low) continue;
+			if (start > rd_list[lcv].high) continue;
         }
         // shadow map
         else
         {
             // fail: outside boundaries
-            if ((stop & 0xffff) < (rd_low[lcv] & 0xffff)) continue;
-            if ((start & 0xffff) > (rd_high[lcv] & 0xffff)) continue;
+			if ((stop & 0xffff) < (rd_list[lcv].low & 0xffff)) continue;
+			if ((start & 0xffff) > (rd_list[lcv].high & 0xffff)) continue;
 
-            if ((stop >> 16) < (rd_low[lcv] >> 16)) continue;
-            if ((start >> 16) > (rd_high[lcv] >> 16)) continue;
+			if ((stop >> 16) < (rd_list[lcv].low >> 16)) continue;
+			if ((start >> 16) > (rd_list[lcv].high >> 16)) continue;
         }
 
         // ------------------------------------------------------
 
         // auto-trace
-        if (rd_mode[lcv] >= 4 && rd_mode[lcv] < 8)
+		if (rd_list[lcv].mode >= 4 && rd_list[lcv].mode < 8)
         {
-            rd_mode[lcv] &= 3;
+			rd_list[lcv].mode &= 3;
             //trace_map = 1;
 
             hook_trace = 0;
@@ -279,7 +259,7 @@ static void trace_read_byte_internal()
         }
 
         // output file mode
-        out = (rd_mode[lcv] <= 1) ? fp_hook : fp_trace;
+		out = (rd_list[lcv].mode <= 1) ? fp_hook : fp_trace;
 
         if (!out) continue;
         if (out == fp_trace)
@@ -293,7 +273,7 @@ static void trace_read_byte_internal()
 
 void trace_read_byte()
 {
-    if (hook_trace && rd_mode)
+    if (hook_trace)
         trace_read_byte_internal();
     M68kDW.TraceRead(hook_address, hook_address);
     CallRegisteredLuaMemHook(hook_address, 1, hook_value, LUAMEMHOOK_READ);
@@ -306,34 +286,34 @@ static void trace_read_word_internal()
     start = hook_address;
     stop = start + 1;
 
-    for (int lcv = 0; lcv < STATES; lcv++)
+	for (size_t lcv = 0; lcv < rd_list.size(); lcv++)
     {
         FILE *out;
 
         // linear map
-        if (rd_mode[lcv] & 1)
+		if (rd_list[lcv].mode & 1)
         {
             // fail: outside boundaries
-            if (stop < rd_low[lcv]) continue;
-            if (start > rd_high[lcv]) continue;
+			if (stop < rd_list[lcv].low) continue;
+			if (start > rd_list[lcv].high) continue;
         }
         // shadow map
         else
         {
             // fail: outside boundaries
-            if ((stop & 0xffff) < (rd_low[lcv] & 0xffff)) continue;
-            if ((start & 0xffff) > (rd_high[lcv] & 0xffff)) continue;
+			if ((stop & 0xffff) < (rd_list[lcv].low & 0xffff)) continue;
+			if ((start & 0xffff) > (rd_list[lcv].high & 0xffff)) continue;
 
-            if ((stop >> 16) < (rd_low[lcv] >> 16)) continue;
-            if ((start >> 16) > (rd_high[lcv] >> 16)) continue;
+			if ((stop >> 16) < (rd_list[lcv].low >> 16)) continue;
+			if ((start >> 16) > (rd_list[lcv].high >> 16)) continue;
         }
 
         // ------------------------------------------------------
 
         // auto-trace
-        if (rd_mode[lcv] >= 4 && rd_mode[lcv] < 8)
+		if (rd_list[lcv].mode >= 4 && rd_list[lcv].mode < 8)
         {
-            rd_mode[lcv] &= 3;
+			rd_list[lcv].mode &= 3;
             //trace_map = 1;
 
             hook_trace = 0;
@@ -342,7 +322,7 @@ static void trace_read_word_internal()
         }
 
         // output file mode
-        out = (rd_mode[lcv] <= 1) ? fp_hook : fp_trace;
+		out = (rd_list[lcv].mode <= 1) ? fp_hook : fp_trace;
 
         if (!out) continue;
         if (out == fp_trace)
@@ -355,7 +335,7 @@ static void trace_read_word_internal()
 }
 void trace_read_word()
 {
-    if (hook_trace && rd_mode)
+    if (hook_trace)
         trace_read_word_internal();
     M68kDW.TraceRead(hook_address, hook_address + 1);
     CallRegisteredLuaMemHook(hook_address, 2, hook_value, LUAMEMHOOK_READ);
@@ -368,34 +348,34 @@ static void trace_read_dword_internal()
     start = hook_address;
     stop = start + 3;
 
-    for (int lcv = 0; lcv < STATES; lcv++)
+	for (size_t lcv = 0; lcv < rd_list.size(); lcv++)
     {
         FILE *out;
 
         // linear map
-        if (rd_mode[lcv] & 1)
+		if (rd_list[lcv].mode & 1)
         {
             // fail: outside boundaries
-            if (stop < rd_low[lcv]) continue;
-            if (start > rd_high[lcv]) continue;
+			if (stop < rd_list[lcv].low) continue;
+			if (start > rd_list[lcv].high) continue;
         }
         // shadow map
         else
         {
             // fail: outside boundaries
-            if ((stop & 0xffff) < (rd_low[lcv] & 0xffff)) continue;
-            if ((start & 0xffff) > (rd_high[lcv] & 0xffff)) continue;
+			if ((stop & 0xffff) < (rd_list[lcv].low & 0xffff)) continue;
+			if ((start & 0xffff) > (rd_list[lcv].high & 0xffff)) continue;
 
-            if ((stop >> 16) < (rd_low[lcv] >> 16)) continue;
-            if ((start >> 16) > (rd_high[lcv] >> 16)) continue;
+			if ((stop >> 16) < (rd_list[lcv].low >> 16)) continue;
+			if ((start >> 16) > (rd_list[lcv].high >> 16)) continue;
         }
 
         // ------------------------------------------------------
 
         // auto-trace
-        if (rd_mode[lcv] >= 4 && rd_mode[lcv] < 8)
+		if (rd_list[lcv].mode >= 4 && rd_list[lcv].mode < 8)
         {
-            rd_mode[lcv] &= 3;
+			rd_list[lcv].mode &= 3;
             //trace_map = 1;
 
             hook_trace = 0;
@@ -404,7 +384,7 @@ static void trace_read_dword_internal()
         }
 
         // output file mode
-        out = (rd_mode[lcv] <= 1) ? fp_hook : fp_trace;
+		out = (rd_list[lcv].mode <= 1) ? fp_hook : fp_trace;
 
         if (!out) continue;
         if (out == fp_trace)
@@ -417,7 +397,7 @@ static void trace_read_dword_internal()
 }
 void trace_read_dword()
 {
-    if (hook_trace && rd_mode)
+    if (hook_trace)
         trace_read_dword_internal();
     M68kDW.TraceRead(hook_address, hook_address + 3);
     CallRegisteredLuaMemHook(hook_address, 4, hook_value, LUAMEMHOOK_READ);
@@ -432,34 +412,34 @@ static void trace_write_byte_internal()
     start = hook_address;
     stop = start + 0;
 
-    for (int lcv = 0; lcv < STATES; lcv++)
+	for (size_t lcv = 0; lcv < wr_list.size(); lcv++)
     {
         FILE *out;
 
         // linear map
-        if (wr_mode[lcv] & 1)
+		if (wr_list[lcv].mode & 1)
         {
             // fail: outside boundaries
-            if (stop < wr_low[lcv]) continue;
-            if (start > wr_high[lcv]) continue;
+			if (stop < wr_list[lcv].low) continue;
+			if (start > wr_list[lcv].high) continue;
         }
         // shadow map
         else
         {
             // fail: outside boundaries
-            if ((stop & 0xffff) < (wr_low[lcv] & 0xffff)) continue;
-            if ((start & 0xffff) > (wr_high[lcv] & 0xffff)) continue;
+			if ((stop & 0xffff) < (wr_list[lcv].low & 0xffff)) continue;
+			if ((start & 0xffff) > (wr_list[lcv].high & 0xffff)) continue;
 
-            if ((stop >> 16) < (wr_low[lcv] >> 16)) continue;
-            if ((start >> 16) > (wr_high[lcv] >> 16)) continue;
+			if ((stop >> 16) < (wr_list[lcv].low >> 16)) continue;
+			if ((start >> 16) > (wr_list[lcv].high >> 16)) continue;
         }
 
         // ------------------------------------------------------
 
         // auto-trace
-        if (wr_mode[lcv] >= 4 && wr_mode[lcv] < 8)
+		if (wr_list[lcv].mode >= 4 && wr_list[lcv].mode < 8)
         {
-            wr_mode[lcv] &= 3;
+			wr_list[lcv].mode &= 3;
             //trace_map = 1;
 
             hook_trace = 0;
@@ -468,7 +448,7 @@ static void trace_write_byte_internal()
         }
 
         // output file mode
-        out = (wr_mode[lcv] <= 1) ? fp_hook : fp_trace;
+		out = (wr_list[lcv].mode <= 1) ? fp_hook : fp_trace;
 
         if (!out) continue;
         if (out == fp_trace)
@@ -485,7 +465,7 @@ static void trace_write_byte_internal()
 }
 void trace_write_byte()
 {
-    if (hook_trace && wr_mode)
+    if (hook_trace)
         trace_write_byte_internal();
     M68kDW.TraceWrite(hook_address, hook_address);
     CallRegisteredLuaMemHook(hook_address, 1, hook_value, LUAMEMHOOK_WRITE);
@@ -498,34 +478,34 @@ static void trace_write_word_internal()
     start = hook_address;
     stop = start + 1;
 
-    for (int lcv = 0; lcv < STATES; lcv++)
+	for (size_t lcv = 0; lcv < wr_list.size(); lcv++)
     {
         FILE *out;
 
         // linear map
-        if (wr_mode[lcv] & 1)
+		if (wr_list[lcv].mode & 1)
         {
             // fail: outside boundaries
-            if (stop < wr_low[lcv]) continue;
-            if (start > wr_high[lcv]) continue;
+			if (stop < wr_list[lcv].low) continue;
+			if (start > wr_list[lcv].high) continue;
         }
         // shadow map
         else
         {
             // fail: outside boundaries
-            if ((stop & 0xffff) < (wr_low[lcv] & 0xffff)) continue;
-            if ((start & 0xffff) > (wr_high[lcv] & 0xffff)) continue;
+			if ((stop & 0xffff) < (wr_list[lcv].low & 0xffff)) continue;
+			if ((start & 0xffff) > (wr_list[lcv].high & 0xffff)) continue;
 
-            if ((stop >> 16) < (wr_low[lcv] >> 16)) continue;
-            if ((start >> 16) > (wr_high[lcv] >> 16)) continue;
+			if ((stop >> 16) < (wr_list[lcv].low >> 16)) continue;
+			if ((start >> 16) > (wr_list[lcv].high >> 16)) continue;
         }
 
         // ------------------------------------------------------
 
         // auto-trace
-        if (wr_mode[lcv] >= 4 && wr_mode[lcv] < 8)
+		if (wr_list[lcv].mode >= 4 && wr_list[lcv].mode < 8)
         {
-            wr_mode[lcv] &= 3;
+			wr_list[lcv].mode &= 3;
             //trace_map = 1;
 
             hook_trace = 0;
@@ -534,7 +514,7 @@ static void trace_write_word_internal()
         }
 
         // output file mode
-        out = (wr_mode[lcv] <= 1) ? fp_hook : fp_trace;
+		out = (wr_list[lcv].mode <= 1) ? fp_hook : fp_trace;
 
         if (!out) continue;
         if (out == fp_trace)
@@ -547,7 +527,7 @@ static void trace_write_word_internal()
 }
 void trace_write_word()
 {
-    if (hook_trace && wr_mode)
+    if (hook_trace)
         trace_write_word_internal();
     M68kDW.TraceWrite(hook_address, hook_address + 1);
     CallRegisteredLuaMemHook(hook_address, 2, hook_value, LUAMEMHOOK_WRITE);
@@ -560,34 +540,34 @@ static void trace_write_dword_internal()
     start = hook_address;
     stop = start + 3;
 
-    for (int lcv = 0; lcv < STATES; lcv++)
+	for (size_t lcv = 0; lcv < wr_list.size(); lcv++)
     {
         FILE *out;
 
         // linear map
-        if (wr_mode[lcv] & 1)
+		if (wr_list[lcv].mode & 1)
         {
             // fail: outside boundaries
-            if (stop < wr_low[lcv]) continue;
-            if (start > wr_high[lcv]) continue;
+			if (stop < wr_list[lcv].low) continue;
+			if (start > wr_list[lcv].high) continue;
         }
         // shadow map
         else
         {
             // fail: outside boundaries
-            if ((stop & 0xffff) < (wr_low[lcv] & 0xffff)) continue;
-            if ((start & 0xffff) > (wr_high[lcv] & 0xffff)) continue;
+			if ((stop & 0xffff) < (wr_list[lcv].low & 0xffff)) continue;
+			if ((start & 0xffff) > (wr_list[lcv].high & 0xffff)) continue;
 
-            if ((stop >> 16) < (wr_low[lcv] >> 16)) continue;
-            if ((start >> 16) > (wr_high[lcv] >> 16)) continue;
+			if ((stop >> 16) < (wr_list[lcv].low >> 16)) continue;
+			if ((start >> 16) > (wr_list[lcv].high >> 16)) continue;
         }
 
         // ------------------------------------------------------
 
         // auto-trace
-        if (wr_mode[lcv] >= 4 && wr_mode[lcv] < 8)
+		if (wr_list[lcv].mode >= 4 && wr_list[lcv].mode < 8)
         {
-            wr_mode[lcv] &= 3;
+			wr_list[lcv].mode &= 3;
             //trace_map = 1;
 
             hook_trace = 0;
@@ -596,7 +576,7 @@ static void trace_write_dword_internal()
         }
 
         // output file mode
-        out = (wr_mode[lcv] <= 1) ? fp_hook : fp_trace;
+		out = (wr_list[lcv].mode <= 1) ? fp_hook : fp_trace;
 
         if (!out) continue;
         if (out == fp_trace)
@@ -609,7 +589,7 @@ static void trace_write_dword_internal()
 }
 void trace_write_dword()
 {
-    if (hook_trace && wr_mode)
+    if (hook_trace)
         trace_write_dword_internal();
     M68kDW.TraceWrite(hook_address, hook_address + 3);
     CallRegisteredLuaMemHook(hook_address, 4, hook_value, LUAMEMHOOK_WRITE);
@@ -618,7 +598,7 @@ void trace_write_dword()
 static void hook_dma_internal()
 {
     unsigned int start, stop;
-    int lcv;
+	size_t lcv;
 
     // VDP area
     hook_value &= 3;
@@ -627,34 +607,34 @@ static void hook_dma_internal()
     start = VDP_Reg.DMA_Address << 1;
     stop = start + (VDP_Reg.DMA_Length << 1) - 1;
 
-    for (lcv = 0; lcv < STATES; lcv++)
+    for (lcv = 0; lcv < rd_list.size(); lcv++)
     {
         FILE *out;
 
         // linear map
-        if (rd_mode[lcv] & 1)
+		if (rd_list[lcv].mode & 1)
         {
             // fail: outside boundaries
-            if (stop < rd_low[lcv]) continue;
-            if (start > rd_high[lcv]) continue;
+			if (stop < rd_list[lcv].low) continue;
+			if (start > rd_list[lcv].high) continue;
         }
         // shadow map
         else
         {
             // fail: outside boundaries
-            if ((stop & 0xffff) < (rd_low[lcv] & 0xffff)) continue;
-            if ((start & 0xffff) > (rd_high[lcv] & 0xffff)) continue;
+			if ((stop & 0xffff) < (rd_list[lcv].low & 0xffff)) continue;
+			if ((start & 0xffff) > (rd_list[lcv].high & 0xffff)) continue;
 
-            if ((stop >> 16) < (rd_low[lcv] >> 16)) continue;
-            if ((start >> 16) > (rd_high[lcv] >> 16)) continue;
+			if ((stop >> 16) < (rd_list[lcv].low >> 16)) continue;
+			if ((start >> 16) > (rd_list[lcv].high >> 16)) continue;
         }
 
         // ------------------------------------------------------
 
         // auto-trace
-        if (rd_mode[lcv] >= 4 && rd_mode[lcv] < 8)
+		if (rd_list[lcv].mode >= 4 && rd_list[lcv].mode < 8)
         {
-            rd_mode[lcv] &= 3;
+			rd_list[lcv].mode &= 3;
             //trace_map = 1;
 
             hook_trace = 0;
@@ -663,7 +643,7 @@ static void hook_dma_internal()
         }
 
         // output file mode
-        out = (rd_mode[lcv] <= 1) ? fp_hook : fp_trace;
+		out = (rd_list[lcv].mode <= 1) ? fp_hook : fp_trace;
 
         if (!out) continue;
         if (out == fp_trace)
@@ -717,23 +697,23 @@ static void hook_dma_internal()
     }
 
     // breakpoints
-    for (lcv = 0; lcv < 3; lcv++)
+    for (lcv = 0; lcv < ppu_list.size(); lcv++)
     {
         FILE *out;
 
         // VDP memory only
-        if ((ppu_mode[lcv] & 1) != 1) continue;
+		if ((ppu_list[lcv].mode & 1) != 1) continue;
 
         // fail case: outside range
-        if (stop_l < ppu_low[lcv]) continue;
-        if (start_l > ppu_high[lcv]) continue;
+		if (stop_l < ppu_list[lcv].low) continue;
+		if (start_l > ppu_list[lcv].high) continue;
 
         // ------------------------------------------------------
 
         // auto-trace
-        if (ppu_mode[lcv] >= 4 && ppu_mode[lcv] < 8)
+		if (ppu_list[lcv].mode >= 4 && ppu_list[lcv].mode < 8)
         {
-            ppu_mode[lcv] &= 3;
+			ppu_list[lcv].mode &= 3;
             //trace_map = 1;
 
             hook_trace = 0;
@@ -742,7 +722,7 @@ static void hook_dma_internal()
         }
 
         // output file mode
-        out = (ppu_mode[lcv] <= 1) ? fp_hook : fp_trace;
+		out = (ppu_list[lcv].mode <= 1) ? fp_hook : fp_trace;
 
         if (!out) continue;
         if (out == fp_trace)
@@ -763,7 +743,7 @@ static void hook_dma_internal()
 }
 void hook_dma()
 {
-    if (hook_trace && rd_mode)
+    if (hook_trace)
         hook_dma_internal();
 }
 
@@ -804,23 +784,23 @@ static void trace_write_vram_byte_internal()
     }
 
     // breakpoints
-    for (int lcv = 0; lcv < 3; lcv++)
+	for (size_t lcv = 0; lcv < ppu_list.size(); lcv++)
     {
         FILE *out;
 
         // VRAM only
-        if ((ppu_mode[lcv] & 1) != 1) continue;
+		if ((ppu_list[lcv].mode & 1) != 1) continue;
 
         // fail case: outside range
-        if (stop_l < ppu_low[lcv]) continue;
-        if (start_l > ppu_high[lcv]) continue;
+		if (stop_l < ppu_list[lcv].low) continue;
+		if (start_l > ppu_list[lcv].high) continue;
 
         // ------------------------------------------------------
 
         // auto-trace
-        if (ppu_mode[lcv] >= 4 && ppu_mode[lcv] < 8)
+		if (ppu_list[lcv].mode >= 4 && ppu_list[lcv].mode < 8)
         {
-            ppu_mode[lcv] &= 3;
+			ppu_list[lcv].mode &= 3;
             //trace_map = 1;
 
             hook_trace = 0;
@@ -829,7 +809,7 @@ static void trace_write_vram_byte_internal()
         }
 
         // output file mode
-        out = (ppu_mode[lcv] <= 1) ? fp_hook : fp_trace;
+		out = (ppu_list[lcv].mode <= 1) ? fp_hook : fp_trace;
 
         if (!out) continue;
         if (out == fp_trace)
@@ -843,7 +823,7 @@ static void trace_write_vram_byte_internal()
 }
 void trace_write_vram_byte()
 {
-    if (hook_trace && ppu_mode)
+    if (hook_trace)
         trace_write_vram_byte_internal();
 }
 
@@ -884,23 +864,23 @@ static void trace_write_vram_word_internal()
     }
 
     // breakpoints
-    for (int lcv = 0; lcv < 3; lcv++)
+	for (size_t lcv = 0; lcv < ppu_list.size(); lcv++)
     {
         FILE *out;
 
         // VRAM only
-        if ((ppu_mode[lcv] & 1) != 1) continue;
+		if ((ppu_list[lcv].mode & 1) != 1) continue;
 
         // fail case: outside range
-        if (stop_l < ppu_low[lcv]) continue;
-        if (start_l > ppu_high[lcv]) continue;
+		if (stop_l < ppu_list[lcv].low) continue;
+		if (start_l > ppu_list[lcv].high) continue;
 
         // ------------------------------------------------------
 
         // auto-trace
-        if (ppu_mode[lcv] >= 4 && ppu_mode[lcv] < 8)
+		if (ppu_list[lcv].mode >= 4 && ppu_list[lcv].mode < 8)
         {
-            ppu_mode[lcv] &= 3;
+			ppu_list[lcv].mode &= 3;
             //trace_map = 1;
 
             hook_trace = 0;
@@ -909,7 +889,7 @@ static void trace_write_vram_word_internal()
         }
 
         // output file mode
-        out = (ppu_mode[lcv] <= 1) ? fp_hook : fp_trace;
+		out = (ppu_list[lcv].mode <= 1) ? fp_hook : fp_trace;
 
         if (!out) continue;
         if (out == fp_trace)
@@ -923,7 +903,7 @@ static void trace_write_vram_word_internal()
 }
 void trace_write_vram_word()
 {
-    if (hook_trace && ppu_mode)
+    if (hook_trace)
         trace_write_vram_word_internal();
 }
 
@@ -964,23 +944,23 @@ static void trace_read_vram_byte_internal()
     }
 
     // breakpoints
-    for (int lcv = 0; lcv < 3; lcv++)
+	for (size_t lcv = 0; lcv < ppu_list.size(); lcv++)
     {
         FILE *out;
 
         // VRAM only
-        if ((ppu_mode[lcv] & 1) != 1) continue;
+		if ((ppu_list[lcv].mode & 1) != 1) continue;
 
         // fail case: outside range
-        if (stop_l < ppu_low[lcv]) continue;
-        if (start_l > ppu_high[lcv]) continue;
+		if (stop_l < ppu_list[lcv].low) continue;
+		if (start_l > ppu_list[lcv].high) continue;
 
         // ------------------------------------------------------
 
         // auto-trace
-        if (ppu_mode[lcv] >= 4 && ppu_mode[lcv] < 8)
+		if (ppu_list[lcv].mode >= 4 && ppu_list[lcv].mode < 8)
         {
-            ppu_mode[lcv] &= 3;
+			ppu_list[lcv].mode &= 3;
             //trace_map = 1;
 
             hook_trace = 0;
@@ -989,7 +969,7 @@ static void trace_read_vram_byte_internal()
         }
 
         // output file mode
-        out = (ppu_mode[lcv] <= 1) ? fp_hook : fp_trace;
+		out = (ppu_list[lcv].mode <= 1) ? fp_hook : fp_trace;
 
         if (!out) continue;
         if (out == fp_trace)
@@ -1003,7 +983,7 @@ static void trace_read_vram_byte_internal()
 }
 void trace_read_vram_byte()
 {
-    if (hook_trace && ppu_mode)
+    if (hook_trace)
         trace_read_vram_byte_internal();
 }
 
@@ -1044,23 +1024,23 @@ static void trace_read_vram_word_internal()
     }
 
     // breakpoints
-    for (int lcv = 0; lcv < 3; lcv++)
+	for (size_t lcv = 0; lcv < ppu_list.size(); lcv++)
     {
         FILE *out;
 
         // VRAM only
-        if ((ppu_mode[lcv] & 1) != 1) continue;
+		if ((ppu_list[lcv].mode & 1) != 1) continue;
 
         // fail case: outside range
-        if (stop_l < ppu_low[lcv]) continue;
-        if (start_l > ppu_high[lcv]) continue;
+		if (stop_l < ppu_list[lcv].low) continue;
+		if (start_l > ppu_list[lcv].high) continue;
 
         // ------------------------------------------------------
 
         // auto-trace
-        if (ppu_mode[lcv] >= 4 && ppu_mode[lcv] < 8)
+		if (ppu_list[lcv].mode >= 4 && ppu_list[lcv].mode < 8)
         {
-            ppu_mode[lcv] &= 3;
+			ppu_list[lcv].mode &= 3;
             //trace_map = 1;
 
             hook_trace = 0;
@@ -1069,7 +1049,7 @@ static void trace_read_vram_word_internal()
         }
 
         // output file mode
-        out = (ppu_mode[lcv] <= 1) ? fp_hook : fp_trace;
+		out = (ppu_list[lcv].mode <= 1) ? fp_hook : fp_trace;
 
         if (!out) continue;
         if (out == fp_trace)
@@ -1083,7 +1063,7 @@ static void trace_read_vram_word_internal()
 }
 void trace_read_vram_word()
 {
-    if (hook_trace && ppu_mode)
+    if (hook_trace)
         trace_read_vram_word_internal();
 }
 
@@ -1098,23 +1078,23 @@ static void hook_vdp_reg_internal()
     stop = start + 0;
 
     // VRAM breakpoints
-    for (int lcv = 0; lcv < 3; lcv++)
+	for (size_t lcv = 0; lcv < ppu_list.size(); lcv++)
     {
         FILE *out;
 
         // VDP registers only
-        if ((ppu_mode[lcv] & 1) != 0) continue;
+		if ((ppu_list[lcv].mode & 1) != 0) continue;
 
         // fail case: outside range
-        if (stop < ppu_low[lcv]) continue;
-        if (start > ppu_high[lcv]) continue;
+		if (stop < ppu_list[lcv].low) continue;
+		if (start > ppu_list[lcv].high) continue;
 
         // ------------------------------------------------------
 
         // auto-trace
-        if (ppu_mode[lcv] >= 4 && ppu_mode[lcv] < 8)
+		if (ppu_list[lcv].mode >= 4 && ppu_list[lcv].mode < 8)
         {
-            ppu_mode[lcv] &= 3;
+			ppu_list[lcv].mode &= 3;
             //trace_map = 1;
 
             hook_trace = 0;
@@ -1123,7 +1103,7 @@ static void hook_vdp_reg_internal()
         }
 
         // output file mode
-        out = (ppu_mode[lcv] <= 1) ? fp_hook : fp_trace;
+		out = (ppu_list[lcv].mode <= 1) ? fp_hook : fp_trace;
 
         if (!out) continue;
         if (out == fp_trace)
@@ -1136,6 +1116,6 @@ static void hook_vdp_reg_internal()
 }
 void hook_vdp_reg()
 {
-    if (hook_trace && ppu_mode)
+    if (hook_trace)
         hook_vdp_reg_internal();
 }

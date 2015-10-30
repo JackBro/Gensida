@@ -479,19 +479,19 @@ static int idaapi write_register(thid_t tid, int regidx, const regval_t *value)
 {
 	if (regidx >= R_D0 && regidx <= R_D7)
 	{
-		main68k_context.dreg[regidx - R_D0] = value->ival;
+		main68k_context.dreg[regidx - R_D0] = (unsigned int)value->ival;
 	}
 	else if (regidx >= R_A0 && regidx <= R_A7)
 	{
-		main68k_context.areg[regidx - R_A0] = value->ival;
+		main68k_context.areg[regidx - R_A0] = (unsigned int)value->ival;
 	}
 	else if (regidx == R_PC)
 	{
-		main68k_context.pc = value->ival;
+		main68k_context.pc = (unsigned int)value->ival;
 	}
 	else if (regidx == R_SR)
 	{
-		main68k_context.sr = value->ival;
+		main68k_context.sr = (unsigned short)value->ival;
 	}
 	else if (regidx >= R_DR00 && regidx < R_DR23)
 	{

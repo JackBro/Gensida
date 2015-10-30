@@ -1,26 +1,22 @@
 #include <stdio.h>
 #include <memory.h>
+#include <vector>
 
 #include "Cpu_68k.h"
 #include "M68KD.h"
+#include "M68k_debugwindow.h"
 #include "Mem_M68k.h"
 #include "Mem_S68k.h"
 #include "vdp_io.h"
 #include "luascript.h"
 
-#define uint32 unsigned int
+#include "tracer.h"
 
 extern FILE* fp_trace_cd;
 extern FILE* fp_call_cd;
 extern FILE* fp_hook_cd;
 
-#define STATES 3
-extern unsigned int *rd_mode_cd, *wr_mode_cd, *ppu_mode_cd, *pc_mode_cd;
-extern unsigned int *rd_low_cd, *rd_high_cd;
-extern unsigned int *wr_low_cd, *wr_high_cd;
-extern unsigned int *ppu_low_cd, *ppu_high_cd;
-extern unsigned int *pc_low_cd, *pc_high_cd;
-extern unsigned int *pc_start_cd;
+extern std::vector<HookList> rd_list_cd, wr_list_cd, ppu_list_cd, pc_list_cd;
 
 extern bool trace_map;
 extern bool hook_trace;
@@ -51,25 +47,10 @@ void DeInitDebug_cd()
         fclose(fp_hook_cd);
     }
 
-    if (rd_mode_cd)
-    {
-        delete[] rd_mode_cd;
-        delete[] wr_mode_cd;
-        delete[] pc_mode_cd;
-        delete[] ppu_mode_cd;
-
-        delete[] rd_low_cd;
-        delete[] wr_low_cd;
-        delete[] pc_low_cd;
-        delete[] ppu_low_cd;
-
-        delete[] rd_high_cd;
-        delete[] wr_high_cd;
-        delete[] pc_high_cd;
-        delete[] ppu_high_cd;
-
-        delete[] pc_start_cd;
-    }
+	pc_list_cd.clear();
+	rd_list_cd.clear();
+	wr_list_cd.clear();
+	ppu_list_cd.clear();
 
     if (fp_trace_cd)
     {
@@ -166,17 +147,17 @@ static void GensTrace_cd_trace()
 
 static void GensTrace_cd_hook()
 {
-    for (int lcv = 0; lcv < STATES; lcv++)
+	for (size_t lcv = 0; lcv < pc_list_cd.size(); lcv++)
     {
         FILE *out;
 
         // start-stop
-        if (pc_mode_cd[lcv] & 1)
+		if (pc_list_cd[lcv].mode & 1)
         {
-            if (hook_pc_cd == pc_low_cd[lcv])
-                pc_start_cd[lcv] = 1;
+            if (hook_pc_cd == pc_list_cd[lcv].low)
+                pc_list_cd[lcv].start = 1;
 
-            if (!pc_start_cd[lcv]) continue;
+            if (!pc_list_cd[lcv].start) continue;
 
             out = fp_hook_cd;
         }
@@ -184,20 +165,20 @@ static void GensTrace_cd_hook()
         else
         {
             // fail: outside boundaries
-            if (hook_pc_cd < pc_low_cd[lcv]) continue;
-            if (hook_pc_cd > pc_high_cd[lcv]) continue;
+            if (hook_pc_cd < pc_list_cd[lcv].low) continue;
+            if (hook_pc_cd > pc_list_cd[lcv].high) continue;
         }
 
         // ------------------------------------------------------
 
-        if (pc_mode_cd[lcv] >= 4 && pc_mode_cd[lcv] < 8)
+        if (pc_list_cd[lcv].mode >= 4 && pc_list_cd[lcv].mode < 8)
         {
-            pc_mode_cd[lcv] &= 3;
+            pc_list_cd[lcv].mode &= 3;
             trace_map = 1;
         }
 
         // output file mode
-        out = (pc_mode_cd[lcv] <= 1) ? fp_hook_cd : fp_trace_cd;
+        out = (pc_list_cd[lcv].mode <= 1) ? fp_hook_cd : fp_trace_cd;
 
         if (!out) continue;
         if (out == fp_trace_cd)
@@ -206,11 +187,11 @@ static void GensTrace_cd_hook()
         Print_Instruction_cd(out);
 
         // end formatting
-        if (hook_pc_cd == pc_high_cd[lcv])
+        if (hook_pc_cd == pc_list_cd[lcv].high)
         {
-            pc_start_cd[lcv] = 0;
+            pc_list_cd[lcv].start = 0;
 
-            if (pc_low_cd[lcv] != pc_high_cd[lcv])
+            if (pc_list_cd[lcv].low != pc_list_cd[lcv].high)
                 fprintf(out, "\n");
         }
     } // end STATES
@@ -236,34 +217,34 @@ static void trace_read_byte_cd_internal()
     start = hook_address_cd;
     stop = start + 0;
 
-    for (int lcv = 0; lcv < STATES; lcv++)
+	for (size_t lcv = 0; lcv < rd_list_cd.size(); lcv++)
     {
         FILE *out;
 
         // linear map
-        if (rd_mode_cd[lcv] & 1)
+        if (rd_list_cd[lcv].mode & 1)
         {
             // fail: outside boundaries
-            if (stop < rd_low_cd[lcv]) continue;
-            if (start > rd_high_cd[lcv]) continue;
+            if (stop < rd_list_cd[lcv].low) continue;
+            if (start > rd_list_cd[lcv].high) continue;
         }
         // shadow map
         else
         {
             // fail: outside boundaries
-            if ((stop & 0xffff) < (rd_low_cd[lcv] & 0xffff)) continue;
-            if ((start & 0xffff) > (rd_high_cd[lcv] & 0xffff)) continue;
+            if ((stop & 0xffff) < (rd_list_cd[lcv].low & 0xffff)) continue;
+            if ((start & 0xffff) > (rd_list_cd[lcv].high & 0xffff)) continue;
 
-            if ((stop >> 16) < (rd_low_cd[lcv] >> 16)) continue;
-            if ((start >> 16) > (rd_high_cd[lcv] >> 16)) continue;
+            if ((stop >> 16) < (rd_list_cd[lcv].low >> 16)) continue;
+            if ((start >> 16) > (rd_list_cd[lcv].high >> 16)) continue;
         }
 
         // ------------------------------------------------------
 
         // auto-trace
-        if (rd_mode_cd[lcv] >= 4 && rd_mode_cd[lcv] < 8)
+        if (rd_list_cd[lcv].mode >= 4 && rd_list_cd[lcv].mode < 8)
         {
-            rd_mode_cd[lcv] &= 3;
+            rd_list_cd[lcv].mode &= 3;
             trace_map = 1;
 
             hook_trace = 0;
@@ -272,7 +253,7 @@ static void trace_read_byte_cd_internal()
         }
 
         // output file mode
-        out = (rd_mode_cd[lcv] <= 1) ? fp_hook_cd : fp_trace_cd;
+        out = (rd_list_cd[lcv].mode <= 1) ? fp_hook_cd : fp_trace_cd;
 
         if (!out) continue;
         if (out == fp_trace_cd)
@@ -297,34 +278,34 @@ static void trace_read_word_cd_internal()
     start = hook_address_cd;
     stop = start + 1;
 
-    for (int lcv = 0; lcv < STATES; lcv++)
+	for (size_t lcv = 0; lcv < rd_list_cd.size(); lcv++)
     {
         FILE *out;
 
         // linear map
-        if (rd_mode_cd[lcv] & 1)
+        if (rd_list_cd[lcv].mode & 1)
         {
             // fail: outside boundaries
-            if (stop < rd_low_cd[lcv]) continue;
-            if (start > rd_high_cd[lcv]) continue;
+            if (stop < rd_list_cd[lcv].low) continue;
+            if (start > rd_list_cd[lcv].high) continue;
         }
         // shadow map
         else
         {
             // fail: outside boundaries
-            if ((stop & 0xffff) < (rd_low_cd[lcv] & 0xffff)) continue;
-            if ((start & 0xffff) > (rd_high_cd[lcv] & 0xffff)) continue;
+            if ((stop & 0xffff) < (rd_list_cd[lcv].low & 0xffff)) continue;
+            if ((start & 0xffff) > (rd_list_cd[lcv].high & 0xffff)) continue;
 
-            if ((stop >> 16) < (rd_low_cd[lcv] >> 16)) continue;
-            if ((start >> 16) > (rd_high_cd[lcv] >> 16)) continue;
+            if ((stop >> 16) < (rd_list_cd[lcv].low >> 16)) continue;
+            if ((start >> 16) > (rd_list_cd[lcv].high >> 16)) continue;
         }
 
         // ------------------------------------------------------
 
         // auto-trace
-        if (rd_mode_cd[lcv] >= 4 && rd_mode_cd[lcv] < 8)
+        if (rd_list_cd[lcv].mode >= 4 && rd_list_cd[lcv].mode < 8)
         {
-            rd_mode_cd[lcv] &= 3;
+            rd_list_cd[lcv].mode &= 3;
             trace_map = 1;
 
             hook_trace = 0;
@@ -333,7 +314,7 @@ static void trace_read_word_cd_internal()
         }
 
         // output file mode
-        out = (rd_mode_cd[lcv] <= 1) ? fp_hook_cd : fp_trace_cd;
+        out = (rd_list_cd[lcv].mode <= 1) ? fp_hook_cd : fp_trace_cd;
 
         if (!out) continue;
         if (out == fp_trace_cd)
@@ -358,34 +339,34 @@ static void trace_read_dword_cd_internal()
     start = hook_address_cd;
     stop = start + 3;
 
-    for (int lcv = 0; lcv < STATES; lcv++)
+	for (size_t lcv = 0; lcv < rd_list_cd.size(); lcv++)
     {
         FILE *out;
 
         // linear map
-        if (rd_mode_cd[lcv] & 1)
+        if (rd_list_cd[lcv].mode & 1)
         {
             // fail: outside boundaries
-            if (stop < rd_low_cd[lcv]) continue;
-            if (start > rd_high_cd[lcv]) continue;
+            if (stop < rd_list_cd[lcv].low) continue;
+            if (start > rd_list_cd[lcv].high) continue;
         }
         // shadow map
         else
         {
             // fail: outside boundaries
-            if ((stop & 0xffff) < (rd_low_cd[lcv] & 0xffff)) continue;
-            if ((start & 0xffff) > (rd_high_cd[lcv] & 0xffff)) continue;
+            if ((stop & 0xffff) < (rd_list_cd[lcv].low & 0xffff)) continue;
+            if ((start & 0xffff) > (rd_list_cd[lcv].high & 0xffff)) continue;
 
-            if ((stop >> 16) < (rd_low_cd[lcv] >> 16)) continue;
-            if ((start >> 16) > (rd_high_cd[lcv] >> 16)) continue;
+            if ((stop >> 16) < (rd_list_cd[lcv].low >> 16)) continue;
+            if ((start >> 16) > (rd_list_cd[lcv].high >> 16)) continue;
         }
 
         // ------------------------------------------------------
 
         // auto-trace
-        if (rd_mode_cd[lcv] >= 4 && rd_mode_cd[lcv] < 8)
+        if (rd_list_cd[lcv].mode >= 4 && rd_list_cd[lcv].mode < 8)
         {
-            rd_mode_cd[lcv] &= 3;
+            rd_list_cd[lcv].mode &= 3;
             trace_map = 1;
 
             hook_trace = 0;
@@ -394,7 +375,7 @@ static void trace_read_dword_cd_internal()
         }
 
         // output file mode
-        out = (rd_mode_cd[lcv] <= 1) ? fp_hook_cd : fp_trace_cd;
+        out = (rd_list_cd[lcv].mode <= 1) ? fp_hook_cd : fp_trace_cd;
 
         if (!out) continue;
         if (out == fp_trace_cd)
@@ -419,34 +400,34 @@ static void trace_write_byte_cd_internal()
     start = hook_address_cd;
     stop = start + 0;
 
-    for (int lcv = 0; lcv < STATES; lcv++)
+	for (size_t lcv = 0; lcv < wr_list_cd.size(); lcv++)
     {
         FILE *out;
 
         // linear map
-        if (wr_mode_cd[lcv] & 1)
+        if (wr_list_cd[lcv].mode & 1)
         {
             // fail: outside boundaries
-            if (stop < wr_low_cd[lcv]) continue;
-            if (start > wr_high_cd[lcv]) continue;
+            if (stop < wr_list_cd[lcv].low) continue;
+            if (start > wr_list_cd[lcv].high) continue;
         }
         // shadow map
         else
         {
             // fail: outside boundaries
-            if ((stop & 0xffff) < (wr_low_cd[lcv] & 0xffff)) continue;
-            if ((start & 0xffff) > (wr_high_cd[lcv] & 0xffff)) continue;
+            if ((stop & 0xffff) < (wr_list_cd[lcv].low & 0xffff)) continue;
+            if ((start & 0xffff) > (wr_list_cd[lcv].high & 0xffff)) continue;
 
-            if ((stop >> 16) < (wr_low_cd[lcv] >> 16)) continue;
-            if ((start >> 16) > (wr_high_cd[lcv] >> 16)) continue;
+            if ((stop >> 16) < (wr_list_cd[lcv].low >> 16)) continue;
+            if ((start >> 16) > (wr_list_cd[lcv].high >> 16)) continue;
         }
 
         // ------------------------------------------------------
 
         // auto-trace
-        if (wr_mode_cd[lcv] >= 4 && wr_mode_cd[lcv] < 8)
+        if (wr_list_cd[lcv].mode >= 4 && wr_list_cd[lcv].mode < 8)
         {
-            wr_mode_cd[lcv] &= 3;
+            wr_list_cd[lcv].mode &= 3;
             trace_map = 1;
 
             hook_trace = 0;
@@ -455,7 +436,7 @@ static void trace_write_byte_cd_internal()
         }
 
         // output file mode
-        out = (wr_mode_cd[lcv] <= 1) ? fp_hook_cd : fp_trace_cd;
+        out = (wr_list_cd[lcv].mode <= 1) ? fp_hook_cd : fp_trace_cd;
 
         if (!out) continue;
         if (out == fp_trace_cd)
@@ -480,34 +461,34 @@ static void trace_write_word_cd_internal()
     start = hook_address_cd;
     stop = start + 1;
 
-    for (int lcv = 0; lcv < STATES; lcv++)
+	for (size_t lcv = 0; lcv < wr_list_cd.size(); lcv++)
     {
         FILE *out;
 
         // linear map
-        if (wr_mode_cd[lcv] & 1)
+        if (wr_list_cd[lcv].mode & 1)
         {
             // fail: outside boundaries
-            if (stop < wr_low_cd[lcv]) continue;
-            if (start > wr_high_cd[lcv]) continue;
+            if (stop < wr_list_cd[lcv].low) continue;
+            if (start > wr_list_cd[lcv].high) continue;
         }
         // shadow map
         else
         {
             // fail: outside boundaries
-            if ((stop & 0xffff) < (wr_low_cd[lcv] & 0xffff)) continue;
-            if ((start & 0xffff) > (wr_high_cd[lcv] & 0xffff)) continue;
+            if ((stop & 0xffff) < (wr_list_cd[lcv].low & 0xffff)) continue;
+            if ((start & 0xffff) > (wr_list_cd[lcv].high & 0xffff)) continue;
 
-            if ((stop >> 16) < (wr_low_cd[lcv] >> 16)) continue;
-            if ((start >> 16) > (wr_high_cd[lcv] >> 16)) continue;
+            if ((stop >> 16) < (wr_list_cd[lcv].low >> 16)) continue;
+            if ((start >> 16) > (wr_list_cd[lcv].high >> 16)) continue;
         }
 
         // ------------------------------------------------------
 
         // auto-trace
-        if (wr_mode_cd[lcv] >= 4 && wr_mode_cd[lcv] < 8)
+        if (wr_list_cd[lcv].mode >= 4 && wr_list_cd[lcv].mode < 8)
         {
-            wr_mode_cd[lcv] &= 3;
+            wr_list_cd[lcv].mode &= 3;
             trace_map = 1;
 
             hook_trace = 0;
@@ -516,7 +497,7 @@ static void trace_write_word_cd_internal()
         }
 
         // output file mode
-        out = (wr_mode_cd[lcv] <= 1) ? fp_hook_cd : fp_trace_cd;
+        out = (wr_list_cd[lcv].mode <= 1) ? fp_hook_cd : fp_trace_cd;
 
         if (!out) continue;
         if (out == fp_trace_cd)
@@ -541,34 +522,34 @@ static void trace_write_dword_cd_internal()
     start = hook_address_cd;
     stop = start + 3;
 
-    for (int lcv = 0; lcv < STATES; lcv++)
+	for (size_t lcv = 0; lcv < wr_list_cd.size(); lcv++)
     {
         FILE *out;
 
         // linear map
-        if (wr_mode_cd[lcv] & 1)
+        if (wr_list_cd[lcv].mode & 1)
         {
             // fail: outside boundaries
-            if (stop < wr_low_cd[lcv]) continue;
-            if (start > wr_high_cd[lcv]) continue;
+            if (stop < wr_list_cd[lcv].low) continue;
+            if (start > wr_list_cd[lcv].high) continue;
         }
         // shadow map
         else
         {
             // fail: outside boundaries
-            if ((stop & 0xffff) < (wr_low_cd[lcv] & 0xffff)) continue;
-            if ((start & 0xffff) > (wr_high_cd[lcv] & 0xffff)) continue;
+            if ((stop & 0xffff) < (wr_list_cd[lcv].low & 0xffff)) continue;
+            if ((start & 0xffff) > (wr_list_cd[lcv].high & 0xffff)) continue;
 
-            if ((stop >> 16) < (wr_low_cd[lcv] >> 16)) continue;
-            if ((start >> 16) > (wr_high_cd[lcv] >> 16)) continue;
+            if ((stop >> 16) < (wr_list_cd[lcv].low >> 16)) continue;
+            if ((start >> 16) > (wr_list_cd[lcv].high >> 16)) continue;
         }
 
         // ------------------------------------------------------
 
         // auto-trace
-        if (wr_mode_cd[lcv] >= 4 && wr_mode_cd[lcv] < 8)
+        if (wr_list_cd[lcv].mode >= 4 && wr_list_cd[lcv].mode < 8)
         {
-            wr_mode_cd[lcv] &= 3;
+            wr_list_cd[lcv].mode &= 3;
             trace_map = 1;
 
             hook_trace = 0;
@@ -577,7 +558,7 @@ static void trace_write_dword_cd_internal()
         }
 
         // output file mode
-        out = (wr_mode_cd[lcv] <= 1) ? fp_hook_cd : fp_trace_cd;
+        out = (wr_list_cd[lcv].mode <= 1) ? fp_hook_cd : fp_trace_cd;
 
         if (!out) continue;
         if (out == fp_trace_cd)
@@ -616,29 +597,29 @@ static void hook_dma_cd()
         FILE *out;
 
         // linear map
-        if (rd_mode_cd[lcv] & 1)
+        if (rd_list_cd[lcv].mode & 1)
         {
             // fail: outside boundaries
-            if (stop < rd_low_cd[lcv]) continue;
-            if (start > rd_high_cd[lcv]) continue;
+            if (stop < rd_list_cd[lcv].low) continue;
+            if (start > rd_list_cd[lcv].high) continue;
         }
         // shadow map
         else
         {
             // fail: outside boundaries
-            if ((stop & 0xffff) < (rd_low_cd[lcv] & 0xffff)) continue;
-            if ((start & 0xffff) > (rd_high_cd[lcv] & 0xffff)) continue;
+            if ((stop & 0xffff) < (rd_list_cd[lcv].low & 0xffff)) continue;
+            if ((start & 0xffff) > (rd_list_cd[lcv].high & 0xffff)) continue;
 
-            if ((stop >> 16) < (rd_low_cd[lcv] >> 16)) continue;
-            if ((start >> 16) > (rd_high_cd[lcv] >> 16)) continue;
+            if ((stop >> 16) < (rd_list_cd[lcv].low >> 16)) continue;
+            if ((start >> 16) > (rd_list_cd[lcv].high >> 16)) continue;
         }
 
         // ------------------------------------------------------
 
         // auto-trace
-        if (rd_mode_cd[lcv] >= 4 && rd_mode_cd[lcv] < 8)
+        if (rd_list_cd[lcv].mode >= 4 && rd_list_cd[lcv].mode < 8)
         {
-            rd_mode_cd[lcv] &= 3;
+            rd_list_cd[lcv].mode &= 3;
             trace_map = 1;
 
             hook_trace = 0;
@@ -647,7 +628,7 @@ static void hook_dma_cd()
         }
 
         // output file mode
-        out = (rd_mode_cd[lcv] <= 1) ? fp_hook_cd : fp_trace_cd;
+        out = (rd_list_cd[lcv].mode <= 1) ? fp_hook_cd : fp_trace_cd;
 
         if (!out) continue;
         if (out == fp_trace_cd)

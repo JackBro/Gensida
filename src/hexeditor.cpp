@@ -732,7 +732,7 @@ TextArea = {
                              sprintf(fname, "%s Dump.bin", Hex->CurrentRegion.Name);
                              if (Change_File_S(fname, ".", "Save Full Dump As...", "All Files\0*.*\0\0", "*.*", hDlg)) {
                                  FILE *out = fopen(fname, "wb+");
-                                 int i;
+								 size_t i;
 								 for (i = 0; i < Hex->CurrentRegion.Size; ++i) {
                                      fname[i & 2047] = Hex->CurrentRegion.Array[i^Hex->CurrentRegion.Swap];
                                      if ((i & 2047) == 2047)
