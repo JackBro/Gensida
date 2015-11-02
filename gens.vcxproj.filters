@@ -661,9 +661,6 @@
     <ClInclude Include="src\hexeditor.h">
       <Filter>Headers</Filter>
     </ClInclude>
-    <ClInclude Include="src\svnrev.h">
-      <Filter>C/C++ Sources</Filter>
-    </ClInclude>
     <ClInclude Include="src\m68k_debugwindow.h">
       <Filter>Headers</Filter>
     </ClInclude>

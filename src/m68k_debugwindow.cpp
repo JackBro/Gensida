@@ -96,10 +96,10 @@ void M68kDebugWindow::TracePC(int pc)
     }
 }
 
-void M68kDebugWindow::TraceRead(uint32 start, uint32 stop)
+void M68kDebugWindow::TraceRead(uint32 start, uint32 stop, bool is_vdp)
 {
 	handled_ida_event = false;
-	if (BreakRead(last_pc, start, stop))
+	if (BreakRead(last_pc, start, stop, is_vdp))
     {
         char bwhy[33];
         sprintf(bwhy, "Read: %08X-%08X", start, stop);
@@ -108,10 +108,10 @@ void M68kDebugWindow::TraceRead(uint32 start, uint32 stop)
     }
 }
 
-void M68kDebugWindow::TraceWrite(uint32 start, uint32 stop)
+void M68kDebugWindow::TraceWrite(uint32 start, uint32 stop, bool is_vdp)
 {
 	handled_ida_event = false;
-    if (BreakWrite(last_pc, start, stop))
+	if (BreakWrite(last_pc, start, stop, is_vdp))
     {
         char bwhy[33];
         sprintf(bwhy, "Write: %08X-%08X", start, stop);

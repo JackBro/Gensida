@@ -257,9 +257,6 @@ static InputButton s_inputButtons[] =
     { MOD_NONE, VK_NONE, ID_TOGGLE_SHOWFPS, 0, NULL, "Show Framerate", "ShowFPSKey" },
     { MOD_NONE, VK_NONE, ID_TOGGLE_SHOWLED, 0, NULL, "Show SegaCD LED", "ShowLEDKey" },
 
-    { MOD_CONTROL | MOD_SHIFT, VK_OEM_2, ID_CHANGE_TRACE, 0, NULL, "Instruction Tracing On/Off", "TraceKey" },
-    { MOD_CONTROL | MOD_SHIFT, VK_OEM_PERIOD, ID_CHANGE_HOOK, 0, NULL, "Memory Hooking On/Off", "HookKey" },
-
     { MOD_CONTROL, 'G', ID_FILES_GAMEGENIE, 0, NULL, "Game Genie Setup", "GameGenieKey" },
     { MOD_CONTROL, 'N', ID_FILES_NETPLAY, 0, NULL, "Netplay Setup", "NetplayKey" },
 

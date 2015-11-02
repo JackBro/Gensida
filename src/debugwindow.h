@@ -6,15 +6,21 @@
 
 #define WM_DEBUG_DUMMY_EXIT (WM_USER+1000)
 
+#define BRK_PC     0x000001
+#define BRK_READ   0x000002
+#define BRK_WRITE  0x000004
+#define BRK_VDP    0x000010
+#define BRK_FORBID 0x000100
+
 typedef unsigned int uint32;
-typedef unsigned char uint8;
+typedef unsigned short ushort;
 
 struct Breakpoint
 {
     uint32 start;
     uint32 end;
     bool enabled;
-    uint8 type;
+	ushort type;
 };
 
 struct DebugWindow
@@ -32,8 +38,8 @@ struct DebugWindow
     void SetWhyBreak(LPCSTR lpString);
 
     bool BreakPC(int pc);
-    bool BreakRead(int pc, uint32 start, uint32 stop);
-    bool BreakWrite(int pc, uint32 start, uint32 stop);
+    bool BreakRead(int pc, uint32 start, uint32 stop, bool is_vdp);
+	bool BreakWrite(int pc, uint32 start, uint32 stop, bool is_vdp);
 
     virtual void DoStepOver();
     virtual void TracePC(int pc);

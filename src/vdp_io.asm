@@ -28,7 +28,6 @@ section .data align=64
 	extern _dma_src
 	extern _dma_len
 
-	extern _hook_vdp_reg
 	extern Rom_Data
 	extern Rom_Size
 	extern Cell_Conv_Tab
@@ -941,15 +940,6 @@ section .text align=64
 		and eax, 0xFF					; on isole la valeur du registre
 		mov dword [Ctrl.Address], 0
 		and ebx, 0x1F					; on isole le numero du registre 
-
-	pushad
-	sub esi,ebp
-	sub esi,byte 0
-	mov [_hook_pc],esi
-	mov [_hook_address],ebx
-	mov [_hook_value],eax
-	call _hook_vdp_reg
-	popad
 
 		jmp [Table_Set_Reg + ebx * 4]	; on affecte en fonction
 

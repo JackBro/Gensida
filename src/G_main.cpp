@@ -56,9 +56,6 @@
 #include "OpenArchive.h"
 #include "m68k_debugwindow.h"
 #include "plane_explorer_kmod.h"
-#include <regex>
-#include <fstream>
-#include <sstream>
 #include "tracer.h"
 
 #include "ida_debmod.h"
@@ -68,18 +65,7 @@ extern "C" void Read_To_68K_Space(int adr);
 extern void HexDestroyDialog();
 #define MAPHACK
 
-std::ifstream fp1;
-
-std::vector<HookList> rd_list, wr_list, ppu_list, pc_list;
-std::vector<HookList> rd_list_cd, wr_list_cd, ppu_list_cd, pc_list_cd;
-
-bool trace_map = 0;
-bool hook_trace = 0;
-
-FILE *fp_hook, *fp_hook_cd;
-FILE *fp_trace, *fp_trace_cd;
-char *mapped;
-char *mapped_cd;
+bool hook_trace = 1;
 
 #define WM_KNUX WM_USER + 3
 #define GENS_VERSION   2.10
@@ -2019,57 +2005,6 @@ bool Step_Gens_MainLoop(bool allowSleep, bool allowEmulate)
     }
 
     return reachedEmulate;
-}
-
-void ReadHookRamFiles(const char *filename)
-{
-	bool cd_ver = (filename == "hook_log.txt");
-	
-	fp1.open(filename);
-
-	rd_list.clear();
-	wr_list.clear();
-	pc_list.clear();
-	ppu_list.clear();
-
-	std::regex hook_xx("^hook_([pc|rd|wr|ppu])\\d+ ([0-9a-fA-F]+) ([0-9a-fA-F]+) ([0-9a-fA-F]+)");
-	std::smatch match;
-	std::string line;
-
-	while (std::getline(fp1, line))
-    {
-		if (std::regex_search(line, match, hook_xx))
-		{
-			unsigned int mode, low, high;
-
-			const std::string &mm = match[1].str();
-			sscanf(match[2].str().c_str(), "%x", &mode);
-			sscanf(match[3].str().c_str(), "%x", &low);
-			sscanf(match[4].str().c_str(), "%x", &high);
-
-			HookList hl = HookList(mode, low, high);
-			std::vector<HookList> *list_ptr;
-
-			if (mm == "pc")
-			{
-				list_ptr = (!cd_ver ? &pc_list : &pc_list_cd);
-			}
-			else if (mm == "rd")
-			{
-				list_ptr = (!cd_ver ? &rd_list : &rd_list_cd);
-			}
-			else if (mm == "wr")
-			{
-				list_ptr = (!cd_ver ? &wr_list : &wr_list_cd);
-			}
-			else if (mm == "ppu")
-			{
-				list_ptr = (!cd_ver ? &ppu_list : &ppu_list_cd);
-			}
-			list_ptr->push_back(hl);
-		}
-    }
-	fp1.close();
 }
 
 #ifdef _DEBUG
@@ -4434,101 +4369,6 @@ long PASCAL WinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                     return 0;
             }
 
-            case ID_CHANGE_TRACE:
-            {
-                trace_map = !trace_map;
-                Build_Main_Menu();
-                if (trace_map)
-                {
-                    if (!fp_trace)
-                    {
-                        fp_trace = fopen("trace.log", "a");
-                        mapped = new char[0x100 * 0x10000];
-                        memset(mapped, 0, 0x100 * 0x10000);
-                        //							fseek(fp_trace,0,SEEK_END);
-                        fprintf(fp_trace, "TRACE STARTED\n\n");
-                    }
-                    if (SegaCD_Started && !fp_trace_cd)
-                    {
-                        fp_trace_cd = fopen("trace_cd.log", "a");
-                        mapped_cd = new char[0x100 * 0x10000];
-                        memset(mapped_cd, 0, 0x100 * 0x10000);
-                        //							fseek(fp_trace_cd,0,SEEK_END);
-                        fprintf(fp_trace_cd, "TRACE STARTED\n\n");
-                    }
-                }
-                else
-                {
-                    if (fp_trace)
-                    {
-                        fprintf(fp_trace, "\nTRACE STOPPED\n\n");
-                        fclose(fp_trace);
-                        delete[](mapped);
-                        fp_trace = NULL;
-                    }
-                    if (fp_trace_cd)
-                    {
-                        fprintf(fp_trace_cd, "\nTRACE STOPPED\n\n");
-                        fclose(fp_trace_cd);
-                        delete[](mapped_cd);
-                        fp_trace_cd = NULL;
-                    }
-                }
-
-                char message[256];
-                sprintf(message, "Instruction logging %sed", trace_map ? "start" : "end");
-                MESSAGE_L(message, message)
-
-                    return 0;
-            }
-
-            case ID_CHANGE_HOOK:
-            {
-                hook_trace = !hook_trace;
-                Build_Main_Menu();
-                if (hook_trace)
-                {
-                    ReadHookRamFiles("hook_log.txt"); // you can edit the hook_log.txt and hook_log_cd.txt files while the emulator is running, now.
-					ReadHookRamFiles("hook_log_cd.txt");
-                    if (!fp_hook)
-                    {
-                        fp_hook = fopen("hook.txt", "a");
-                        fseek(fp_hook, 0, SEEK_END);
-                    }
-                    fprintf(fp_hook, "MEMORY ACCESS LOGGING STARTED\n\n");
-                    if (SegaCD_Started)
-                    {
-                        if (!fp_hook_cd)
-                        {
-                            fp_hook_cd = fopen("hook_cd.txt", "a");
-                            fseek(fp_hook_cd, 0, SEEK_END);
-                        }
-                        fprintf(fp_hook_cd, "MEMORY ACCESS LOGGING STARTED\n\n");
-                    }
-                }
-                else
-                {
-                    if (fp_hook && (fp_hook != fp_trace))
-                    {
-                        fprintf(fp_hook, "\nMEMORY ACCESS LOGGING STOPPED\n\n");
-                        fclose(fp_hook);
-                        fp_hook = NULL;
-                    }
-                    if (fp_hook_cd && (fp_hook_cd != fp_trace_cd))
-                    {
-                        fprintf(fp_hook_cd, "\nMEMORY ACCESS LOGGING STOPPED\n\n");
-                        fclose(fp_hook_cd);
-                        fp_hook_cd = NULL;
-                    }
-                }
-
-                char message[256];
-                sprintf(message, "RAM logging %sed", hook_trace ? "start" : "end");
-                MESSAGE_L(message, message)
-
-                    return 0;
-            }
-
             case ID_EMULATION_PAUSED:
                 if (Paused)
                 {
@@ -4865,7 +4705,6 @@ HMENU Build_Main_Menu(void)
     HMENU Movies_Tracks; //Upth-Add - submenu of Tas_Tools -> Tools_Movies
     HMENU MoviesHistory;
     HMENU Tools_AVI;    //Upth-Add - Submenu of TAS_Tools
-    HMENU Tools_Trace;    //Upth-Add - Submenu of TAS_Tools
     HMENU Lua_Script;
 
     DestroyMenu(Gens_Menu);
@@ -4913,7 +4752,6 @@ HMENU Build_Main_Menu(void)
     Tools_Movies = CreatePopupMenu(); //Upth-Add - Initialize my new menus
     Movies_Tracks = CreatePopupMenu(); //Upth-Add - Initialize new menu
     Tools_AVI = CreatePopupMenu(); //Upth-Add - Initialize my new menus
-    Tools_Trace = CreatePopupMenu(); //Upth-Add - Initialize my new menus
     Lua_Script = CreatePopupMenu();
 
     /////////////////////////////////////////////
@@ -5453,8 +5291,6 @@ HMENU Build_Main_Menu(void)
 
     MENU_L(TAS_Tools, i++, MF_BYPOSITION | MF_POPUP | MF_STRING,
         (UINT)Lua_Script, "Lua Scripting", "", "&Lua Scripting");
-    MENU_L(TAS_Tools, i++, MF_BYPOSITION | MF_POPUP | MF_STRING,
-        (UINT)Tools_Trace, "Tracer Tools", "", "&Tracer tools");
 
     InsertMenu(TAS_Tools, i++, MF_SEPARATOR, NULL, NULL);
 
@@ -5573,15 +5409,6 @@ HMENU Build_Main_Menu(void)
 
     MENU_L(Tools_AVI, i++, Flags | ((AVISplit > 0) ? MF_CHECKED : MF_UNCHECKED),
         ID_CHANGE_AVISPLIT, Str_Tmp, "", Str_Tmp);
-
-    // TRACE //
-
-    i = 0;
-
-    MENU_L(Tools_Trace, i++, Flags | (trace_map ? MF_CHECKED : MF_UNCHECKED),
-        ID_CHANGE_TRACE, "Log Instructions", "", "&Trace");
-    MENU_L(Tools_Trace, i++, Flags | (hook_trace ? MF_CHECKED : MF_UNCHECKED),
-        ID_CHANGE_HOOK, "Log RAM access", "", "&Hook RAM");
 
     // LUA SCRIPT //
 

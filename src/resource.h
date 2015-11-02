@@ -644,8 +644,6 @@
 #define IDC_EDIT_COMPAREADDRESSSTEP     43008
 #define IDC_EDIT_COMPAREADDRESSSTEPCOUNT 43009
 #define ID_SPLICE                       43100
-#define ID_CHANGE_TRACE                 43200
-#define ID_CHANGE_HOOK                  43201
 #define ID_PREV_TRACK                   43202
 #define ID_NEXT_TRACK                   43203
 #define IDC_MASTVOL                     43300

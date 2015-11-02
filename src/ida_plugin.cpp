@@ -32,7 +32,7 @@ extern debugger_t debugger;
 static bool plugin_inited;
 static bool dbg_started;
 
-static int find_breakpoint(uint32 start, uint32 end, uint8 type)
+static int find_breakpoint(uint32 start, uint32 end, ushort type)
 {
 	for (size_t i = 0; i < M68kDW.Breakpoints.size(); ++i)
 	{
@@ -62,32 +62,38 @@ static int idaapi hook_dbg(void *user_data, int notification_code, va_list va)
 		int bptev_code = va_arg(va, int);
 		bpt_t *bpt = va_arg(va, bpt_t *);
 
-		uint8 type = 0;
-		ushort chkFlags = 0;
+		ushort type = 0;
 		int n = 0;
 
-		chkFlags |= (bpt->enabled()) << 0; // Enabled
-		chkFlags |= ((bpt->type & BPT_EXEC) ? 1 : 0) << 1; // PC
-		chkFlags |= ((bpt->type & BPT_READ) ? 1 : 0) << 2; // Read
-		chkFlags |= ((bpt->type & BPT_WRITE) ? 1 : 0) << 3; // Write
-		chkFlags |= (bpt->cndbody.empty() ? 0 : (bpt->cndbody[0] == '1')) << 4; // Forbid
-
 		bool enabled = bpt->enabled();
-		type |= ((bpt->type & BPT_EXEC) ? 1 : 0) << 0; // PC
-		type |= ((bpt->type & BPT_READ) ? 1 : 0) << 1; // Read
-		type |= ((bpt->type & BPT_WRITE) ? 1 : 0) << 2; // Write
-		type |= (bpt->cndbody.empty() ? 0 : (bpt->cndbody[0] == '1')) << 3; // Forbid
+		type |= ((bpt->type & BPT_EXEC) ? BRK_PC : 0); // PC
+		type |= ((bpt->type & BPT_READ) ? BRK_READ : 0); // Read
+		type |= ((bpt->type & BPT_WRITE) ? BRK_WRITE : 0); // Write
+		type |= (bpt->cndbody.empty() ? 0 : ((bpt->cndbody[0] == '1') ? BRK_FORBID : 0)); // Forbid
+		type |= (bpt->cndbody.empty() ? 0 : ((bpt->cndbody[0] == '2') ? BRK_VDP : 0)); // VDP
 
 		if (bptev_code == BPTEV_ADDED)
 		{
 			char *bpt_dialog =
 				"Edit Breakpoint\n\n"
 				"<:A:13:13::>\n"
-				"<##Parameters##Enable:C> "
-				"<PC:C><Read:C><Write:C><Forbid:C>>\n";
+				"<##Parameters##Enable:C>"
+				"<PC:C><Read:C><Write:C><Forbid:C>"
+	            "<VRAM:C>>\n"
+				"00000-0ffff = VRAM\n"
+				"10000-1ffff = CRAM\n"
+				"20000-2ffff = VSRAM\n";
 
 			char range[MAXSTR];
 			qsnprintf(range, sizeof(range), "%06X-%06X", bpt->ea, bpt->ea);
+
+			ushort chkFlags = 0;
+			chkFlags |= (bpt->enabled()) << 0; // Enabled
+			chkFlags |= ((bpt->type & BPT_EXEC) ? 1 : 0) << 1; // PC
+			chkFlags |= ((bpt->type & BPT_READ) ? 1 : 0) << 2; // Read
+			chkFlags |= ((bpt->type & BPT_WRITE) ? 1 : 0) << 3; // Write
+			chkFlags |= (bpt->cndbody.empty() ? 0 : (bpt->cndbody[0] == '1')) << 4; // Forbid
+			chkFlags |= (bpt->cndbody.empty() ? 0 : (bpt->cndbody[0] == '2')) << 5; // VDP
 
 			if (AskUsingForm_c(bpt_dialog, range, &chkFlags) == 1)
 			{
@@ -101,7 +107,14 @@ static int idaapi hook_dbg(void *user_data, int notification_code, va_list va)
 					b.end = b.start;
 
 				b.enabled = enabled;
-				b.type = type;
+
+				chkFlags >>= 1;
+				b.type = 0;
+				b.type |= (chkFlags & 0x01) ? BRK_PC : 0;
+				b.type |= (chkFlags & 0x02) ? BRK_READ : 0;
+				b.type |= (chkFlags & 0x04) ? BRK_WRITE : 0;
+				b.type |= (chkFlags & 0x08) ? BRK_FORBID : 0;
+				b.type |= (chkFlags & 0x10) ? BRK_VDP : 0;
 			}
 		}
 		else if (bptev_code == BPTEV_CHANGED)
