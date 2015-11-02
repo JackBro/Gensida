@@ -244,6 +244,19 @@ static int idaapi gens_process(void *ud)
 	return rc;
 }
 
+static uint32 get_entry_point(const char *rom_path)
+{
+	FILE *fp = fopenRB(rom_path);
+	if (fp == NULL) return 0;
+
+	uint32 addr = 0;
+	eseek(fp, 4);
+	eread(fp, &addr, sizeof(addr));
+	eclose(fp);
+
+	return swap32(addr);
+}
+
 // Start an executable to debug
 // 1 - ok, 0 - failed, -2 - file not found (ask for process options)
 // 1|CRC32_MISMATCH - ok, but the input file crc does not match
@@ -257,6 +270,15 @@ static int idaapi start_process(const char *path,
 	uint32 input_file_crc32)
 {
 	qsnprintf(cmdline, sizeof(cmdline), "-rom \"%s\"", path);
+
+	int n = M68kDW.Breakpoints.size();
+	M68kDW.Breakpoints.resize(n + 1);
+	Breakpoint &b = M68kDW.Breakpoints[n];
+
+	b.start = get_entry_point(path);
+	b.end = b.start;
+	b.enabled = true;
+	b.type = 0x01;
 
 	stopped = false;
 	prepare_codemap();
