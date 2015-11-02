@@ -62,21 +62,21 @@ static int idaapi hook_dbg(void *user_data, int notification_code, va_list va)
 		int bptev_code = va_arg(va, int);
 		bpt_t *bpt = va_arg(va, bpt_t *);
 
+		uint8 type = 0;
 		ushort chkFlags = 0;
 		int n = 0;
 
 		chkFlags |= (bpt->enabled()) << 0; // Enabled
-		chkFlags |= (bpt->type == BPT_EXEC) << 1; // PC
-		chkFlags |= (bpt->type == BPT_READ) << 2; // Read
-		chkFlags |= (bpt->type == BPT_WRITE) << 3; // Write
-		chkFlags |= (bpt->cndbody.empty() ? 0 : (bpt->cndbody[0] == '1')) << 4; // Write
+		chkFlags |= ((bpt->type & BPT_EXEC) ? 1 : 0) << 1; // PC
+		chkFlags |= ((bpt->type & BPT_READ) ? 1 : 0) << 2; // Read
+		chkFlags |= ((bpt->type & BPT_WRITE) ? 1 : 0) << 3; // Write
+		chkFlags |= (bpt->cndbody.empty() ? 0 : (bpt->cndbody[0] == '1')) << 4; // Forbid
 
-		bool enabled = chkFlags & (1 << 0);
-		uint8 type =
-			(((chkFlags >> 1) & (1 << 0)) << 0) +
-			(((chkFlags >> 1) & (1 << 1)) << 1) +
-			(((chkFlags >> 1) & (1 << 2)) << 2) +
-			(((chkFlags >> 1) & (1 << 3)) << 3);
+		bool enabled = bpt->enabled();
+		type |= ((bpt->type & BPT_EXEC) ? 1 : 0) << 0; // PC
+		type |= ((bpt->type & BPT_READ) ? 1 : 0) << 1; // Read
+		type |= ((bpt->type & BPT_WRITE) ? 1 : 0) << 2; // Write
+		type |= (bpt->cndbody.empty() ? 0 : (bpt->cndbody[0] == '1')) << 3; // Forbid
 
 		if (bptev_code == BPTEV_ADDED)
 		{
@@ -89,7 +89,7 @@ static int idaapi hook_dbg(void *user_data, int notification_code, va_list va)
 			char range[MAXSTR];
 			qsnprintf(range, sizeof(range), "%06X-%06X", bpt->ea, bpt->ea);
 
-			if (!dbg_started || AskUsingForm_c(bpt_dialog, range, &chkFlags) == 1)
+			if (AskUsingForm_c(bpt_dialog, range, &chkFlags) == 1)
 			{
 				n = M68kDW.Breakpoints.size();
 				M68kDW.Breakpoints.resize(n + 1);
