@@ -65,7 +65,7 @@
       <RuntimeLibrary Condition="'$(Configuration)'=='Release'">MultiThreaded</RuntimeLibrary>
       <Optimization Condition="'$(Configuration)'=='Debug'">Disabled</Optimization>
       <Optimization Condition="'$(Configuration)'=='Release'">Full</Optimization>
-      <ProgramDataBaseFileName>$(OutDir)gensida.pdb</ProgramDataBaseFileName>
+      <ProgramDataBaseFileName>$(IntDir)gensida.pdb</ProgramDataBaseFileName>
       <WarningLevel>Level3</WarningLevel>
       <TreatWarningAsError>false</TreatWarningAsError>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -254,101 +254,101 @@
   <ItemGroup>
     <CustomBuild Include="src\blit.asm">
       <Message>Assembling %(Filename).asm</Message>
-      <Command>dependencies\nasmw -i "%(RootDir)%(Directory)." "%(RootDir)%(Directory)\%(Filename).asm" -f win32 -o "$(OutDir)%(Filename).obj"
+      <Command>dependencies\nasmw -i "%(RootDir)%(Directory)." "%(RootDir)%(Directory)\%(Filename).asm" -f win32 -o "$(IntDir)%(Filename).obj"
 </Command>
-      <Outputs>$(OutDir)%(Filename).obj;%(Outputs)</Outputs>
+      <Outputs>$(IntDir)%(Filename).obj;%(Outputs)</Outputs>
     </CustomBuild>
     <CustomBuild Include="src\gfx_cd.asm">
       <Message>Assembling %(Filename).asm</Message>
-      <Command>dependencies\nasmw -i "%(RootDir)%(Directory)." "%(RootDir)%(Directory)\%(Filename).asm" -f win32 -o "$(OutDir)%(Filename).obj"
+      <Command>dependencies\nasmw -i "%(RootDir)%(Directory)." "%(RootDir)%(Directory)\%(Filename).asm" -f win32 -o "$(IntDir)%(Filename).obj"
 </Command>
-      <Outputs>$(OutDir)%(Filename).obj;%(Outputs)</Outputs>
+      <Outputs>$(IntDir)%(Filename).obj;%(Outputs)</Outputs>
     </CustomBuild>
     <CustomBuild Include="src\io.asm">
       <Message>Assembling %(Filename).asm</Message>
-      <Command>dependencies\nasmw -i "%(RootDir)%(Directory)." "%(RootDir)%(Directory)\%(Filename).asm" -f win32 -o "$(OutDir)%(Filename).obj"
+      <Command>dependencies\nasmw -i "%(RootDir)%(Directory)." "%(RootDir)%(Directory)\%(Filename).asm" -f win32 -o "$(IntDir)%(Filename).obj"
 </Command>
-      <Outputs>$(OutDir)%(Filename).obj;%(Outputs)</Outputs>
+      <Outputs>$(IntDir)%(Filename).obj;%(Outputs)</Outputs>
     </CustomBuild>
     <CustomBuild Include="Starscream\Main68k\main68k.asm">
       <Message>Assembling %(Filename).asm</Message>
-      <Command>dependencies\nasmw -i "%(RootDir)%(Directory)." "%(RootDir)%(Directory)\%(Filename).asm" -f win32 -o "$(OutDir)%(Filename).obj"
+      <Command>dependencies\nasmw -i "%(RootDir)%(Directory)." "%(RootDir)%(Directory)\%(Filename).asm" -f win32 -o "$(IntDir)%(Filename).obj"
 </Command>
-      <Outputs>$(OutDir)%(Filename).obj;%(Outputs)</Outputs>
+      <Outputs>$(IntDir)%(Filename).obj;%(Outputs)</Outputs>
     </CustomBuild>
     <CustomBuild Include="src\Mem_M68k.asm">
       <Message>Assembling %(Filename).asm</Message>
-      <Command>dependencies\nasmw -i "%(RootDir)%(Directory)." "%(RootDir)%(Directory)\%(Filename).asm" -f win32 -o "$(OutDir)%(Filename).obj"
+      <Command>dependencies\nasmw -i "%(RootDir)%(Directory)." "%(RootDir)%(Directory)\%(Filename).asm" -f win32 -o "$(IntDir)%(Filename).obj"
 </Command>
       <AdditionalInputs>mem_m68k_32x.inc;mem_m68k_cd.inc;%(AdditionalInputs)</AdditionalInputs>
-      <Outputs>$(OutDir)%(Filename).obj;%(Outputs)</Outputs>
+      <Outputs>$(IntDir)%(Filename).obj;%(Outputs)</Outputs>
     </CustomBuild>
     <CustomBuild Include="src\Mem_S68k.asm">
       <Message>Assembling %(Filename).asm</Message>
-      <Command>dependencies\nasmw -i "%(RootDir)%(Directory)." "%(RootDir)%(Directory)\%(Filename).asm" -f win32 -o "$(OutDir)%(Filename).obj"
+      <Command>dependencies\nasmw -i "%(RootDir)%(Directory)." "%(RootDir)%(Directory)\%(Filename).asm" -f win32 -o "$(IntDir)%(Filename).obj"
 </Command>
-      <Outputs>$(OutDir)%(Filename).obj;%(Outputs)</Outputs>
+      <Outputs>$(IntDir)%(Filename).obj;%(Outputs)</Outputs>
     </CustomBuild>
     <CustomBuild Include="src\Mem_SH2.asm">
       <Message>Assembling %(Filename).asm</Message>
-      <Command>dependencies\nasmw -i "%(RootDir)%(Directory)." "%(RootDir)%(Directory)\%(Filename).asm" -f win32 -o "$(OutDir)%(Filename).obj"
+      <Command>dependencies\nasmw -i "%(RootDir)%(Directory)." "%(RootDir)%(Directory)\%(Filename).asm" -f win32 -o "$(IntDir)%(Filename).obj"
 </Command>
-      <Outputs>$(OutDir)%(Filename).obj;%(Outputs)</Outputs>
+      <Outputs>$(IntDir)%(Filename).obj;%(Outputs)</Outputs>
     </CustomBuild>
     <CustomBuild Include="src\Mem_Z80.asm">
       <Message>Assembling %(Filename).asm</Message>
-      <Command>dependencies\nasmw -i "%(RootDir)%(Directory)." "%(RootDir)%(Directory)\%(Filename).asm" -f win32 -o "$(OutDir)%(Filename).obj"
+      <Command>dependencies\nasmw -i "%(RootDir)%(Directory)." "%(RootDir)%(Directory)\%(Filename).asm" -f win32 -o "$(IntDir)%(Filename).obj"
 </Command>
-      <Outputs>$(OutDir)%(Filename).obj;%(Outputs)</Outputs>
+      <Outputs>$(IntDir)%(Filename).obj;%(Outputs)</Outputs>
     </CustomBuild>
     <CustomBuild Include="src\Misc.asm">
       <Message>Assembling %(Filename).asm</Message>
-      <Command>dependencies\nasmw -i "%(RootDir)%(Directory)." "%(RootDir)%(Directory)\%(Filename).asm" -f win32 -o "$(OutDir)%(Filename).obj"
+      <Command>dependencies\nasmw -i "%(RootDir)%(Directory)." "%(RootDir)%(Directory)\%(Filename).asm" -f win32 -o "$(IntDir)%(Filename).obj"
 </Command>
-      <Outputs>$(OutDir)%(Filename).obj;%(Outputs)</Outputs>
+      <Outputs>$(IntDir)%(Filename).obj;%(Outputs)</Outputs>
     </CustomBuild>
     <CustomBuild Include="src\pwm.asm">
       <Message>Assembling %(Filename).asm</Message>
-      <Command>dependencies\nasmw -i "%(RootDir)%(Directory)." "%(RootDir)%(Directory)\%(Filename).asm" -f win32 -o "$(OutDir)%(Filename).obj"
+      <Command>dependencies\nasmw -i "%(RootDir)%(Directory)." "%(RootDir)%(Directory)\%(Filename).asm" -f win32 -o "$(IntDir)%(Filename).obj"
 </Command>
-      <Outputs>$(OutDir)%(Filename).obj;%(Outputs)</Outputs>
+      <Outputs>$(IntDir)%(Filename).obj;%(Outputs)</Outputs>
     </CustomBuild>
     <CustomBuild Include="src\SH2a.asm">
       <Message>Assembling %(Filename).asm</Message>
-      <Command>dependencies\nasmw -i "%(RootDir)%(Directory)." "%(RootDir)%(Directory)\%(Filename).asm" -f win32 -o "$(OutDir)%(Filename).obj"
+      <Command>dependencies\nasmw -i "%(RootDir)%(Directory)." "%(RootDir)%(Directory)\%(Filename).asm" -f win32 -o "$(IntDir)%(Filename).obj"
 </Command>
       <AdditionalInputs>SH2_IO.inc;%(AdditionalInputs)</AdditionalInputs>
-      <Outputs>$(OutDir)%(Filename).obj;%(Outputs)</Outputs>
+      <Outputs>$(IntDir)%(Filename).obj;%(Outputs)</Outputs>
     </CustomBuild>
     <CustomBuild Include="Starscream\Sub68k\sub68k.asm">
       <Message>Assembling %(Filename).asm</Message>
-      <Command>dependencies\nasmw -i "%(RootDir)%(Directory)." "%(RootDir)%(Directory)\%(Filename).asm" -f win32 -o "$(OutDir)%(Filename).obj"
+      <Command>dependencies\nasmw -i "%(RootDir)%(Directory)." "%(RootDir)%(Directory)\%(Filename).asm" -f win32 -o "$(IntDir)%(Filename).obj"
 </Command>
-      <Outputs>$(OutDir)%(Filename).obj;%(Outputs)</Outputs>
+      <Outputs>$(IntDir)%(Filename).obj;%(Outputs)</Outputs>
     </CustomBuild>
     <CustomBuild Include="src\vdp_32X.asm">
       <Message>Assembling %(Filename).asm</Message>
-      <Command>dependencies\nasmw -i "%(RootDir)%(Directory)." "%(RootDir)%(Directory)\%(Filename).asm" -f win32 -o "$(OutDir)%(Filename).obj"
+      <Command>dependencies\nasmw -i "%(RootDir)%(Directory)." "%(RootDir)%(Directory)\%(Filename).asm" -f win32 -o "$(IntDir)%(Filename).obj"
 </Command>
-      <Outputs>$(OutDir)%(Filename).obj;%(Outputs)</Outputs>
+      <Outputs>$(IntDir)%(Filename).obj;%(Outputs)</Outputs>
     </CustomBuild>
     <CustomBuild Include="src\vdp_io.asm">
       <Message>Assembling %(Filename).asm</Message>
-      <Command>dependencies\nasmw -i "%(RootDir)%(Directory)." "%(RootDir)%(Directory)\%(Filename).asm" -f win32 -o "$(OutDir)%(Filename).obj"
+      <Command>dependencies\nasmw -i "%(RootDir)%(Directory)." "%(RootDir)%(Directory)\%(Filename).asm" -f win32 -o "$(IntDir)%(Filename).obj"
 </Command>
-      <Outputs>$(OutDir)%(Filename).obj;%(Outputs)</Outputs>
+      <Outputs>$(IntDir)%(Filename).obj;%(Outputs)</Outputs>
     </CustomBuild>
     <CustomBuild Include="src\vdp_rend.asm">
       <Message>Assembling %(Filename).asm</Message>
-      <Command>dependencies\nasmw -i "%(RootDir)%(Directory)." "%(RootDir)%(Directory)\%(Filename).asm" -f win32 -o "$(OutDir)%(Filename).obj"
+      <Command>dependencies\nasmw -i "%(RootDir)%(Directory)." "%(RootDir)%(Directory)\%(Filename).asm" -f win32 -o "$(IntDir)%(Filename).obj"
 </Command>
-      <Outputs>$(OutDir)%(Filename).obj;%(Outputs)</Outputs>
+      <Outputs>$(IntDir)%(Filename).obj;%(Outputs)</Outputs>
     </CustomBuild>
     <CustomBuild Include="src\z80.asm">
       <Message>Assembling %(Filename).asm</Message>
-      <Command>dependencies\nasmw -i "%(RootDir)%(Directory)." "%(RootDir)%(Directory)\%(Filename).asm" -f win32 -o "$(OutDir)%(Filename).obj"
+      <Command>dependencies\nasmw -i "%(RootDir)%(Directory)." "%(RootDir)%(Directory)\%(Filename).asm" -f win32 -o "$(IntDir)%(Filename).obj"
 </Command>
-      <Outputs>$(OutDir)%(Filename).obj;%(Outputs)</Outputs>
+      <Outputs>$(IntDir)%(Filename).obj;%(Outputs)</Outputs>
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
