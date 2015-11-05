@@ -38,7 +38,7 @@
 std::vector<HexParams *> HexEditors;
 std::vector<HexParams *> HexOrder;
 std::vector<SymbolName>  HexNames;
-std::vector<HardPatch>   HexPatches;
+//std::vector<HardPatch>   HexPatches;
 HMENU HexEditorMenu;
 HMENU HexRegionsMenu;
 HFONT HexFont = 0;
@@ -109,27 +109,27 @@ TextArea = {
 #define REGION_COUNT    sizeof(HexRegions) / sizeof(HexRegions)[0]
 #define OFFSET_REMINDER Hex->CurrentRegion.Size % RowCount
 #define GAP_CHECK		(row / 8 * Hex->Gap)
-
+    /*
     void HexRepeatPatch(u8 *Array, UINT Start, UINT End) {
-        for (UINT i = 0; i < HexPatches.size(); i++) {
-            if (HexPatches[i].Array == Array &&
-                HexPatches[i].Address >= Start &&
-                HexPatches[i].Address <= End   &&
-                HexPatches[i].Active)
-                Array[Start] = HexPatches[i].Value;
-        }
+    for (UINT i = 0; i < HexPatches.size(); i++) {
+    if (HexPatches[i].Array   == Array &&
+    HexPatches[i].Address >= Start &&
+    HexPatches[i].Address <= End   &&
+    HexPatches[i].Active)
+    Array[Start] = HexPatches[i].Value;
+    }
     }
 
     void HexWatchPoint68K(UINT Start, UINT Size) {
-        if (UseWatchPoints)
-            HexRepeatPatch((u8 *)Ram_68k, Start, Size);
+    if (UseWatchPoints)
+    HexRepeatPatch((u8 *)Ram_68k, Start, Size);
     }
 
     void HexWatchPointZ80(UINT Start, UINT Size) {
-        if (UseWatchPoints)
-            HexRepeatPatch((u8 *)Ram_Z80, Start, Size);
+    if (UseWatchPoints)
+    HexRepeatPatch((u8 *)Ram_Z80, Start, Size);
     }
-
+    */
     int HexCap(int Val1, int Val2, bool GreaterThan) {
         if (GreaterThan && (int)Val1 > (int)Val2) Val1 = Val2;
         else if (!GreaterThan && (int)Val1 < (int)Val2) Val1 = Val2;
