@@ -271,15 +271,7 @@ void PlaneExplorer_GetTipText(int x, int y, char * buffer)
 
     name.word = *(unsigned short *)(&VRam[tile_addr]);
 
-    wsprintf(buffer, "POSITION: %dx%d\n"
-        "PLANE: %c (0x%04X)\n"
-        "MAPPING ADDRESS: 0x%04X\n"
-        "MAPPING VALUE: 0x%04X\n"
-        "TILE INDEX: 0x%04X(%d)\n"
-        "TILE PALETTE: %d\n"
-        "HFLIPPED: %s\n"
-        "VFLIPPED: %s\n"
-        "PRIORITY: %d",
+	sprintf(buffer, "POS: %dx%d; PLANE: %c (0x%04X); ADDRESS: 0x%04X; VALUE: 0x%04X; INDEX: 0x%04X(%d); PAL: %d; HF: %s; VF: %s; PRIORITY: %d",
         x >> 3,
         y >> 3,
         plane_char,
@@ -361,7 +353,7 @@ BOOL CALLBACK PlaneExplorerDialogProc(HWND hwnd, UINT Message, WPARAM wParam, LP
         GetClientRect(hexplorer, &rc1);
         if (PtInRect(&rc1, pt))
         {
-            PlaneExplorer_GetTipText(pt.x, pt.y, buffer + 6);
+            PlaneExplorer_GetTipText(pt.x, pt.y, &buffer[0]);
         }
         SetDlgItemText(hwnd, IDC_PLANEEXPLORER_TILEINFO, buffer);
         return FALSE;

@@ -7,7 +7,8 @@
 //
 // Generated from the TEXTINCLUDE 2 resource.
 //
-#include "afxres.h"
+#include "afxres.h"
+
 /////////////////////////////////////////////////////////////////////////////
 #undef APSTUDIO_READONLY_SYMBOLS
 
@@ -681,6 +682,7 @@ STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_VISIBLE | WS_CAPT
 CAPTION "Plane Explorer"
 FONT 8, "MS Shell Dlg", 400, 0, 0xCC
 BEGIN
+    LTEXT           "",IDC_PLANEEXPLORER_TILEINFO,20,7,470,8
     CONTROL         "Transparency",IDC_PLANEEXPLORER_TRANS,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,20,20,60,10
     CONTROL         "",IDC_PLANEEXPLORER_MAIN,"Static",SS_OWNERDRAW,20,40,256,256
     CONTROL         "Plane A",IDC_PLANEEXPLORER_PLANE_A,"Button",BS_AUTORADIOBUTTON | BS_VCENTER | WS_GROUP,90,20,40,10
@@ -857,7 +859,8 @@ END
 //
 // Generated from the TEXTINCLUDE 3 resource.
 //
-
+
+
 /////////////////////////////////////////////////////////////////////////////
 #endif    // not APSTUDIO_INVOKED
 
