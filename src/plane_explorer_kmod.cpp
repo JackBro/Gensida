@@ -19,6 +19,7 @@ static COLORREF plane_explorer_palette[256];
 static int old_plane_width = 0;
 static int old_plane_height = 0;
 static int plane_explorer_plane = 0;
+static bool show_transparence = false;
 
 static void PlaneExplorerInit_KMod(HWND hDlg)
 {
@@ -193,7 +194,7 @@ static void PlaneExplorer_UpdateBitmap(HWND hwnd, int plane)
     {
         for (i = 0; i < plane_width; i++)
         {
-            int trans_color = (IsDlgButtonChecked(hwnd, IDC_PLANEEXPLORER_TRANS) == BST_CHECKED) ? (unsigned char)(((j ^ i) >> 1) & 1) + 254 : -1;
+			int trans_color = show_transparence ? (unsigned char)(((j ^ i) >> 1) & 1) + 254 : -1;
             PlaneExplorer_DrawTile(plane_data[j * plane_width + i], i, j, trans_color);
         }
     }
@@ -317,6 +318,7 @@ BOOL CALLBACK PlaneExplorerDialogProc(HWND hwnd, UINT Message, WPARAM wParam, LP
             InvalidateRect(hwnd, NULL, FALSE);
             break;
         case IDC_PLANEEXPLORER_TRANS:
+			show_transparence = (IsDlgButtonChecked(hwnd, IDC_PLANEEXPLORER_TRANS) == BST_CHECKED);
             InvalidateRect(hwnd, NULL, FALSE);
             break;
         default:

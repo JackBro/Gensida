@@ -32,16 +32,19 @@ extern debugger_t debugger;
 static bool plugin_inited;
 static bool dbg_started;
 
-static int find_breakpoint(uint32 start, uint32 end, ushort type)
+static int _find_breakpoint(uint32 start, uint32 end, ushort type)
 {
-	for (size_t i = 0; i < M68kDW.Breakpoints.size(); ++i)
+	std::forward_list<Breakpoint>::const_iterator i = M68kDW.Breakpoints.cbegin();
+	int idx = 0;
+
+	while (i != M68kDW.Breakpoints.cend())
 	{
-		if (M68kDW.Breakpoints[i].start >= start &&
-			M68kDW.Breakpoints[i].end <= end &&
-			M68kDW.Breakpoints[i].type == type)
-			return i;
-		i++;
+		if (i->start >= start && i->end <= end && i->type == type)
+			return idx;
+
+		idx++; i++;
 	}
+
 	return -1;
 }
 
@@ -97,46 +100,35 @@ static int idaapi hook_dbg(void *user_data, int notification_code, va_list va)
 
 			if (AskUsingForm_c(bpt_dialog, range, &chkFlags) == 1)
 			{
-				n = M68kDW.Breakpoints.size();
-				M68kDW.Breakpoints.resize(n + 1);
-				Breakpoint &b = M68kDW.Breakpoints[n];
-
-				if (sscanf(range, "%x-%x", &(b.start), &(b.end)) == 1)
-					b.end = b.start;
-				if (b.end < b.start)
-					b.end = b.start;
-
-				b.enabled = enabled;
+				uint32 start = 0, end = 0;
+				if (sscanf(range, "%x-%x", &start, &end) == 1)
+					end = start;
+				if (end < start)
+					end = start;
 
 				chkFlags >>= 1;
-				b.type = 0;
-				b.type |= (chkFlags & 0x01) ? BRK_PC : 0;
-				b.type |= (chkFlags & 0x02) ? BRK_READ : 0;
-				b.type |= (chkFlags & 0x04) ? BRK_WRITE : 0;
-				b.type |= (chkFlags & 0x08) ? BRK_FORBID : 0;
-				b.type |= (chkFlags & 0x10) ? BRK_VDP : 0;
+				ushort type = 0;
+				type |= (chkFlags & 0x01) ? BRK_PC : 0;
+				type |= (chkFlags & 0x02) ? BRK_READ : 0;
+				type |= (chkFlags & 0x04) ? BRK_WRITE : 0;
+				type |= (chkFlags & 0x08) ? BRK_FORBID : 0;
+				type |= (chkFlags & 0x10) ? BRK_VDP : 0;
+
+				M68kDW.Breakpoints.emplace_front(Breakpoint(start, end, enabled, type));
 			}
 		}
 		else if (bptev_code == BPTEV_CHANGED)
 		{
-			n = find_breakpoint(bpt->ea, bpt->ea + bpt->size, type);
-
-			if (n != -1)
-			{
-				Breakpoint &b = M68kDW.Breakpoints[n];
-
-				b.enabled = enabled;
-				b.type = type;
-			}
+			Breakpoint b(bpt->ea, bpt->ea + bpt->size, bpt->enabled(), type);
+			M68kDW.Breakpoints.remove(b);
+			b.enabled = enabled;
+			b.type = type;
+			M68kDW.Breakpoints.push_front(b);
 		}
 		else // BPTEV_REMOVED
 		{
-			n = find_breakpoint(bpt->ea, bpt->ea + bpt->size, type);
-
-			if (n != -1)
-			{
-				M68kDW.Breakpoints.erase(M68kDW.Breakpoints.begin() + n);
-			}
+			Breakpoint b(bpt->ea, bpt->ea + bpt->size, bpt->enabled(), type);
+			M68kDW.Breakpoints.remove(b);
 		}
 	} break;
 	}

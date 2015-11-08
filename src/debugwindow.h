@@ -2,6 +2,7 @@
 #define DEBUG_WINDOW_H
 #include <windows.h>
 #include <vector>
+#include <forward_list>
 #include <string>
 
 #define WM_DEBUG_DUMMY_EXIT (WM_USER+1000)
@@ -21,13 +22,20 @@ struct Breakpoint
     uint32 end;
     bool enabled;
 	ushort type;
+
+	Breakpoint(uint32 _start, uint32 _end, bool _enabled, ushort _type) : start(_start), end(_end), enabled(_enabled), type(_type) {};
+
+	bool Breakpoint::operator ==(const Breakpoint &b) const
+	{
+		return (this->start == b.start) && (this->end == b.end) && (this->enabled == b.enabled) && (this->type == b.type);
+	}
 };
 
 struct DebugWindow
 {
     DebugWindow();
     std::vector<uint32> callstack;
-    std::vector<Breakpoint> Breakpoints;
+	std::forward_list<Breakpoint> Breakpoints;
 
     HWND DummyHWnd;
 

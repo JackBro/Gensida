@@ -71,9 +71,9 @@ void DebugWindow::SetWhyBreak(LPCSTR lpString)
 
 bool DebugWindow::BreakPC(int pc)
 {
-    std::vector<::Breakpoint>::iterator i, n;
-    i = Breakpoints.begin();
-    n = Breakpoints.end();
+    std::forward_list<::Breakpoint>::const_iterator i, n;
+    i = Breakpoints.cbegin();
+    n = Breakpoints.cend();
     bool r = false;
     for (; i != n; ++i)
     {
@@ -92,9 +92,9 @@ bool DebugWindow::BreakPC(int pc)
 
 bool DebugWindow::BreakRead(int pc, uint32 star, uint32 stop, bool is_vdp)
 {
-    std::vector<::Breakpoint>::iterator i, n;
-    i = Breakpoints.begin();
-    n = Breakpoints.end();
+	std::forward_list<::Breakpoint>::const_iterator i, n;
+    i = Breakpoints.cbegin();
+    n = Breakpoints.cend();
     bool r = false;
     for (; i != n; ++i)
     {
@@ -122,9 +122,9 @@ bool DebugWindow::BreakRead(int pc, uint32 star, uint32 stop, bool is_vdp)
 
 bool DebugWindow::BreakWrite(int pc, uint32 star, uint32 stop, bool is_vdp)
 {
-    std::vector<::Breakpoint>::iterator i, n;
-    i = Breakpoints.begin();
-    n = Breakpoints.end();
+	std::forward_list<::Breakpoint>::const_iterator i, n;
+    i = Breakpoints.cbegin();
+    n = Breakpoints.cend();
     bool r = false;
     for (; i != n; ++i)
     {

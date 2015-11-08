@@ -271,14 +271,8 @@ static int idaapi start_process(const char *path,
 {
 	qsnprintf(cmdline, sizeof(cmdline), "-rom \"%s\"", path);
 
-	int n = M68kDW.Breakpoints.size();
-	M68kDW.Breakpoints.resize(n + 1);
-	Breakpoint &b = M68kDW.Breakpoints[n];
-
-	b.start = get_entry_point(path);
-	b.end = b.start;
-	b.enabled = true;
-	b.type = 0x01;
+	uint32 start = get_entry_point(path);
+	M68kDW.Breakpoints.emplace_front(Breakpoint(start, start, true, 0x01));
 
 	stopped = false;
 	prepare_codemap();
