@@ -23,43 +23,12 @@ static int plane_explorer_plane = 0;
 static void PlaneExplorerInit_KMod(HWND hDlg)
 {
     HWND hexplorer;
-    RECT rc, r;
-    int dx1, dy1, dx2, dy2;
-
-    if (Full_Screen)
-    {
-        while (ShowCursor(false) >= 0);
-        while (ShowCursor(true) < 0);
-    }
-
-    GetWindowRect(::HWnd, &r);
-    dx1 = (r.right - r.left) / 2;
-    dy1 = (r.bottom - r.top) / 2;
-
-    GetWindowRect(hDlg, &rc);
-    dx2 = (rc.right - rc.left) / 2;
-    dy2 = (rc.bottom - rc.top) / 2;
-
-    // push it away from the main window if we can
-    const int width = (r.right - r.left);
-    const int width2 = (rc.right - rc.left);
-    if (r.left + width2 + width < GetSystemMetrics(SM_CXSCREEN))
-    {
-        r.right += width;
-        r.left += width;
-    }
-    else if ((int)r.left - (int)width2 > 0)
-    {
-        r.right -= width2;
-        r.left -= width2;
-    }
+    RECT rc;
 
     CheckRadioButton(hDlg, IDC_PLANEEXPLORER_PLANE_A, IDC_PLANEEXPLORER_PLANE_B, IDC_PLANEEXPLORER_PLANE_A);
-
-    SetWindowPos(hDlg, NULL, r.left, r.top, NULL, NULL, SWP_NOSIZE | SWP_NOZORDER | SWP_SHOWWINDOW);
-
     hexplorer = (HWND)GetDlgItem(hDlg, IDC_PLANEEXPLORER_MAIN);
-    MoveWindow(hexplorer, 5, 5, 520, 520, TRUE);
+    GetClientRect(hDlg, &rc);
+    MoveWindow(hexplorer, 20, 60, (rc.right - rc.left) - 40, (rc.bottom - rc.top) - 80, TRUE);
 }
 
 static void PlaneExplorer_UpdatePalette(void)
@@ -324,7 +293,7 @@ void PlaneExplorer_GetTipText(int x, int y, char * buffer)
         );
 }
 
-LRESULT CALLBACK PlaneExplorerDialogProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
+BOOL CALLBACK PlaneExplorerDialogProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
 {
     switch (Message)
     {
@@ -355,11 +324,17 @@ LRESULT CALLBACK PlaneExplorerDialogProc(HWND hwnd, UINT Message, WPARAM wParam,
         }
         break;
 
+    case WM_SIZE:
+    {
+        HWND hexplorer = GetDlgItem(hwnd, IDC_PLANEEXPLORER_MAIN);
+        MoveWindow(hexplorer, 20, 60, LOWORD(lParam) - 40, HIWORD(lParam) - 80, TRUE);
+        break;
+    }
     case WM_CLOSE:
         DialogsOpen--;
         PlaneExplorerHWnd = NULL;
         EndDialog(hwnd, true);
-        return true;
+        break;
 
     case WM_MOUSELEAVE:
         SetDlgItemText(hwnd, IDC_PLANEEXPLORER_TILEINFO, "");
@@ -368,8 +343,8 @@ LRESULT CALLBACK PlaneExplorerDialogProc(HWND hwnd, UINT Message, WPARAM wParam,
     case WM_MOUSEMOVE:
     {
         HWND hexplorer = GetDlgItem(hwnd, IDC_PLANEEXPLORER_MAIN);
-        int x = LOWORD(lParam);
-        int y = HIWORD(lParam);
+        int x = (short)(lParam);
+        int y = (short)(lParam >> 16);
         char buffer[180] = "";
         RECT rc1;
         POINT pt;
@@ -384,7 +359,7 @@ LRESULT CALLBACK PlaneExplorerDialogProc(HWND hwnd, UINT Message, WPARAM wParam,
         GetClientRect(hexplorer, &rc1);
         if (PtInRect(&rc1, pt))
         {
-            PlaneExplorer_GetTipText(pt.x, pt.y, buffer);
+            PlaneExplorer_GetTipText(pt.x, pt.y, buffer + 6);
         }
         SetDlgItemText(hwnd, IDC_PLANEEXPLORER_TILEINFO, buffer);
         return FALSE;

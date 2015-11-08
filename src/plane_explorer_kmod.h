@@ -2,6 +2,6 @@
 #define PLANE_EXPLORER_H
 
 void Update_Plane_Explorer();
-LRESULT CALLBACK PlaneExplorerDialogProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam);
+BOOL CALLBACK PlaneExplorerDialogProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam);
 
 #endif
