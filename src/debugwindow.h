@@ -27,7 +27,7 @@ struct Breakpoint
 
 	bool Breakpoint::operator ==(const Breakpoint &b) const
 	{
-		return (this->start >= b.start) && (this->end <= b.end) && (this->enabled == b.enabled) && (this->type == b.type);
+		return (this->start >= b.start) && (this->end <= b.end) && (this->enabled == b.enabled) && ((this->type & b.type) != 0);
 	}
 };
 

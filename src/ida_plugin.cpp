@@ -88,7 +88,7 @@ static int idaapi hook_dbg(void *user_data, int notification_code, va_list va)
 				"20000-2ffff = VSRAM\n";
 
 			char range[MAXSTR];
-			qsnprintf(range, sizeof(range), "%06X-%06X", bpt->ea, bpt->ea);
+			qsnprintf(range, sizeof(range), "%06X-%06X", bpt->ea, bpt->ea + bpt->size - 1);
 
 			ushort chkFlags = 0;
 			chkFlags |= (bpt->enabled()) << 0; // Enabled
@@ -119,7 +119,7 @@ static int idaapi hook_dbg(void *user_data, int notification_code, va_list va)
 		}
 		else if (bptev_code == BPTEV_CHANGED)
 		{
-			Breakpoint b(bpt->ea, bpt->ea + bpt->size, bpt->enabled(), type);
+			Breakpoint b(bpt->ea, bpt->ea + bpt->size - 1, bpt->enabled(), type);
 			M68kDW.Breakpoints.remove(b);
 			b.enabled = enabled;
 			b.type = type;
@@ -127,7 +127,7 @@ static int idaapi hook_dbg(void *user_data, int notification_code, va_list va)
 		}
 		else // BPTEV_REMOVED
 		{
-			Breakpoint b(bpt->ea, bpt->ea + bpt->size, bpt->enabled(), type);
+			Breakpoint b(bpt->ea, bpt->ea + bpt->size - 1, bpt->enabled(), type);
 			M68kDW.Breakpoints.remove(b);
 		}
 	} break;
