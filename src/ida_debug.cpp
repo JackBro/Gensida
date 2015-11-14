@@ -272,7 +272,10 @@ static int idaapi start_process(const char *path,
 	qsnprintf(cmdline, sizeof(cmdline), "-rom \"%s\"", path);
 
 	uint32 start = get_entry_point(path);
-	M68kDW.Breakpoints.emplace_front(Breakpoint(start, start, true, 0x01));
+
+	Breakpoint b(start, start, true, BRK_PC);
+	M68kDW.Breakpoints.remove(b);
+	M68kDW.Breakpoints.emplace_front(b);
 
 	stopped = false;
 	prepare_codemap();
@@ -589,7 +592,48 @@ static int idaapi write_register(thid_t tid, int regidx, const regval_t *value)
 // This function is called from debthread
 static int idaapi get_memory_info(meminfo_vec_t &areas)
 {
-	return -3;
+	memory_info_t info;
+
+	for (int i = 0; i < get_segm_qty(); ++i)
+	{
+		char buf[MAX_PATH];
+
+		segment_t *segm = getnseg(i);
+
+		info.startEA = segm->startEA;
+		info.endEA = segm->endEA;
+
+		get_segm_name(segm, buf, sizeof(buf));
+		info.name = buf;
+
+		get_segm_class(segm, buf, sizeof(buf));
+		info.sclass = buf;
+
+		info.sbase = 0;
+		info.perm = 0 | SEGPERM_READ | SEGPERM_WRITE;
+		info.bitness = 1;
+		areas.push_back(info);
+	}
+
+	info.name = "VDP_DBG_VRAM";
+	info.startEA = 0xB0000000;
+	info.endEA = info.startEA + 0x10000;
+	info.bitness = 1;
+	areas.push_back(info);
+
+	info.name = "VDP_DBG_CRAM";
+	info.startEA = info.endEA;
+	info.endEA = info.startEA + 0x10000;
+	info.bitness = 1;
+	areas.push_back(info);
+
+	info.name = "VDP_DBG_VSRAM";
+	info.startEA = info.endEA;
+	info.endEA = info.startEA + 0x10000;
+	info.bitness = 1;
+	areas.push_back(info);
+
+	return 1;
 }
 
 extern bool IsHardwareAddressValid(unsigned int address);
@@ -656,7 +700,128 @@ static int idaapi update_bpts(update_bpt_info_t *bpts, int nadd, int ndel)
 {
 	CHECK_FOR_START(0);
 
+	for (int i = 0; i < nadd; ++i)
+	{
+		ea_t start = bpts[i].ea;
+		ea_t end = bpts[i].ea + bpts[i].size - 1;
+		ushort type = 0;
+
+		switch (bpts[i].type)
+		{
+		case BPT_EXEC:
+			type = BRK_PC;
+			break;
+		case BPT_READ:
+			type = BRK_READ;
+			break;
+		case BPT_WRITE:
+			type = BRK_WRITE;
+			break;
+		case BPT_RDWR:
+			type = BRK_READ | BRK_WRITE;
+			break;
+		}
+
+		if (start >= 0xB0000000 && end < 0xB0030000)
+		{
+			start -= 0xB0000000;
+			end -= 0xB0000000;
+			type |= BRK_VDP;
+		}
+
+		Breakpoint b(start, end, true, type);
+		M68kDW.Breakpoints.remove(b);
+		M68kDW.Breakpoints.emplace_front(b);
+		bpts[i].code = BPT_OK;
+	}
+
+	for (int i = 0; i < ndel; ++i)
+	{
+		ea_t start = bpts[nadd + i].ea;
+		ea_t end = bpts[nadd + i].ea + bpts[nadd + i].size - 1;
+		ushort type = 0;
+		
+		switch (bpts[nadd + i].type)
+		{
+		case BPT_EXEC:
+			type = BRK_PC;
+			break;
+		case BPT_READ:
+			type = BRK_READ;
+			break;
+		case BPT_WRITE:
+			type = BRK_WRITE;
+			break;
+		case BPT_RDWR:
+			type = BRK_READ | BRK_WRITE;
+			break;
+		}
+
+		if (start >= 0xB0000000 && end < 0xB0030000)
+		{
+			start -= 0xB0000000;
+			end -= 0xB0000000;
+			type |= BRK_VDP;
+		}
+
+		Breakpoint b(start, end, true, type);
+		M68kDW.Breakpoints.remove(b);
+		bpts[nadd + i].code = BPT_OK;
+	}
+
 	return (ndel + nadd);
+}
+
+// Update low-level (server side) breakpoint conditions
+// Returns nlowcnds. -1-network error
+// This function is called from debthread
+static int idaapi update_lowcnds(const lowcnd_t *lowcnds, int nlowcnds)
+{
+	for (int i = 0; i < nlowcnds; ++i)
+	{
+		std::forward_list<Breakpoint>::iterator j, n;
+		j = M68kDW.Breakpoints.begin();
+		n = M68kDW.Breakpoints.end();
+
+		ea_t start = lowcnds[i].ea;
+		ea_t end = lowcnds[i].ea + lowcnds[i].size - 1;
+		ushort type = 0;
+
+		switch (lowcnds[i].type)
+		{
+		case BPT_EXEC:
+			type = BRK_PC;
+			break;
+		case BPT_READ:
+			type = BRK_READ;
+			break;
+		case BPT_WRITE:
+			type = BRK_WRITE;
+			break;
+		case BPT_RDWR:
+			type = BRK_READ | BRK_WRITE;
+			break;
+		}
+
+		if (start >= 0xB0000000 && end < 0xB0030000)
+		{
+			start -= 0xB0000000;
+			end -= 0xB0000000;
+			type = BRK_VDP;
+		}
+
+		Breakpoint b(start, end, true, type);
+		for (; j != n; ++j)
+		{
+			if (b == *j)
+			{
+				j->type |= (lowcnds[i].cndbody.empty() ? 0 : ((lowcnds[i].cndbody[0] == '1') ? BRK_FORBID : 0));
+				break;
+			}
+		}
+	}
+
+	return nlowcnds;
 }
 
 // Calculate the call stack trace
@@ -717,8 +882,8 @@ debugger_t debugger =
 	process_get_info,
 
 	start_process,
-	NULL, // vamos_attach_process,
-	NULL, // vamos_detach_process,
+	NULL, // attach_process,
+	NULL, // detach_process,
 	rebase_if_required_to,
 	prepare_to_pause_process,
 	mess_exit_process,
@@ -744,7 +909,7 @@ debugger_t debugger =
 
 	is_ok_bpt,
 	update_bpts,
-	NULL, // update_lowcnds,
+	update_lowcnds,
 
 	NULL, // open_file
 	NULL, // close_file

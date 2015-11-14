@@ -12,7 +12,7 @@
 // A copy of the GPL 2.0 should have been included with the program.
 // If not, see http ://www.gnu.org/licenses/
 
-#define VERSION "1.0.3"
+#define VERSION "1.0.4"
 
 #include <Windows.h>
 
@@ -32,22 +32,6 @@ extern debugger_t debugger;
 static bool plugin_inited;
 static bool dbg_started;
 
-static int _find_breakpoint(uint32 start, uint32 end, ushort type)
-{
-	std::forward_list<Breakpoint>::const_iterator i = M68kDW.Breakpoints.cbegin();
-	int idx = 0;
-
-	while (i != M68kDW.Breakpoints.cend())
-	{
-		if (i->start >= start && i->end <= end && i->type == type)
-			return idx;
-
-		idx++; i++;
-	}
-
-	return -1;
-}
-
 static int idaapi hook_dbg(void *user_data, int notification_code, va_list va)
 {
 	switch (notification_code)
@@ -59,78 +43,6 @@ static int idaapi hook_dbg(void *user_data, int notification_code, va_list va)
 	case dbg_notification_t::dbg_process_exit:
 		dbg_started = false;
 		break;
-
-	case dbg_notification_t::dbg_bpt_changed:
-	{
-		int bptev_code = va_arg(va, int);
-		bpt_t *bpt = va_arg(va, bpt_t *);
-
-		ushort type = 0;
-		int n = 0;
-
-		bool enabled = bpt->enabled();
-		type |= ((bpt->type & BPT_EXEC) ? BRK_PC : 0); // PC
-		type |= ((bpt->type & BPT_READ) ? BRK_READ : 0); // Read
-		type |= ((bpt->type & BPT_WRITE) ? BRK_WRITE : 0); // Write
-		type |= (bpt->cndbody.empty() ? 0 : ((bpt->cndbody[0] == '1') ? BRK_FORBID : 0)); // Forbid
-		type |= (bpt->cndbody.empty() ? 0 : ((bpt->cndbody[0] == '2') ? BRK_VDP : 0)); // VDP
-
-		if (bptev_code == BPTEV_ADDED)
-		{
-			char *bpt_dialog =
-				"Edit Breakpoint\n\n"
-				"<:A:13:13::>\n"
-				"<##Parameters##Enable:C>"
-				"<PC:C><Read:C><Write:C><Forbid:C>"
-	            "<VRAM:C>>\n"
-				"00000-0ffff = VRAM\n"
-				"10000-1ffff = CRAM\n"
-				"20000-2ffff = VSRAM\n";
-
-			char range[MAXSTR];
-			qsnprintf(range, sizeof(range), "%06X-%06X", bpt->ea, bpt->ea + bpt->size - 1);
-
-			ushort chkFlags = 0;
-			chkFlags |= (bpt->enabled()) << 0; // Enabled
-			chkFlags |= ((bpt->type & BPT_EXEC) ? 1 : 0) << 1; // PC
-			chkFlags |= ((bpt->type & BPT_READ) ? 1 : 0) << 2; // Read
-			chkFlags |= ((bpt->type & BPT_WRITE) ? 1 : 0) << 3; // Write
-			chkFlags |= (bpt->cndbody.empty() ? 0 : (bpt->cndbody[0] == '1')) << 4; // Forbid
-			chkFlags |= (bpt->cndbody.empty() ? 0 : (bpt->cndbody[0] == '2')) << 5; // VDP
-
-			if (AskUsingForm_c(bpt_dialog, range, &chkFlags) == 1)
-			{
-				uint32 start = 0, end = 0;
-				if (sscanf(range, "%x-%x", &start, &end) == 1)
-					end = start;
-				if (end < start)
-					end = start;
-
-				chkFlags >>= 1;
-				ushort type = 0;
-				type |= (chkFlags & 0x01) ? BRK_PC : 0;
-				type |= (chkFlags & 0x02) ? BRK_READ : 0;
-				type |= (chkFlags & 0x04) ? BRK_WRITE : 0;
-				type |= (chkFlags & 0x08) ? BRK_FORBID : 0;
-				type |= (chkFlags & 0x10) ? BRK_VDP : 0;
-
-				M68kDW.Breakpoints.emplace_front(Breakpoint(start, end, enabled, type));
-			}
-		}
-		else if (bptev_code == BPTEV_CHANGED)
-		{
-			Breakpoint b(bpt->ea, bpt->ea + bpt->size - 1, bpt->enabled(), type);
-			M68kDW.Breakpoints.remove(b);
-			b.enabled = enabled;
-			b.type = type;
-			M68kDW.Breakpoints.push_front(b);
-		}
-		else // BPTEV_REMOVED
-		{
-			Breakpoint b(bpt->ea, bpt->ea + bpt->size - 1, bpt->enabled(), type);
-			M68kDW.Breakpoints.remove(b);
-		}
-	} break;
 	}
 	return 0;
 }
