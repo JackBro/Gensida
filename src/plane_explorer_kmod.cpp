@@ -26,6 +26,7 @@ static void PlaneExplorerInit_KMod(HWND hDlg)
     HWND hexplorer;
     RECT rc;
 
+	CheckDlgButton(hDlg, IDC_PLANEEXPLORER_TRANS, BST_UNCHECKED);
     CheckRadioButton(hDlg, IDC_PLANEEXPLORER_PLANE_A, IDC_PLANEEXPLORER_PLANE_B, IDC_PLANEEXPLORER_PLANE_A);
     hexplorer = (HWND)GetDlgItem(hDlg, IDC_PLANEEXPLORER_MAIN);
     GetClientRect(hDlg, &rc);
@@ -172,9 +173,12 @@ static void PlaneExplorer_UpdateBitmap(HWND hwnd, int plane)
     unsigned int plane_height = 32 + ((VDP_Reg.Scr_Size >> 4) & 0x3) * 32;
     unsigned int plane_a_base = (VDP_Reg.Pat_ScrA_Adr & 0x38) << 10;
     unsigned int plane_b_base = (VDP_Reg.Pat_ScrB_Adr & 0x7) << 13;
+	unsigned int plane_w_base = (VDP_Reg.Pat_Win_Adr & ((VDP_Reg.Set4 & 0x81) ? 0x3C : 0x3E)) << 10;
+
     unsigned short * plane_a = (unsigned short *)(&VRam[plane_a_base]);
     unsigned short * plane_b = (unsigned short *)(&VRam[plane_b_base]);
-    unsigned short * plane_data = (plane == 0) ? plane_a : plane_b;
+	unsigned short * plane_w = (unsigned short *)(&VRam[plane_w_base]);
+	unsigned short * plane_data = (plane == 0) ? plane_a : ((plane == 1) ? plane_b : plane_w);
 
     if (plane_width != old_plane_width ||
         plane_height != old_plane_height)
@@ -228,13 +232,8 @@ static void PlaneExplorerPaint_KMod(HWND hwnd, LPDRAWITEMSTRUCT lpdi)
         }
     };
 
-    int plane;
-
     PlaneExplorer_UpdatePalette();
-
-    plane = (int)SendDlgItemMessage(hwnd, IDC_PLANEEXPLORER_PLANE_A, BM_GETCHECK, 0, 0) ? 0 : 1;
-
-    PlaneExplorer_UpdateBitmap(hwnd, plane);
+	PlaneExplorer_UpdateBitmap(hwnd, plane_explorer_plane);
 
     memcpy(bmi.palette, plane_explorer_palette, sizeof(bmi.palette));
 
@@ -257,8 +256,9 @@ void PlaneExplorer_GetTipText(int x, int y, char * buffer)
 
     unsigned int plane_a_base = (VDP_Reg.Pat_ScrA_Adr & 0x38) << 10;
     unsigned int plane_b_base = (VDP_Reg.Pat_ScrB_Adr & 0x7) << 13;
-    unsigned int base = plane_explorer_plane ? plane_b_base : plane_a_base;
-    char plane_char = plane_explorer_plane ? 'B' : 'A';
+	unsigned int plane_w_base = (VDP_Reg.Pat_Win_Adr & ((VDP_Reg.Set4 & 0x81) ? 0x3C : 0x3E)) << 10;
+	unsigned int base = (plane_explorer_plane == 0) ? plane_a_base : ((plane_explorer_plane == 1) ? plane_b_base : plane_w_base);
+	char plane_char = (plane_explorer_plane == 0) ? 'A' : ((plane_explorer_plane == 1) ? 'B' : 'W');
     unsigned int tile_addr = base + ((y >> 3) * plane_size_x + (x >> 3)) * 2;
     union PATTERN_NAME name;
 
@@ -309,6 +309,10 @@ BOOL CALLBACK PlaneExplorerDialogProc(HWND hwnd, UINT Message, WPARAM wParam, LP
             plane_explorer_plane = 1;
             InvalidateRect(hwnd, NULL, FALSE);
             break;
+		case IDC_PLANEEXPLORER_WINDOW:
+			plane_explorer_plane = 2;
+			InvalidateRect(hwnd, NULL, FALSE);
+			break;
         case IDC_PLANEEXPLORER_TRANS:
 			show_transparence = (IsDlgButtonChecked(hwnd, IDC_PLANEEXPLORER_TRANS) == BST_CHECKED);
             InvalidateRect(hwnd, NULL, FALSE);
