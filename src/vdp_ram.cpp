@@ -38,7 +38,7 @@ HBITMAP VDPRamMemBMP;
 HBITMAP VDPRamLastBMP;
 BITMAPINFO MemBMPi;
 COLORREF *MemBMPBits;
-int VDPRamPal;
+int VDPRamPal, VDPRamTile;
 #define VDP_RAM_VCOUNT 20
 
 void Update_VDP_RAM()
@@ -162,7 +162,7 @@ LRESULT CALLBACK VDPRamProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
         //VDPRamMemBMP=CreateCompatibleBitmap(hdc,8*16,(sizeof(VRam)/32/16)*8+8);
         VDPRamMemBMP = CreateDIBSection(VDPRamMemDC, &MemBMPi, DIB_RGB_COLORS, (void **)&MemBMPBits, NULL, NULL);
         VDPRamLastBMP = (HBITMAP)SelectObject(VDPRamMemDC, VDPRamMemBMP);
-        VDPRamPal = 0;
+        VDPRamPal = VDPRamTile = 0;
         //memset(&MemBMPi,0,sizeof(MemBMPi));
         //MemBMPi.bmiHeader.biSize=sizeof(MemBMPi.bmiHeader);
         //GetDIBits(VDPRamMemDC,VDPRamMemBMP,0,0,NULL,&MemBMPi,DIB_RGB_COLORS);
@@ -463,13 +463,25 @@ LRESULT CALLBACK VDPRamProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
         SelectObject(VDPRamMemDC, VDPRamMemBMP);
 #undef _GetPal
         int scroll = GetScrollPos(GetDlgItem(hDlg, IDC_SCROLLBAR1), SB_CTL);
-        StretchBlt(ps.hdc, 5, 5 + 4 * 16 + 5, 8 * 16 * 2, VDP_RAM_VCOUNT * 8 * 2, VDPRamMemDC, 0, scroll * 8, 8 * 16, VDP_RAM_VCOUNT * 8, SRCCOPY);
-        StretchBlt(ps.hdc, 5, 5, 16 * 16, 4 * 16, VDPRamMemDC, 0, MemBMPi.bmiHeader.biHeight - 8, 16, 4, SRCCOPY);
+        StretchBlt(ps.hdc, 5, 5 + 4 * 16 + 5, 8 * 16 * 2, VDP_RAM_VCOUNT * 8 * 2, VDPRamMemDC, 0, scroll * 8, 8 * 16, VDP_RAM_VCOUNT * 8, SRCCOPY); // VRAM
+        StretchBlt(ps.hdc, 5, 5, 16 * 16, 4 * 16, VDPRamMemDC, 0, MemBMPi.bmiHeader.biHeight - 8, 16, 4, SRCCOPY); // CRAM
+		StretchBlt(ps.hdc, 5 + 16 * 16 + 16 + 8, 295, 64, 64, VDPRamMemDC, (VDPRamTile % 16) << 3, (VDPRamTile >> 4) << 3, 8, 8, SRCCOPY); // Selected Tile
+
         r.left = 5;
-        r.right = 5 + 16 * 16;
+		r.right = r.left + 16 * 16;
         r.top = 5 + VDPRamPal;
-        r.bottom = 5 + 16 + VDPRamPal;
+		r.bottom = r.top + 16;
         DrawFocusRect(ps.hdc, &r);
+
+		r.left = 5 + ((VDPRamTile % 16) << 4);
+		r.right = r.left + 16;
+		int row = (VDPRamTile >> 4) - scroll;
+		r.top = 5 + 4 * 16 + 5 + (row << 4);
+		r.bottom = r.top + 16;
+
+		if (row >= 0 && row < VDP_RAM_VCOUNT)
+			DrawFocusRect(ps.hdc, &r);
+
         EndPaint(hDlg, &ps);
         return true;
     }	break;
@@ -478,33 +490,33 @@ LRESULT CALLBACK VDPRamProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
     {
         int x = LOWORD(lParam) - 5;
         int y = HIWORD(lParam) - 5;
-        if (x >= 0 &&
-            x < 16 * 16 &&
-            y >= 0 &&
-            y <= 16 * 4)
+        if (x >= 0 && x < 16 * 16 &&
+            y >= 0 && y <= 16 * 4)
         {
             VDPRamPal = y & 0x30;
             Update_VDP_RAM();
         }
-    }	break;
+		else
+		{
+			x = LOWORD(lParam) - 5;
+			y = HIWORD(lParam) - (5 + 4 * 16 + 5);
 
-    case WM_MOUSEMOVE:
-    {
-        int x = LOWORD(lParam) - 5;
-        int y = HIWORD(lParam) - (5 + 4 * 16 + 5);
-        if (x >= 0 &&
-            x < 16 * 16 &&
-            y >= 0 &&
-            y <= VDP_RAM_VCOUNT * 8 * 2)
-        {
-            HDC dc = GetDC(hDlg);
-            int scroll = GetScrollPos(GetDlgItem(hDlg, IDC_SCROLLBAR1), SB_CTL);
-            StretchBlt(dc, 5 + 16 * 16 + 16 + 8, 295, 64, 64, VDPRamMemDC, (x >> 4) << 3, ((y >> 4) + scroll) << 3, 8, 8, SRCCOPY);
-            ReleaseDC(hDlg, dc);
-            char buff[30];
-            sprintf(buff, "Offset: %04X\r\nId: %03X", (((y >> 4) + scroll) << 9) + ((x >> 4) << 5), (((y >> 4) + scroll) << 4) + (x >> 4));
-            SetDlgItemText(hDlg, IDC_EDIT1, buff);
-        }
+			if (x >= 0 &&
+				x < 16 * 16 &&
+				y >= 0 &&
+				y < VDP_RAM_VCOUNT * 8 * 2)
+			{
+				int scroll = GetScrollPos(GetDlgItem(hDlg, IDC_SCROLLBAR1), SB_CTL);
+
+				char buff[30];
+				int offset = (((y >> 4) + scroll) << 9) + ((x >> 4) << 5);
+				int id = VDPRamTile = (((y >> 4) + scroll) << 4) + (x >> 4);
+				sprintf(buff, "Offset: %04X\r\nId: %03X", offset, id);
+				SetDlgItemText(hDlg, IDC_TILE_INFO, buff);
+
+				Update_VDP_RAM();
+			}
+		}
     }	break;
 
     case WM_CLOSE:
