@@ -2058,7 +2058,7 @@ int PASCAL WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR lpCmdLine, int nC
     // see the mp3 decoder's error messages, etc.
     // ...I'd rather redirect stdout/stderr to OutputDebugString() though
     // but I can't figure out how to do that so this is the next best thing
-    RedirectIOToConsole();
+    //RedirectIOToConsole();
 #endif
 
     ///////////////////////////////////////////////////

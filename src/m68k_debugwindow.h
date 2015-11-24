@@ -12,6 +12,7 @@ struct M68kDebugWindow :DebugWindow
 
     void DoStepOver();
     void TracePC(int pc);
+	void TraceRegValue(unsigned char reg_idx, uint32 value, bool is_vdp);
     void TraceRead(uint32 start, uint32 stop, bool is_vdp);
 	void TraceWrite(uint32 start, uint32 stop, bool is_vdp);
     ~M68kDebugWindow();

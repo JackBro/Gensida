@@ -31,6 +31,10 @@ eventlist_t g_events;
 bool stopped = true;
 qthread_t gens_thread = NULL;
 
+uint16 allow0_breaks = 0;
+uint32 allow1_breaks = 0;
+uint32 break_regs[16 + 24] = { 0 };
+
 #define CHECK_FOR_START(x) {if (stopped) return x;}
 
 static const char *const SRReg[] =
@@ -53,6 +57,54 @@ static const char *const SRReg[] =
 	"T"
 };
 
+static const char *const ALLOW_FLAGS_DA[] =
+{
+	"A07",
+	"A06",
+	"A05",
+	"A04",
+	"A03",
+	"A02",
+	"A01",
+	"A00",
+
+	"D07",
+	"D06",
+	"D05",
+	"D04",
+	"D03",
+	"D02",
+	"D01",
+	"D00",
+};
+
+static const char *const ALLOW_FLAGS_V[] =
+{
+	"V23",
+	"V22",
+	"V21",
+	"V20",
+	"V19",
+	"V18",
+	"V17",
+	"V16",
+	"V15",
+	"V14",
+	"V13",
+	"V12",
+	"V11",
+	"V10",
+	"V09",
+	"V08",
+	"V07",
+	"V06",
+	"V05",
+	"V04",
+	"V03",
+	"V02",
+	"V01",
+	"V00",
+};
 
 register_info_t registers[] =
 {
@@ -78,34 +130,88 @@ register_info_t registers[] =
 
 	{ "SR", NULL, RC_GENERAL, dt_word, SRReg, 0xFFFF },
 
-	{ "MODE1", NULL, RC_VDP, dt_byte, NULL, 0 },
-	{ "MODE2", NULL, RC_VDP, dt_byte, NULL, 0 },
-	{ "PLANE_A_ADDR", NULL, RC_VDP, dt_word, NULL, 0 },
-	{ "WINDOW_ADDR", NULL, RC_VDP, dt_word, NULL, 0 },
-	{ "PLANE_B_ADDR", NULL, RC_VDP, dt_word, NULL, 0 },
-	{ "SPRITE_TBL_ADDR", NULL, RC_VDP, dt_word, NULL, 0 },
-	{ "SPRITES_REBASE", NULL, RC_VDP, dt_byte, NULL, 0 },
-	{ "BACK_COLOR", NULL, RC_VDP, dt_byte, NULL, 0 },
-	{ "HBLANK_COUNTER", NULL, RC_VDP, dt_byte, NULL, 0 },
-	{ "MODE3", NULL, RC_VDP, dt_byte, NULL, 0 },
-	{ "MODE4", NULL, RC_VDP, dt_byte, NULL, 0 },
-	{ "HSCROLL_TBL_ADDR", NULL, RC_VDP, dt_word, NULL, 0 },
-	{ "PLANES_REBASE", NULL, RC_VDP, dt_byte, NULL, 0 },
-	{ "AUTO_INC_VALUE", NULL, RC_VDP, dt_byte, NULL, 0 },
-	{ "PLANES_SIZE", NULL, RC_VDP, dt_byte, NULL, 0 },
-	{ "WINDOW_HPOS", NULL, RC_VDP, dt_byte, NULL, 0 },
-	{ "WINDOW_VPOS", NULL, RC_VDP, dt_byte, NULL, 0 },
-	{ "DMA_LEN", NULL, RC_VDP, dt_word, NULL, 0 },
-	//{ "DMA_LEN_HIGH", NULL, RC_VDP, dt_byte, NULL, 0 },
-	{ "DMA_SRC", NULL, RC_VDP, dt_3byte, NULL, 0 },
-	//{ "DMA_SRC_MID", NULL, RC_VDP, dt_byte, NULL, 0 },
-	//{ "DMA_SRC_HIGH", NULL, RC_VDP, dt_byte, NULL, 0 },
+	{ "DMA_LEN", REGISTER_READONLY, RC_GENERAL, dt_word, NULL, 0 },
+	{ "DMA_SRC", REGISTER_ADDRESS | REGISTER_READONLY, RC_GENERAL, dt_3byte, NULL, 0 },
+	{ "VDP_DST", REGISTER_ADDRESS | REGISTER_READONLY, RC_GENERAL, dt_dword, NULL, 0 },
+
+	// Register Breakpoints
+	{ "ALLOW0", NULL, RC_BREAK, dt_word, ALLOW_FLAGS_DA, 0xFFFF },
+	{ "ALLOW1", NULL, RC_BREAK, dt_3byte, ALLOW_FLAGS_V, 0xFFFFFF },
+	{ "D00", REGISTER_ADDRESS, RC_BREAK, dt_dword, NULL, 0 },
+	{ "D01", REGISTER_ADDRESS, RC_BREAK, dt_dword, NULL, 0 },
+	{ "D02", REGISTER_ADDRESS, RC_BREAK, dt_dword, NULL, 0 },
+	{ "D03", REGISTER_ADDRESS, RC_BREAK, dt_dword, NULL, 0 },
+	{ "D04", REGISTER_ADDRESS, RC_BREAK, dt_dword, NULL, 0 },
+	{ "D05", REGISTER_ADDRESS, RC_BREAK, dt_dword, NULL, 0 },
+	{ "D06", REGISTER_ADDRESS, RC_BREAK, dt_dword, NULL, 0 },
+	{ "D07", REGISTER_ADDRESS, RC_BREAK, dt_dword, NULL, 0 },
+
+	{ "A00", REGISTER_ADDRESS, RC_BREAK, dt_dword, NULL, 0 },
+	{ "A01", REGISTER_ADDRESS, RC_BREAK, dt_dword, NULL, 0 },
+	{ "A02", REGISTER_ADDRESS, RC_BREAK, dt_dword, NULL, 0 },
+	{ "A03", REGISTER_ADDRESS, RC_BREAK, dt_dword, NULL, 0 },
+	{ "A04", REGISTER_ADDRESS, RC_BREAK, dt_dword, NULL, 0 },
+	{ "A05", REGISTER_ADDRESS, RC_BREAK, dt_dword, NULL, 0 },
+	{ "A06", REGISTER_ADDRESS, RC_BREAK, dt_dword, NULL, 0 },
+	{ "A07", REGISTER_ADDRESS, RC_BREAK, dt_dword, NULL, 0 },
+
+	{ "V00", NULL, RC_BREAK, dt_byte, NULL, 0 },
+	{ "V01", NULL, RC_BREAK, dt_byte, NULL, 0 },
+	{ "V02", NULL, RC_BREAK, dt_byte, NULL, 0 },
+	{ "V03", NULL, RC_BREAK, dt_byte, NULL, 0 },
+	{ "V04", NULL, RC_BREAK, dt_byte, NULL, 0 },
+	{ "V05", NULL, RC_BREAK, dt_byte, NULL, 0 },
+	{ "V06", NULL, RC_BREAK, dt_byte, NULL, 0 },
+	{ "V07", NULL, RC_BREAK, dt_byte, NULL, 0 },
+	{ "V08", NULL, RC_BREAK, dt_byte, NULL, 0 },
+	{ "V09", NULL, RC_BREAK, dt_byte, NULL, 0 },
+	{ "V10", NULL, RC_BREAK, dt_byte, NULL, 0 },
+	{ "V11", NULL, RC_BREAK, dt_byte, NULL, 0 },
+	{ "V12", NULL, RC_BREAK, dt_byte, NULL, 0 },
+	{ "V13", NULL, RC_BREAK, dt_byte, NULL, 0 },
+	{ "V14", NULL, RC_BREAK, dt_byte, NULL, 0 },
+	{ "V15", NULL, RC_BREAK, dt_byte, NULL, 0 },
+	{ "V16", NULL, RC_BREAK, dt_byte, NULL, 0 },
+	{ "V17", NULL, RC_BREAK, dt_byte, NULL, 0 },
+	{ "V18", NULL, RC_BREAK, dt_byte, NULL, 0 },
+	{ "V19", NULL, RC_BREAK, dt_byte, NULL, 0 },
+	{ "V20", NULL, RC_BREAK, dt_byte, NULL, 0 },
+	{ "V21", NULL, RC_BREAK, dt_byte, NULL, 0 },
+	{ "V22", NULL, RC_BREAK, dt_byte, NULL, 0 },
+	{ "V23", NULL, RC_BREAK, dt_byte, NULL, 0 },
+
+	// VDP Registers
+	{ "$00", NULL, RC_VDP, dt_byte, NULL, 0 },
+	{ "$01", NULL, RC_VDP, dt_byte, NULL, 0 },
+	{ "$02", NULL, RC_VDP, dt_byte, NULL, 0 },
+	{ "$03", NULL, RC_VDP, dt_byte, NULL, 0 },
+	{ "$04", NULL, RC_VDP, dt_byte, NULL, 0 },
+	{ "$05", NULL, RC_VDP, dt_byte, NULL, 0 },
+	{ "$06", NULL, RC_VDP, dt_byte, NULL, 0 },
+	{ "$07", NULL, RC_VDP, dt_byte, NULL, 0 },
+	{ "$08", NULL, RC_VDP, dt_byte, NULL, 0 },
+	{ "$09", NULL, RC_VDP, dt_byte, NULL, 0 },
+	{ "$10", NULL, RC_VDP, dt_byte, NULL, 0 },
+	{ "$11", NULL, RC_VDP, dt_byte, NULL, 0 },
+	{ "$12", NULL, RC_VDP, dt_byte, NULL, 0 },
+	{ "$13", NULL, RC_VDP, dt_byte, NULL, 0 },
+	{ "$14", NULL, RC_VDP, dt_byte, NULL, 0 },
+	{ "$15", NULL, RC_VDP, dt_byte, NULL, 0 },
+	{ "$16", NULL, RC_VDP, dt_byte, NULL, 0 },
+	{ "$17", NULL, RC_VDP, dt_byte, NULL, 0 },
+	{ "$18", NULL, RC_VDP, dt_byte, NULL, 0 },
+	{ "$19", NULL, RC_VDP, dt_byte, NULL, 0 },
+	{ "$20", NULL, RC_VDP, dt_byte, NULL, 0 },
+	{ "$21", NULL, RC_VDP, dt_byte, NULL, 0 },
+	{ "$22", NULL, RC_VDP, dt_byte, NULL, 0 },
+	{ "$23", NULL, RC_VDP, dt_byte, NULL, 0 },
 };
 
 static const char *register_classes[] =
 {
 	"General Registers",
 	"VDP Registers",
+	"Register Breakpoints",
 	NULL
 };
 
@@ -158,7 +264,7 @@ inline static void toggle_pause()
 
 static void pause_execution()
 {
-	M68kDW.DummyHWnd = (HWND)0;
+	M68kDW.DebugStop = false;
 
 	if (Paused) return;
 	toggle_pause();
@@ -166,7 +272,7 @@ static void pause_execution()
 
 static void continue_execution()
 {
-	M68kDW.DummyHWnd = (HWND)0;
+	M68kDW.DebugStop = false;
 
 	if (!Paused) return;
 	toggle_pause();
@@ -273,10 +379,12 @@ static int idaapi start_process(const char *path,
 
 	uint32 start = get_entry_point(path);
 
-	Breakpoint b(start, start, true, BRK_PC);
+	Breakpoint b(start & 0xFFFFFF, start & 0xFFFFFF, true, BRK_PC);
 	M68kDW.Breakpoints.remove(b);
 	M68kDW.Breakpoints.emplace_front(b);
 
+	allow0_breaks = allow1_breaks = 0;
+	g_events.clear();
 	stopped = false;
 	prepare_codemap();
 	gens_thread = qthread_create(gens_process, NULL);
@@ -319,7 +427,9 @@ static int idaapi mess_exit_process(void)
 	HWND hwndGens = FindWindowEx(NULL, NULL, "Gens", NULL);
 
 	if (hwndGens != NULL)
+	{
 		SendMessage(hwndGens, WM_CLOSE, 0, 0);
+	}
 
 	return 1;
 }
@@ -400,11 +510,11 @@ static int do_step(dbg_notification_t idx)
 	{
 	case dbg_step_into:
 		M68kDW.StepInto = 1;
-		M68kDW.DummyHWnd = (HWND)0;
+		M68kDW.DebugStop = false;
 		break;
 	case dbg_step_over:
 		M68kDW.DoStepOver();
-		M68kDW.DummyHWnd = (HWND)0;
+		M68kDW.DebugStop = false;
 		break;
 	}
 	
@@ -452,37 +562,44 @@ static int idaapi read_registers(thid_t tid, int clsmask, regval_t *values)
 
 		values[R_PC].ival = M68kDW.last_pc;
 		values[R_SR].ival = main68k_context.sr;
+
+		values[R_VDP_DMA_LEN].ival = VDP_Reg.regs[R_DR19 - R_DR00] | (VDP_Reg.regs[R_DR20 - R_DR00] << 8);
+
+		values[R_VDP_DMA_SRC].ival = VDP_Reg.regs[R_DR21 - R_DR00] | (VDP_Reg.regs[R_DR22 - R_DR00] << 8);
+		UINT16 dma_high = VDP_Reg.regs[R_DR23 - R_DR00];
+		if (!(dma_high & 0x80))
+			values[R_VDP_DMA_SRC].ival |= ((VDP_Reg.regs[R_DR23 - R_DR00] & mask(0, 7)) << 16);
+		else
+			values[R_VDP_DMA_SRC].ival |= ((VDP_Reg.regs[R_DR23 - R_DR00] & mask(0, 6)) << 16);
+		values[R_VDP_DMA_SRC].ival <<= 1;
+
+		values[R_VDP_WRITE_ADDR].ival = 0xB0000000;
+		switch (Ctrl.Access)
+		{
+		case 0x09: // VRAM
+		case 0x0A: // CRAM
+		case 0x0B: // VSRAM
+			values[R_VDP_WRITE_ADDR].ival = (0xB0000000 + 0x10000 * (Ctrl.Access - 0x09)) + Ctrl.Address;
+			break;
+		}
 	}
 
 	if (clsmask & RC_VDP)
 	{
-		unsigned int *vdpRegs = (unsigned int *)&VDP_Reg;
-		values[R_DR00].ival = vdpRegs[R_DR00 - R_DR00];
-		values[R_DR01].ival = vdpRegs[R_DR01 - R_DR00];
-		values[R_DR02].ival = (vdpRegs[R_DR02 - R_DR00] & mask(3, 3)) << 10;
-		values[R_DR03].ival = (vdpRegs[R_DR03 - R_DR00] & mask(1, 5)) << 10;
-		values[R_DR04].ival = (vdpRegs[R_DR04 - R_DR00] & mask(0, 3)) << 13;
-		values[R_DR05].ival = (vdpRegs[R_DR05 - R_DR00] & mask(0, 7)) << 9;
-		values[R_DR06].ival = vdpRegs[R_DR06 - R_DR00];
-		values[R_DR07].ival = vdpRegs[R_DR07 - R_DR00];
-		values[R_DR08].ival = vdpRegs[R_DR10 - R_DR00];
-		values[R_DR09].ival = vdpRegs[R_DR11 - R_DR00];
-		values[R_DR10].ival = vdpRegs[R_DR12 - R_DR00];
-		values[R_DR11].ival = (vdpRegs[R_DR13 - R_DR00] & mask(0, 6)) << 10;
-		values[R_DR12].ival = vdpRegs[R_DR14 - R_DR00];
-		values[R_DR13].ival = vdpRegs[R_DR15 - R_DR00];
-		values[R_DR14].ival = vdpRegs[R_DR16 - R_DR00];
-		values[R_DR15].ival = vdpRegs[R_DR17 - R_DR00];
-		values[R_DR16].ival = vdpRegs[R_DR18 - R_DR00];
-		values[R_DR17].ival = vdpRegs[R_DR19 - R_DR00] | (vdpRegs[R_DR20 - R_DR00] << 8);
-		values[R_DR18].ival = vdpRegs[R_DR21 - R_DR00] | (vdpRegs[R_DR22 - R_DR00] << 8);
+		for (int i = 0; i < 24; ++i)
+		{
+			values[R_DR00 + i].ival = VDP_Reg.regs[i];
+		}
+	}
 
-		UINT16 dma_high = vdpRegs[R_DR23 - R_DR00];
-		if (!(dma_high & 0x80))
-			values[R_DR18].ival |= ((vdpRegs[R_DR23 - R_DR00] & mask(0, 7)) << 16);
-		else
-			values[R_DR18].ival |= ((vdpRegs[R_DR23 - R_DR00] & mask(0, 6)) << 16);
-		values[R_DR18].ival <<= 1;
+	if (clsmask & RC_BREAK)
+	{
+		values[R_B_ALLOW0].ival = allow0_breaks;
+		values[R_B_ALLOW1].ival = allow1_breaks;
+		for (int i = 0; i < (16 + 24); ++i)
+		{
+			values[R_B00 + i].ival = break_regs[i];
+		}
 	}
 
 	return 1;
@@ -498,81 +615,35 @@ static int idaapi write_register(thid_t tid, int regidx, const regval_t *value)
 {
 	if (regidx >= R_D0 && regidx <= R_D7)
 	{
-		main68k_context.dreg[regidx - R_D0] = (unsigned int)value->ival;
+		main68k_context.dreg[regidx - R_D0] = (uint32)value->ival;
 	}
 	else if (regidx >= R_A0 && regidx <= R_A7)
 	{
-		main68k_context.areg[regidx - R_A0] = (unsigned int)value->ival;
+		main68k_context.areg[regidx - R_A0] = (uint32)value->ival;
 	}
 	else if (regidx == R_PC)
 	{
-		main68k_context.pc = (unsigned int)value->ival;
+		main68k_context.pc = (uint32)value->ival;
 	}
 	else if (regidx == R_SR)
 	{
-		main68k_context.sr = (unsigned short)value->ival;
+		main68k_context.sr = (uint16)value->ival;
 	}
-	else if (regidx >= R_DR00 && regidx < R_DR23)
+	else if (regidx >= R_DR00 && regidx <= R_DR23)
 	{
-		unsigned int *vdpRegs = (unsigned int *)&VDP_Reg;
-		regval_t val = *value;
-
-		switch ((register_t)regidx)
-		{
-		case R_DR02:
-			val.ival >>= 10;
-			val.ival &= mask(3, 3);
-			break;
-		case R_DR03:
-			val.ival >>= 10;
-			val.ival &= mask(1, 5);
-			break;
-		case R_DR04:
-			val.ival >>= 13;
-			val.ival &= mask(0, 3);
-			break;
-		case R_DR05:
-			val.ival >>= 9;
-			val.ival &= mask(0, 7);
-			break;
-		case R_DR13:
-			val.ival >>= 10;
-			val.ival &= mask(0, 6);
-			break;
-		case R_DR17:
-			val.ival >>= 8;
-			val.ival &= 0xFF;
-			vdpRegs[R_DR20 - R_DR00] = (unsigned int)val.ival;
-
-			val = *value;
-			val.ival &= 0xFF;
-			regidx = R_DR19;
-			break;
-		case R_DR18:
-			val.ival >>= 1;
-			val.ival >>= 16;
-			val.ival &= 0xFF;
-
-			if (!(val.ival & 0x80))
-				val.ival &= mask(0, 7);
-			else
-				val.ival &= mask(0, 6);
-
-			vdpRegs[R_DR23 - R_DR00] = (unsigned int)val.ival;
-
-			val = *value;
-			val.ival >>= 1;
-			val.ival >>= 8;
-			val.ival &= 0xFF;
-			vdpRegs[R_DR22 - R_DR00] = (unsigned int)val.ival;
-
-			val = *value;
-			val.ival >>= 1;
-			val.ival &= 0xFF;
-			regidx = R_DR21;
-			break;
-		}
-		vdpRegs[regidx - R_DR00] = (unsigned int)val.ival;
+		VDP_Reg.regs[regidx - R_DR00] = (uint32)value->ival;
+	}
+	else if (regidx == R_B_ALLOW0)
+	{
+		allow0_breaks = (uint16)value->ival;
+	}
+	else if (regidx == R_B_ALLOW1)
+	{
+		allow1_breaks = (uint32)value->ival;
+	}
+	else if (regidx >= R_B00 && regidx <= R_B39)
+	{
+		break_regs[regidx - R_B00] = (uint32)value->ival;
 	}
 
 	return 1;
@@ -610,24 +681,24 @@ static int idaapi get_memory_info(meminfo_vec_t &areas)
 		info.sclass = buf;
 
 		info.sbase = 0;
-		info.perm = 0 | SEGPERM_READ | SEGPERM_WRITE;
+		info.perm = SEGPERM_READ | SEGPERM_WRITE;
 		info.bitness = 1;
 		areas.push_back(info);
 	}
 
-	info.name = "VDP_DBG_VRAM";
+	info.name = "DBG_VDP_VRAM";
 	info.startEA = 0xB0000000;
 	info.endEA = info.startEA + 0x10000;
 	info.bitness = 1;
 	areas.push_back(info);
 
-	info.name = "VDP_DBG_CRAM";
+	info.name = "DBG_VDP_CRAM";
 	info.startEA = info.endEA;
 	info.endEA = info.startEA + 0x10000;
 	info.bitness = 1;
 	areas.push_back(info);
 
-	info.name = "VDP_DBG_VSRAM";
+	info.name = "DBG_VDP_VSRAM";
 	info.startEA = info.endEA;
 	info.endEA = info.startEA + 0x10000;
 	info.bitness = 1;
@@ -653,10 +724,7 @@ static ssize_t idaapi read_memory(ea_t ea, void *buffer, size_t size)
 			unsigned char value = (unsigned char)(ReadValueAtHardwareAddress(ea + i, 1) & 0xFF);
 			((UINT8*)buffer)[i] = value;
 		}
-		else // else leave the value nil
-		{
-			i = i;
-		}
+		// else leave the value nil
 	}
 
 	return size;
@@ -729,7 +797,7 @@ static int idaapi update_bpts(update_bpt_info_t *bpts, int nadd, int ndel)
 			type |= BRK_VDP;
 		}
 
-		Breakpoint b(start, end, true, type);
+		Breakpoint b(start & 0xFFFFFF, end & 0xFFFFFF, true, type);
 		M68kDW.Breakpoints.remove(b);
 		M68kDW.Breakpoints.emplace_front(b);
 		bpts[i].code = BPT_OK;
@@ -764,7 +832,7 @@ static int idaapi update_bpts(update_bpt_info_t *bpts, int nadd, int ndel)
 			type |= BRK_VDP;
 		}
 
-		Breakpoint b(start, end, true, type);
+		Breakpoint b(start & 0xFFFFFF, end & 0xFFFFFF, true, type);
 		M68kDW.Breakpoints.remove(b);
 		bpts[nadd + i].code = BPT_OK;
 	}
@@ -807,10 +875,10 @@ static int idaapi update_lowcnds(const lowcnd_t *lowcnds, int nlowcnds)
 		{
 			start -= 0xB0000000;
 			end -= 0xB0000000;
-			type = BRK_VDP;
+			type |= BRK_VDP;
 		}
 
-		Breakpoint b(start, end, true, type);
+		Breakpoint b(start & 0xFFFFFF, end & 0xFFFFFF, true, type);
 		for (; j != n; ++j)
 		{
 			if (b == *j)

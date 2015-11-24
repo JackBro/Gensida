@@ -95,7 +95,7 @@ static int idaapi hook_ui(void *user_data, int notification_code, va_list va)
 			return 0;
 
 		idaplace_t &pl = *(idaplace_t *)place;
-		if (ua_ana0(pl.ea) && dbg_started)
+		if (decode_insn(pl.ea) && dbg_started)
 		{
 			insn_t _cmd = cmd;
 

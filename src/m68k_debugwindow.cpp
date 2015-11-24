@@ -47,10 +47,6 @@ void M68kDebugWindow::TracePC(int pc)
     if (StepInto || StepOver == hook_pc)
     {
         br = true;
-        if (StepInto)
-            SetWhyBreak("StepInto");
-        else
-            SetWhyBreak("StepOver");
 
 		debug_event_t ev;
 		ev.eid = STEP;
@@ -94,6 +90,18 @@ void M68kDebugWindow::TracePC(int pc)
         if (!callstack.empty())
             callstack.pop_back();
     }
+}
+
+void M68kDebugWindow::TraceRegValue(uint8 reg_idx, uint32 value, bool is_vdp)
+{
+	handled_ida_event = false;
+	if (BreakRegValue(last_pc, reg_idx, value, is_vdp))
+	{
+		char bwhy[50];
+		sprintf(bwhy, "Reg[%02d] value break: %08X [%s]", reg_idx, value, is_vdp ? "VDP" : "M68K");
+		SetWhyBreak(bwhy);
+		Breakpoint(last_pc);
+	}
 }
 
 void M68kDebugWindow::TraceRead(uint32 start, uint32 stop, bool is_vdp)

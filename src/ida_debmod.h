@@ -15,6 +15,8 @@
 //        int create_thread(thread_cb_t thread_cb, void *context);
 //
 
+#undef INLINE
+
 #include <deque>
 #include <ida.hpp>
 #include <idd.hpp>

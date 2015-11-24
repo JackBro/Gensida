@@ -7,19 +7,28 @@
 
 #define WM_DEBUG_DUMMY_EXIT (WM_USER+1000)
 
-#define BRK_PC     0x000001
-#define BRK_READ   0x000002
-#define BRK_WRITE  0x000004
-#define BRK_VDP    0x000010
-#define BRK_FORBID 0x000100
+#define BRK_PC      0x000001
+#define BRK_READ    0x000002
+#define BRK_WRITE   0x000004
+#define BRK_VDP     0x000010
+#define BRK_FORBID  0x000100
 
 typedef unsigned int uint32;
 typedef unsigned short ushort;
 
 struct Breakpoint
 {
-    uint32 start;
-    uint32 end;
+	union
+	{
+		uint32 start;
+		uint32 reg_idx;
+	};
+	union
+	{
+		uint32 end;
+		uint32 value;
+	};
+
     bool enabled;
 	ushort type;
 
@@ -37,7 +46,7 @@ struct DebugWindow
     std::vector<uint32> callstack;
 	std::forward_list<Breakpoint> Breakpoints;
 
-    HWND DummyHWnd;
+    bool DebugStop;
 
     bool StepInto;
     uint32 StepOver;
@@ -46,6 +55,7 @@ struct DebugWindow
     void SetWhyBreak(LPCSTR lpString);
 
     bool BreakPC(int pc);
+	bool BreakRegValue(int pc, unsigned char reg_idx, uint32 value, bool is_vdp);
     bool BreakRead(int pc, uint32 start, uint32 stop, bool is_vdp);
 	bool BreakWrite(int pc, uint32 start, uint32 stop, bool is_vdp);
 

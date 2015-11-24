@@ -2,34 +2,43 @@
 extern "C" {
 #endif
 
-    struct Reg_VDP_Type {
-        unsigned int Set1;
-        unsigned int Set2;
-        unsigned int Pat_ScrA_Adr;
-        unsigned int Pat_Win_Adr;
-        unsigned int Pat_ScrB_Adr;
-        unsigned int Spr_Att_Adr;
-        unsigned int Reg6;
-        unsigned int BG_Color;
-        unsigned int Reg8;
-        unsigned int Reg9;
-        unsigned int H_Int;
-        unsigned int Set3;
-        unsigned int Set4;
-        unsigned int H_Scr_Adr;
-        unsigned int Reg14;
-        unsigned int Auto_Inc;
-        unsigned int Scr_Size;
-        unsigned int Win_H_Pos;
-        unsigned int Win_V_Pos;
-        unsigned int DMA_Length_L;
-        unsigned int DMA_Length_H;
-        unsigned int DMA_Src_Adr_L;
-        unsigned int DMA_Src_Adr_M;
-        unsigned int DMA_Src_Adr_H;
-        unsigned int DMA_Length;
-        unsigned int DMA_Address;
-    };
+#pragma pack(push, 1)
+	struct Reg_VDP_Type
+	{
+		union
+		{
+			struct {
+				unsigned int Set1;
+				unsigned int Set2;
+				unsigned int Pat_ScrA_Adr;
+				unsigned int Pat_Win_Adr;
+				unsigned int Pat_ScrB_Adr;
+				unsigned int Spr_Att_Adr;
+				unsigned int Reg6;
+				unsigned int BG_Color;
+				unsigned int Reg8;
+				unsigned int Reg9;
+				unsigned int H_Int;
+				unsigned int Set3;
+				unsigned int Set4;
+				unsigned int H_Scr_Adr;
+				unsigned int Reg14;
+				unsigned int Auto_Inc;
+				unsigned int Scr_Size;
+				unsigned int Win_H_Pos;
+				unsigned int Win_V_Pos;
+				unsigned int DMA_Length_L;
+				unsigned int DMA_Length_H;
+				unsigned int DMA_Src_Adr_L;
+				unsigned int DMA_Src_Adr_M;
+				unsigned int DMA_Src_Adr_H;
+			};
+			unsigned int regs[24];
+		};
+		unsigned int DMA_Length;
+		unsigned int DMA_Address;
+	};
+#pragma pack(pop)
 
     // XXX: these array sizes appear to be completely different from what they are declared as in the ASM files
     extern unsigned char VRam[65536];

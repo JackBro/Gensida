@@ -72,11 +72,33 @@ unsigned int Next_Long_T(void)
 
     Current_PC += 4;
 
-    return(val);
+    return val;
 }
+
+extern UINT16 allow0_breaks;
+extern UINT32 allow1_breaks;
 
 void trace_exec_pc()
 {
+#define CHECK_BIT(var,pos) ((var) & (1<<(pos)))
+	if (allow0_breaks)
+	{
+		for (unsigned char i = 0; i < 16; ++i)
+		{
+			if (!CHECK_BIT(allow0_breaks, i)) continue;
+			M68kDW.TraceRegValue(15 - i, main68k_context.dreg[15 - i], false); // Check for M68k register breakpoints
+		}
+	}
+	if (allow1_breaks)
+	{
+		for (unsigned char i = 0; i < 24; ++i)
+		{
+			if (!CHECK_BIT(allow1_breaks, i)) continue;
+			M68kDW.TraceRegValue(23 - i, VDP_Reg.regs[23 - i], true); // Check for VDP register breakpoints
+		}
+	}
+#undef CHECK_BIT
+
     M68kDW.TracePC(hook_pc);
 	CallRegisteredLuaMemHook(hook_pc, 2, 0, LUAMEMHOOK_EXEC);
 }

@@ -5,6 +5,8 @@
 #include "ramwatch.h"
 #include "debugwindow.h"
 #include "G_ddraw.h"
+#include "Star_68k.h"
+#include "vdp_io.h"
 #include <vector>
 
 #include <dbg.hpp>
@@ -20,7 +22,8 @@ extern "C" int Clear_Sound_Buffer(void);
 
 DebugWindow::DebugWindow()
 {
-    DummyHWnd = HWnd = NULL;
+	DebugStop = false;
+	HWnd = NULL;
     DLGPROC DebugProc = NULL;
 
     StepInto = false;
@@ -52,11 +55,11 @@ void DebugWindow::Breakpoint(int pc)
 	Update_RAM_Watch();
     Clear_Sound_Buffer();
 
-    if (!DummyHWnd)
+	if (!DebugStop)
     {
-        DummyHWnd = (HWND)1;
+		DebugStop = true;
         MSG msg = { 0 };
-        for (; Gens_Running&&DummyHWnd;)
+		for (; Gens_Running && DebugStop;)
         {
             Handle_Gens_Messages();
         }
@@ -85,9 +88,26 @@ bool DebugWindow::BreakPC(int pc)
 			if (i->type & BRK_FORBID)
                 return false;
             r = true;
+			break;
         }
     }
     return r;
+}
+
+extern uint32 break_regs[];
+
+bool DebugWindow::BreakRegValue(int pc, uint8 reg_idx, uint32 value, bool is_vdp)
+{
+	int start_idx = (!is_vdp ? 0 : 16);
+	int len = (!is_vdp ? 16 : 24);
+
+	for (uint8 i = start_idx; i < (start_idx + len); ++i)
+	{
+		if ((reg_idx == i) && (value == break_regs[i]))
+			return true;
+	}
+
+	return false;
 }
 
 bool DebugWindow::BreakRead(int pc, uint32 star, uint32 stop, bool is_vdp)
@@ -113,9 +133,12 @@ bool DebugWindow::BreakRead(int pc, uint32 star, uint32 stop, bool is_vdp)
 			continue;
 		if (!(i->enabled) || !(i->type & BRK_READ))
             continue;
-        if (stop >= i->start &&
-            star <= i->end)
-            r = true;
+		if (stop >= i->start &&
+			star <= i->end)
+		{
+			r = true;
+			break;
+		}
     }
     return r;
 }
@@ -143,7 +166,10 @@ bool DebugWindow::BreakWrite(int pc, uint32 star, uint32 stop, bool is_vdp)
             continue;
         if (stop >= i->start &&
             star <= i->end)
-            r = true;
+		{
+			r = true;
+			break;
+		}
     }
     return r;
 }
