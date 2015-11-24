@@ -52,6 +52,7 @@ void DebugWindow::Breakpoint(int pc)
 		g_events.enqueue(ev, IN_BACK);
 	}
 
+	Show_Genesis_Screen(HWnd);
 	Update_RAM_Watch();
     Clear_Sound_Buffer();
 
