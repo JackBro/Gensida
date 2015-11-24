@@ -33,9 +33,6 @@ enum register_t
 	R_VDP_DMA_SRC,
 	R_VDP_WRITE_ADDR,
 
-	// Allow break regs 
-	R_B_ALLOW0,
-	R_B_ALLOW1,
 	// DX
 	R_B00,
 	R_B01,
@@ -81,6 +78,9 @@ enum register_t
 	R_B37,
 	R_B38,
 	R_B39,
+	// Allow break regs 
+	R_B_ALLOW0,
+	R_B_ALLOW1,
 
 	R_DR00,
 	R_DR01,

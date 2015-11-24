@@ -135,8 +135,6 @@ register_info_t registers[] =
 	{ "VDP_DST", REGISTER_ADDRESS | REGISTER_READONLY, RC_GENERAL, dt_dword, NULL, 0 },
 
 	// Register Breakpoints
-	{ "ALLOW0", NULL, RC_BREAK, dt_word, ALLOW_FLAGS_DA, 0xFFFF },
-	{ "ALLOW1", NULL, RC_BREAK, dt_3byte, ALLOW_FLAGS_V, 0xFFFFFF },
 	{ "D00", REGISTER_ADDRESS, RC_BREAK, dt_dword, NULL, 0 },
 	{ "D01", REGISTER_ADDRESS, RC_BREAK, dt_dword, NULL, 0 },
 	{ "D02", REGISTER_ADDRESS, RC_BREAK, dt_dword, NULL, 0 },
@@ -179,32 +177,34 @@ register_info_t registers[] =
 	{ "V21", NULL, RC_BREAK, dt_byte, NULL, 0 },
 	{ "V22", NULL, RC_BREAK, dt_byte, NULL, 0 },
 	{ "V23", NULL, RC_BREAK, dt_byte, NULL, 0 },
+	{ "ALLOW0", NULL, RC_BREAK, dt_word, ALLOW_FLAGS_DA, 0xFFFF },
+	{ "ALLOW1", NULL, RC_BREAK, dt_3byte, ALLOW_FLAGS_V, 0xFFFFFF },
 
 	// VDP Registers
-	{ "$00", NULL, RC_VDP, dt_byte, NULL, 0 },
-	{ "$01", NULL, RC_VDP, dt_byte, NULL, 0 },
-	{ "$02", NULL, RC_VDP, dt_byte, NULL, 0 },
-	{ "$03", NULL, RC_VDP, dt_byte, NULL, 0 },
-	{ "$04", NULL, RC_VDP, dt_byte, NULL, 0 },
-	{ "$05", NULL, RC_VDP, dt_byte, NULL, 0 },
-	{ "$06", NULL, RC_VDP, dt_byte, NULL, 0 },
-	{ "$07", NULL, RC_VDP, dt_byte, NULL, 0 },
-	{ "$08", NULL, RC_VDP, dt_byte, NULL, 0 },
-	{ "$09", NULL, RC_VDP, dt_byte, NULL, 0 },
-	{ "$10", NULL, RC_VDP, dt_byte, NULL, 0 },
-	{ "$11", NULL, RC_VDP, dt_byte, NULL, 0 },
-	{ "$12", NULL, RC_VDP, dt_byte, NULL, 0 },
-	{ "$13", NULL, RC_VDP, dt_byte, NULL, 0 },
-	{ "$14", NULL, RC_VDP, dt_byte, NULL, 0 },
-	{ "$15", NULL, RC_VDP, dt_byte, NULL, 0 },
-	{ "$16", NULL, RC_VDP, dt_byte, NULL, 0 },
-	{ "$17", NULL, RC_VDP, dt_byte, NULL, 0 },
-	{ "$18", NULL, RC_VDP, dt_byte, NULL, 0 },
-	{ "$19", NULL, RC_VDP, dt_byte, NULL, 0 },
-	{ "$20", NULL, RC_VDP, dt_byte, NULL, 0 },
-	{ "$21", NULL, RC_VDP, dt_byte, NULL, 0 },
-	{ "$22", NULL, RC_VDP, dt_byte, NULL, 0 },
-	{ "$23", NULL, RC_VDP, dt_byte, NULL, 0 },
+	{ "Set1", NULL, RC_VDP, dt_byte, NULL, 0 },
+	{ "Set2", NULL, RC_VDP, dt_byte, NULL, 0 },
+	{ "PlaneA", NULL, RC_VDP, dt_byte, NULL, 0 },
+	{ "Window", NULL, RC_VDP, dt_byte, NULL, 0 },
+	{ "PlaneB", NULL, RC_VDP, dt_byte, NULL, 0 },
+	{ "Sprite", NULL, RC_VDP, dt_byte, NULL, 0 },
+	{ "Reg6", NULL, RC_VDP, dt_byte, NULL, 0 },
+	{ "BgClr", NULL, RC_VDP, dt_byte, NULL, 0 },
+	{ "Reg8", NULL, RC_VDP, dt_byte, NULL, 0 },
+	{ "Reg9", NULL, RC_VDP, dt_byte, NULL, 0 },
+	{ "HInt", NULL, RC_VDP, dt_byte, NULL, 0 },
+	{ "Set3", NULL, RC_VDP, dt_byte, NULL, 0 },
+	{ "Set4", NULL, RC_VDP, dt_byte, NULL, 0 },
+	{ "HScrl", NULL, RC_VDP, dt_byte, NULL, 0 },
+	{ "Reg14", NULL, RC_VDP, dt_byte, NULL, 0 },
+	{ "WrInc", NULL, RC_VDP, dt_byte, NULL, 0 },
+	{ "ScrSz", NULL, RC_VDP, dt_byte, NULL, 0 },
+	{ "WinX", NULL, RC_VDP, dt_byte, NULL, 0 },
+	{ "WinY", NULL, RC_VDP, dt_byte, NULL, 0 },
+	{ "LenLo", NULL, RC_VDP, dt_byte, NULL, 0 },
+	{ "LenHi", NULL, RC_VDP, dt_byte, NULL, 0 },
+	{ "SrcLo", NULL, RC_VDP, dt_byte, NULL, 0 },
+	{ "SrcMid", NULL, RC_VDP, dt_byte, NULL, 0 },
+	{ "SrcHi", NULL, RC_VDP, dt_byte, NULL, 0 },
 };
 
 static const char *register_classes[] =
@@ -424,8 +424,10 @@ static int idaapi prepare_to_pause_process(void)
 static int idaapi mess_exit_process(void)
 {
 	CHECK_FOR_START(1);
-	HWND hwndGens = FindWindowEx(NULL, NULL, "Gens", NULL);
+	M68kDW.Breakpoints.clear();
+	allow0_breaks = allow1_breaks = 0;
 
+	HWND hwndGens = FindWindowEx(NULL, NULL, "Gens", NULL);
 	if (hwndGens != NULL)
 	{
 		SendMessage(hwndGens, WM_CLOSE, 0, 0);

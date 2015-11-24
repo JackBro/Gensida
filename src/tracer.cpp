@@ -94,7 +94,7 @@ void trace_exec_pc()
 		for (unsigned char i = 0; i < 24; ++i)
 		{
 			if (!CHECK_BIT(allow1_breaks, i)) continue;
-			M68kDW.TraceRegValue(23 - i, VDP_Reg.regs[23 - i], true); // Check for VDP register breakpoints
+			M68kDW.TraceRegValue(16 + (23 - i), VDP_Reg.regs[23 - i], true); // Check for VDP register breakpoints
 		}
 	}
 #undef CHECK_BIT
