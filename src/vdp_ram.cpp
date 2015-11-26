@@ -26,12 +26,6 @@
 #include "luascript.h"
 #include <list>
 #include <vector>
-#ifdef _WIN32
-#include "BaseTsd.h"
-typedef INT_PTR intptr_t;
-#else
-#include "stdint.h"
-#endif
 
 HDC VDPRamMemDC;
 HBITMAP VDPRamMemBMP;
@@ -39,6 +33,7 @@ HBITMAP VDPRamLastBMP;
 BITMAPINFO MemBMPi;
 COLORREF *MemBMPBits;
 int VDPRamPal, VDPRamTile;
+bool ShowVRAM;
 #define VDP_RAM_VCOUNT 20
 
 void Update_VDP_RAM()
@@ -167,6 +162,9 @@ LRESULT CALLBACK VDPRamProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
         //MemBMPi.bmiHeader.biSize=sizeof(MemBMPi.bmiHeader);
         //GetDIBits(VDPRamMemDC,VDPRamMemBMP,0,0,NULL,&MemBMPi,DIB_RGB_COLORS);
         //MemBMPBits = new COLORREF[MemBMPi.bmiHeader.biSizeImage/4+1];
+
+		ShowVRAM = true;
+		CheckRadioButton(hDlg, IDC_SHOW_VRAM, IDC_SHOW_M68K_RAM, IDC_SHOW_VRAM);
 
         VDPRamHWnd = hDlg;
 
@@ -379,6 +377,18 @@ LRESULT CALLBACK VDPRamProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
             }
         }
         break;
+		case IDC_SHOW_VRAM:
+		{
+			ShowVRAM = true;
+			InvalidateRect(hDlg, NULL, FALSE);
+		}
+		break;
+		case IDC_SHOW_M68K_RAM:
+		{
+			ShowVRAM = false;
+			InvalidateRect(hDlg, NULL, FALSE);
+		}
+		break;
         }
     }	break;
 #undef swappp
@@ -448,14 +458,15 @@ LRESULT CALLBACK VDPRamProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
         PAINTSTRUCT ps;
         BeginPaint(hDlg, &ps);
         SelectObject(VDPRamMemDC, VDPRamLastBMP);
+		unsigned char *ptr = (unsigned char*)(ShowVRAM ? VRam : Ram_68k);
         int i, j, x, y, xx;
         for (i = 0; i < sizeof(VRam); ++i)
         {
             x = ((i >> 5) & 0xf) << 3;
             y = ((i >> 9) << 3);
             xx = (MemBMPi.bmiHeader.biHeight - 8 - y + 7 - ((i >> 2) & 7))*MemBMPi.bmiHeader.biWidth + (x + (i & 3 ^ 1) * 2);
-            MemBMPBits[xx] = _GetPal((((unsigned char)VRam[i]) >> 4) + VDPRamPal);
-            MemBMPBits[xx + 1] = _GetPal((VRam[i] & 0xf) + VDPRamPal);
+            MemBMPBits[xx] = _GetPal(((ptr[i]) >> 4) + VDPRamPal);
+            MemBMPBits[xx + 1] = _GetPal((ptr[i] & 0xf) + VDPRamPal);
         }
         for (j = 0; j < 4; ++j)
             for (i = 0; i < 16; ++i)

@@ -24,13 +24,14 @@ static bool show_transparence = false;
 static void PlaneExplorerInit_KMod(HWND hDlg)
 {
     HWND hexplorer;
-    RECT rc;
+    RECT rc, rc2;
 
 	CheckDlgButton(hDlg, IDC_PLANEEXPLORER_TRANS, BST_UNCHECKED);
     CheckRadioButton(hDlg, IDC_PLANEEXPLORER_PLANE_A, IDC_PLANEEXPLORER_PLANE_B, IDC_PLANEEXPLORER_PLANE_A);
     hexplorer = (HWND)GetDlgItem(hDlg, IDC_PLANEEXPLORER_MAIN);
-    GetClientRect(hDlg, &rc);
-    MoveWindow(hexplorer, 20, 60, (rc.right - rc.left) - 40, (rc.bottom - rc.top) - 80, TRUE);
+	GetWindowRect(hexplorer, &rc);
+    GetWindowRect(hDlg, &rc2);
+	SetWindowPos(hexplorer, HWND_TOP, 0, 0, (rc2.right - rc.left) - 20, (rc2.bottom - rc.top) - 20, SWP_NOMOVE);
 }
 
 static void PlaneExplorer_UpdatePalette(void)
@@ -271,7 +272,7 @@ void PlaneExplorer_GetTipText(int x, int y, char * buffer)
 
     name.word = *(unsigned short *)(&VRam[tile_addr]);
 
-	sprintf(buffer, "POS: %dx%d; PLANE: %c (0x%04X); ADDRESS: 0x%04X; VALUE: 0x%04X; INDEX: 0x%04X(%d); PAL: %d; HF: %s; VF: %s; PRIORITY: %d",
+	sprintf(buffer, "POS: %dx%d; PLANE: %c (0x%04X);\nADDRESS: 0x%04X; VALUE: 0x%04X;\nINDEX: 0x%04X(%d); PAL: %d;\nHF: %s; VF: %s; PRIORITY: %d",
         x >> 3,
         y >> 3,
         plane_char,
@@ -324,8 +325,11 @@ BOOL CALLBACK PlaneExplorerDialogProc(HWND hwnd, UINT Message, WPARAM wParam, LP
 
     case WM_SIZE:
     {
+		RECT rc, rc2;
         HWND hexplorer = GetDlgItem(hwnd, IDC_PLANEEXPLORER_MAIN);
-        MoveWindow(hexplorer, 20, 60, LOWORD(lParam) - 40, HIWORD(lParam) - 80, TRUE);
+		GetWindowRect(hexplorer, &rc);
+		GetWindowRect(hwnd, &rc2);
+		SetWindowPos(hexplorer, HWND_TOP, 0, 0, (rc2.right - rc.left) - 20, (rc2.bottom - rc.top) - 20, SWP_NOMOVE);
         break;
     }
     case WM_CLOSE:
