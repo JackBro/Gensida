@@ -424,7 +424,6 @@ static int idaapi prepare_to_pause_process(void)
 static int idaapi mess_exit_process(void)
 {
 	CHECK_FOR_START(1);
-	M68kDW.Breakpoints.clear();
 	allow0_breaks = allow1_breaks = 0;
 
 	HWND hwndGens = FindWindowEx(NULL, NULL, "Gens", NULL);

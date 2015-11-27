@@ -691,7 +691,6 @@
 #define IDC_PLANEEXPLORER_PLANE_A       54004
 #define IDC_PLANEEXPLORER_PLANE_B       54005
 #define IDC_PLANEEXPLORER_WINDOW        54006
-#define IDC_PLANEEXPLORER_TILE          54007
 
 // Next default values for new objects
 //

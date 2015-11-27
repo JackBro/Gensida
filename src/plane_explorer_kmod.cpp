@@ -20,6 +20,7 @@ static int old_plane_width = 0;
 static int old_plane_height = 0;
 static int plane_explorer_plane = 0;
 static bool show_transparence = false;
+static POINT pt = { 0 };
 
 static void PlaneExplorerInit_KMod(HWND hDlg)
 {
@@ -86,11 +87,6 @@ union PATTERN_NAME
     };
     unsigned short word;
 };
-
-static unsigned short byte_swap(unsigned short w)
-{
-    return (w >> 8) | (w << 8);
-}
 
 static void PlaneExplorer_DrawTile(unsigned short name_word, unsigned int x, unsigned int y, int transcolor)
 {
@@ -166,7 +162,7 @@ static void PlaneExplorer_DrawTile(unsigned short name_word, unsigned int x, uns
     }
 }
 
-static void PlaneExplorer_UpdateBitmap(HWND hwnd, int plane)
+static void PlaneExplorer_UpdateBitmap(int plane)
 {
     unsigned int i, j;
 
@@ -234,7 +230,7 @@ static void PlaneExplorerPaint_KMod(HWND hwnd, LPDRAWITEMSTRUCT lpdi)
     };
 
     PlaneExplorer_UpdatePalette();
-	PlaneExplorer_UpdateBitmap(hwnd, plane_explorer_plane);
+	PlaneExplorer_UpdateBitmap(plane_explorer_plane);
 
     memcpy(bmi.palette, plane_explorer_palette, sizeof(bmi.palette));
 
@@ -248,6 +244,13 @@ static void PlaneExplorerPaint_KMod(HWND hwnd, LPDRAWITEMSTRUCT lpdi)
         plane_explorer_data,
         (const BITMAPINFO *)&bmi,
         DIB_RGB_COLORS);
+
+	RECT r;
+	r.left = (pt.x & ~7);
+	r.top = (pt.y & ~7);
+	r.right = r.left + 8;
+	r.bottom = r.top + 8;
+	BOOL t = DrawFocusRect(lpdi->hDC, &r);
 }
 
 void PlaneExplorer_GetTipText(int x, int y, char * buffer)
@@ -349,19 +352,20 @@ BOOL CALLBACK PlaneExplorerDialogProc(HWND hwnd, UINT Message, WPARAM wParam, LP
         int y = (short)(lParam >> 16);
         char buffer[180] = "";
         RECT rc1;
-        POINT pt;
+        POINT _pt;
         TRACKMOUSEEVENT tme = { sizeof(tme) };
         tme.hwndTrack = hwnd;
         tme.dwFlags = TME_LEAVE;
         TrackMouseEvent(&tme);
-        pt.x = x;
-        pt.y = y;
-        ClientToScreen(hwnd, &pt);
-        ScreenToClient(hexplorer, &pt);
+        _pt.x = x;
+        _pt.y = y;
+        ClientToScreen(hwnd, &_pt);
+        ScreenToClient(hexplorer, &_pt);
         GetClientRect(hexplorer, &rc1);
-        if (PtInRect(&rc1, pt))
+        if (PtInRect(&rc1, _pt))
         {
-            PlaneExplorer_GetTipText(pt.x, pt.y, &buffer[0]);
+            PlaneExplorer_GetTipText(_pt.x, _pt.y, &buffer[0]);
+			pt = _pt;
         }
         SetDlgItemText(hwnd, IDC_PLANEEXPLORER_TILEINFO, buffer);
         return FALSE;
