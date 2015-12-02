@@ -468,6 +468,7 @@ static int idaapi continue_after_event(const debug_event_t *event)
 		continue_execution();
 		break;
 	case PROCESS_EXIT:
+		continue_execution();
 		finish_execution();
 		break;
 	}
