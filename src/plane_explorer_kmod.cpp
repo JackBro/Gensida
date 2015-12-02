@@ -250,7 +250,7 @@ static void PlaneExplorerPaint_KMod(HWND hwnd, LPDRAWITEMSTRUCT lpdi)
 	r.top = (pt.y & ~7);
 	r.right = r.left + 8;
 	r.bottom = r.top + 8;
-	BOOL t = DrawFocusRect(lpdi->hDC, &r);
+	DrawFocusRect(lpdi->hDC, &r);
 }
 
 void PlaneExplorer_GetTipText(int x, int y, char * buffer)
@@ -296,6 +296,7 @@ BOOL CALLBACK PlaneExplorerDialogProc(HWND hwnd, UINT Message, WPARAM wParam, LP
     {
     case WM_INITDIALOG:
         PlaneExplorerInit_KMod(hwnd);
+		InvalidateRect(hwnd, NULL, FALSE);
         break;
 
     case WM_DRAWITEM:
@@ -366,6 +367,18 @@ BOOL CALLBACK PlaneExplorerDialogProc(HWND hwnd, UINT Message, WPARAM wParam, LP
         {
             PlaneExplorer_GetTipText(_pt.x, _pt.y, &buffer[0]);
 			pt = _pt;
+
+			RECT r;
+			r.left = (_pt.x & ~7);
+			r.top = (_pt.y & ~7);
+			r.right = r.left + 8;
+			r.bottom = r.top + 8;
+
+			PAINTSTRUCT ps;
+			HDC dc = BeginPaint(hexplorer, &ps);
+			DrawFocusRect(dc, &r);
+			EndPaint(hexplorer, &ps);
+			InvalidateRect(hwnd, NULL, FALSE);
         }
         SetDlgItemText(hwnd, IDC_PLANEEXPLORER_TILEINFO, buffer);
         return FALSE;
