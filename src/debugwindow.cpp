@@ -75,24 +75,16 @@ void DebugWindow::SetWhyBreak(LPCSTR lpString)
 
 bool DebugWindow::BreakPC(int pc)
 {
-    std::forward_list<::Breakpoint>::const_iterator i, n;
-    i = Breakpoints.cbegin();
-    n = Breakpoints.cend();
-    bool r = false;
-    for (; i != n; ++i)
-    {
-		if (!(i->enabled) || !(i->type & BRK_PC))
-            continue;
-        if (pc >= (int)i->start &&
-            pc <= (int)i->end)
-        {
-			if (i->type & BRK_FORBID)
-                return false;
-            r = true;
-			break;
-        }
-    }
-    return r;
+	auto range = Breakpoints.equal_range(BP_PC);
+	for (auto i = range.first; i != range.second; ++i)
+	{
+		if (!(i->second.enabled)) continue;
+		if (pc <= (int)(i->second.end) && pc >= (int)(i->second.start))
+		{
+			return !(i->second.is_forbid);
+		}
+	}
+	return false;
 }
 
 extern uint32 break_regs[];
@@ -111,66 +103,62 @@ bool DebugWindow::BreakRegValue(int pc, uint8 reg_idx, uint32 value, bool is_vdp
 	return false;
 }
 
-bool DebugWindow::BreakRead(int pc, uint32 star, uint32 stop, bool is_vdp)
+bool DebugWindow::BreakRead(int pc, uint32 start, uint32 stop, bool is_vdp)
 {
-	std::forward_list<::Breakpoint>::const_iterator i, n;
-    i = Breakpoints.cbegin();
-    n = Breakpoints.cend();
-    bool r = false;
-    for (; i != n; ++i)
-    {
-		if ((i->enabled) && (i->type & BRK_FORBID))
-        {
-			if ((i->type & BRK_PC) &&
-                pc >= (int)i->start &&
-                pc <= (int)i->end)
-                return false;
-			if ((i->type & BRK_READ) &&
-                star >= i->start &&
-                stop <= i->end)
-                return false;
-        }
-		if (!is_vdp && (i->type & BRK_VDP))
-			continue;
-		if (!(i->enabled) || !(i->type & BRK_READ))
-            continue;
-		if (stop >= i->start &&
-			star <= i->end)
+	bool brk = false;
+
+	auto range = Breakpoints.equal_range(BP_READ);
+	for (auto i = range.first; i != range.second; ++i)
+	{
+		if (!(i->second.enabled) || (i->second.is_vdp != is_vdp)) continue;
+		if (start <= i->second.end && stop >= i->second.start)
 		{
-			r = true;
+			brk = !(i->second.is_forbid);
 			break;
 		}
-    }
-    return r;
+	}
+
+	if (!brk) return false;
+	
+	range = Breakpoints.equal_range(BP_PC);
+	for (auto i = range.first; i != range.second; ++i)
+	{
+		if (i->second.enabled && i->second.is_forbid)
+		{
+			if (pc <= (int)(i->second.end) && pc >= (int)(i->second.start))
+				return false;
+		}
+	}
+
+	return true;
 }
 
-bool DebugWindow::BreakWrite(int pc, uint32 star, uint32 stop, bool is_vdp)
+bool DebugWindow::BreakWrite(int pc, uint32 start, uint32 stop, bool is_vdp)
 {
-	std::forward_list<::Breakpoint>::const_iterator i, n;
-    i = Breakpoints.cbegin();
-    n = Breakpoints.cend();
-    bool r = false;
-    for (; i != n; ++i)
-    {
-		if ((i->enabled) && (i->type & BRK_FORBID))
-        {
-			if ((i->type & BRK_PC) &&
-                pc >= (int)i->start &&
-                pc <= (int)i->end)
-                return false;
-			if ((i->type & BRK_WRITE) &&
-                star >= i->start &&
-                stop <= i->end)
-                return false;
-        }
-		if (!(i->enabled) || !(i->type & BRK_WRITE))
-            continue;
-        if (stop >= i->start &&
-            star <= i->end)
+	bool brk = false;
+
+	auto range = Breakpoints.equal_range(BP_WRITE);
+	for (auto i = range.first; i != range.second; ++i)
+	{
+		if (!(i->second.enabled) || (i->second.is_vdp != is_vdp)) continue;
+		if (start <= i->second.end && stop >= i->second.start)
 		{
-			r = true;
+			brk = !(i->second.is_forbid);
 			break;
 		}
-    }
-    return r;
+	}
+
+	if (!brk) return false;
+
+	range = Breakpoints.equal_range(BP_PC);
+	for (auto i = range.first; i != range.second; ++i)
+	{
+		if (i->second.enabled && i->second.is_forbid)
+		{
+			if (pc <= (int)(i->second.end) && pc >= (int)(i->second.start))
+				return false;
+		}
+	}
+
+	return true;
 }

@@ -2,49 +2,46 @@
 #define DEBUG_WINDOW_H
 #include <windows.h>
 #include <vector>
-#include <forward_list>
+#include <unordered_map>
 #include <string>
 
-#define WM_DEBUG_DUMMY_EXIT (WM_USER+1000)
+/*#define WM_DEBUG_DUMMY_EXIT (WM_USER+1000)
 
 #define BRK_PC      0x000001
 #define BRK_READ    0x000002
 #define BRK_WRITE   0x000004
 #define BRK_VDP     0x000010
-#define BRK_FORBID  0x000100
+#define BRK_FORBID  0x000100*/
 
 typedef unsigned int uint32;
 typedef unsigned short ushort;
 
+enum bp_type
+{
+	BP_PC = 1,
+	BP_READ,
+	BP_WRITE,
+};
+
 struct Breakpoint
 {
-	union
-	{
-		uint32 start;
-		uint32 reg_idx;
-	};
-	union
-	{
-		uint32 end;
-		uint32 value;
-	};
+	uint32 start;
+	uint32 end;
 
     bool enabled;
-	ushort type;
+	bool is_vdp, is_forbid;
 
-	Breakpoint(uint32 _start, uint32 _end, bool _enabled, ushort _type) : start(_start), end(_end), enabled(_enabled), type(_type) {};
-
-	bool Breakpoint::operator ==(const Breakpoint &b) const
-	{
-		return (this->start >= b.start) && (this->end <= b.end) && ((this->type & b.type) != 0);
-	}
+	Breakpoint(uint32 _start, uint32 _end, bool _enabled, bool _is_vdp, bool _is_forbid) :
+		start(_start), end(_end), enabled(_enabled), is_vdp(_is_vdp), is_forbid(_is_forbid) {};
 };
+
+typedef std::unordered_multimap<bp_type, Breakpoint> bp_list;
 
 struct DebugWindow
 {
     DebugWindow();
     std::vector<uint32> callstack;
-	std::forward_list<Breakpoint> Breakpoints;
+	bp_list Breakpoints;
 
     bool DebugStop;
 
