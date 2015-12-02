@@ -766,7 +766,7 @@ LRESULT CALLBACK EditWatchProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
                 AddressWatcher Temp;
                 Temp.Size = s;
                 Temp.Type = t;
-                Temp.WrongEndian = false; //replace this when I get little endian working properly
+                Temp.WrongEndian = 0; //replace this when I get little endian working properly
                 unsigned int watchAddress = 0;
                 int rangeSize = 0; // use int (signed) so we can protect against negatives
                 int offset = 0;
@@ -1148,7 +1148,7 @@ LRESULT CALLBACK RamWatchProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
         case IDC_C_WATCH_SEPARATE:
             AddressWatcher separator;
             separator.Address = 0;
-            separator.WrongEndian = false;
+            separator.WrongEndian = 0;
             separator.Size = 'S';
             separator.Type = 'S';
             InsertWatch(separator, "----------------------------", WatchCount);

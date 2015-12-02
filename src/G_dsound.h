@@ -8,7 +8,7 @@
 extern "C" {
 #endif /* #ifdef __cplusplus */
 
-#define DIRECTSOUND_VERSION         0x0300
+#define DIRECTSOUND_VERSION         0x0800
 
 #include <dsound.h>
 

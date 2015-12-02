@@ -305,7 +305,7 @@ int ArchiveFile::ExtractItem(int index, unsigned char* outBuffer, int bufSize) c
             if (SUCCEEDED(object->Open(ifs, 0, 0)))
             {
                 OutStream* os = new OutStream(index, outBuffer, item.size);
-                const UInt32 indices[1] = { index };
+                const UInt32 indices[1] = { (UInt32)index };
                 hr = object->Extract(indices, 1, 0, os);
                 object->Close();
             }
@@ -347,7 +347,7 @@ int ArchiveFile::ExtractItem(int index, const char* outFilename) const
             if (SUCCEEDED(object->Open(ifs, 0, 0)))
             {
                 OutStream* os = new OutStream(index, outFilename);
-                const UInt32 indices[1] = { index };
+                const UInt32 indices[1] = { (UInt32)index };
                 hr = object->Extract(indices, 1, 0, os);
                 object->Close();
             }

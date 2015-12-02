@@ -38,7 +38,7 @@
 
 void PutText(char *string, short x, short y, short xl, short yl, short xh, short yh, int outstyle, int style)
 {
-    size_t string_len = strlen(string);
+    short string_len = (short)strlen(string);
     xl = max(xl, 0);
     yl = max(xl, 0);
     xh = min(xh + 319, 318);

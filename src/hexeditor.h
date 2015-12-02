@@ -6,14 +6,14 @@
 typedef UINT8 u8;
 
 extern "C" {
-    void __fastcall WatchPointZ80(UINT Start, UINT Size);
+    void __fastcall WatchPointZ80(int Start, int Size);
 }
 
 struct HexRegion {
     char Name[12];
     u8*  Array;
-    UINT Offset;
-    UINT Size;
+	int Offset;
+	int Size;
     bool Active;
     u8   Swap;
 };
@@ -32,7 +32,7 @@ struct HexParams {
     bool
         MultiInstance, MouseButtonHeld, SecondDigitPrompted, Running,
         TextView, DrawLines, FontBold;
-    UINT
+    int
         FontHeight, FontWidth, FontWeight,
         Gap, GapHeaderX, GapHeaderY,
         CellHeight, CellWidth,

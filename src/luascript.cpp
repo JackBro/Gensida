@@ -655,10 +655,10 @@ DEFINE_LUA_FUNCTION(input_popup, "message[,type=\"yesno\"[,icon=\"question\"]]")
     return doPopup(L, "yesno", "question");
 }
 
-const char *prompt_str = new char[];
-const char *prompt_default = new char[];
+const char *prompt_str = new char[1024];
+const char *prompt_default = new char[1024];
 int prompt_maxlength;
-char *prompt_result = new char[];
+char *prompt_result = new char[1024];
 
 LRESULT CALLBACK LuaPromptProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
@@ -2660,7 +2660,7 @@ DEFINE_LUA_FUNCTION(joy_peekup, "[controller=1]")
 static const struct ColorMapping
 {
     const char* name;
-    int value;
+    unsigned int value;
 }
 s_colorMapping[] =
 {

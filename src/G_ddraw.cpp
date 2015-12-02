@@ -1023,7 +1023,7 @@ void DrawInformationOnTheScreen()
             QueryPerformanceFrequency((union _LARGE_INTEGER *) freq_cpu);
             if (freq_cpu[0] == 0) freq_cpu[0] = 1;
 
-            sprintf(Info_String, "", FPS);
+            sprintf(Info_String, "%.1f", FPS);
         }
         int backColor = (((FPS_Style & (BLUE | GREEN | RED)) == BLUE) ? RED : BLUE) | (FPS_Style & SIZE_X2) | (FPS_Style & TRANS);
         const static int xOffset[] = { -1, -1, -1, 0, 1, 1, 1, 0 };
@@ -1202,7 +1202,7 @@ int Update_Gens_Logo(HWND hWnd)
     }
 
     renv += pas;
-    zoom_x = sin(renv);
+    zoom_x = (float)sin(renv);
     if (zoom_x == 0.0f) zoom_x = 0.0000001f;
     zoom_x = (1 / zoom_x) * 1;
     zoom_y = 1;

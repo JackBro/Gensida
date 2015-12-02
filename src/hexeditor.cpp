@@ -45,7 +45,7 @@ HFONT HexFont = 0;
 HBRUSH BrushBlack = CreateSolidBrush(RGB(0, 0, 0));
 HBRUSH BrushWhite = CreateSolidBrush(RGB(255, 255, 255));
 bool UseWatchPoints = 1;
-UINT
+int
 ClientXGap = 0,	// Total diff between client and dialog widths
 ClientYGap = 0,	// How much client area is shifted
 RowCount = 16;	// Offset consists of 16 bytes
@@ -371,14 +371,14 @@ TextArea = {
         PTSTR pGlobal = (char *)GlobalLock(hGlobal);
         if (type == 0) {
             // numbers
-            for (UINT i = 0; i < Hex->AddressSelectedTotal; i++) {
+            for (int i = 0; i < Hex->AddressSelectedTotal; i++) {
                 sprintf(str, "%02X", Hex->CurrentRegion.Array[(i + SELECTION_START) ^ Hex->CurrentRegion.Swap]);
                 strcat(pGlobal, str);
             }
         }
         else if (type == 1) {
             // chars
-            for (UINT i = 0; i < Hex->AddressSelectedTotal; i++) {
+            for (int i = 0; i < Hex->AddressSelectedTotal; i++) {
                 UINT8 check = Hex->CurrentRegion.Array[(i + SELECTION_START) ^ Hex->CurrentRegion.Swap];
                 //if((check >= 32) && (check <= 127))
                 pGlobal[i] = (char)check;
@@ -621,7 +621,7 @@ TextArea = {
 
         case WM_PAINT: {
             static char buf[10];
-            unsigned int row = 0, line = 0;
+            int row = 0, line = 0;
             GetWindowRect(hDlg, &wr);
             BeginPaint(hDlg, &ps);
             // TOP HEADER, static.
@@ -641,7 +641,7 @@ TextArea = {
             // RAM, dynamic.
             for (line = 0; line < Hex->OffsetVisibleTotal; line++) {
                 for (row = 0; row < RowCount; row++) {
-                    UINT carriage = Hex->OffsetVisibleFirst + line * RowCount + row;
+                    int carriage = Hex->OffsetVisibleFirst + line * RowCount + row;
                     if (carriage > int(Hex->CurrentRegion.Size - 1))
                         break;
                     // Print numbers in main area
@@ -729,10 +729,10 @@ TextArea = {
 
                          case IDC_C_HEX_DUMP: {
                              char fname[2048];
-                             sprintf(fname, "%s Dump.bin", Hex->CurrentRegion.Name);
+                             sprintf(fname, "%s_dump.bin", Hex->CurrentRegion.Name);
                              if (Change_File_S(fname, ".", "Save Full Dump As...", "All Files\0*.*\0\0", "*.*", hDlg)) {
                                  FILE *out = fopen(fname, "wb+");
-								 size_t i;
+								 int i;
 								 for (i = 0; i < Hex->CurrentRegion.Size; ++i) {
                                      fname[i & 2047] = Hex->CurrentRegion.Array[i^Hex->CurrentRegion.Swap];
                                      if ((i & 2047) == 2047)
