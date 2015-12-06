@@ -226,6 +226,8 @@ static void prepare_codemap()
 
 static void apply_codemap()
 {
+	if (g_codemap.empty()) return;
+	
 	msg("Applying codemap...\n");
 	for (size_t i = 0; i < MAX_ROM_SIZE; ++i)
 	{
