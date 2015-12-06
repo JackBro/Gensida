@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
@@ -23,7 +23,7 @@
     <UseDebugLibraries>false</UseDebugLibraries>
   </PropertyGroup>
   <PropertyGroup Label="Configuration">
-    <PlatformToolset>v120_xp</PlatformToolset>
+    <PlatformToolset>v140_xp</PlatformToolset>
     <ConfigurationType>DynamicLibrary</ConfigurationType>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
@@ -34,8 +34,8 @@
     <TargetExt>.plw</TargetExt>
   </PropertyGroup>
   <PropertyGroup Label="UserMacros">
-    <IDA_DIR>d:\ida65</IDA_DIR>
-    <IDA_SDK>d:\idasdk66</IDA_SDK>
+    <IDA_DIR>d:\ida68</IDA_DIR>
+    <IDA_SDK>d:\idasdk68</IDA_SDK>
   </PropertyGroup>
   <ItemGroup>
     <BuildMacro Include="IDA_DIR">

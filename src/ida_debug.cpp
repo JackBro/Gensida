@@ -59,51 +59,51 @@ static const char *const SRReg[] =
 
 static const char *const ALLOW_FLAGS_DA[] =
 {
-	"A07",
-	"A06",
-	"A05",
-	"A04",
-	"A03",
-	"A02",
-	"A01",
-	"A00",
+	"_A07",
+	"_A06",
+	"_A05",
+	"_A04",
+	"_A03",
+	"_A02",
+	"_A01",
+	"_A00",
 
-	"D07",
-	"D06",
-	"D05",
-	"D04",
-	"D03",
-	"D02",
-	"D01",
-	"D00",
+	"_D07",
+	"_D06",
+	"_D05",
+	"_D04",
+	"_D03",
+	"_D02",
+	"_D01",
+	"_D00",
 };
 
 static const char *const ALLOW_FLAGS_V[] =
 {
-	"V23",
-	"V22",
-	"V21",
-	"V20",
-	"V19",
-	"V18",
-	"V17",
-	"V16",
-	"V15",
-	"V14",
-	"V13",
-	"V12",
-	"V11",
-	"V10",
-	"V09",
-	"V08",
-	"V07",
-	"V06",
-	"V05",
-	"V04",
-	"V03",
-	"V02",
-	"V01",
-	"V00",
+	"_V23",
+	"_V22",
+	"_V21",
+	"_V20",
+	"_V19",
+	"_V18",
+	"_V17",
+	"_V16",
+	"_V15",
+	"_V14",
+	"_V13",
+	"_V12",
+	"_V11",
+	"_V10",
+	"_V09",
+	"_V08",
+	"_V07",
+	"_V06",
+	"_V05",
+	"_V04",
+	"_V03",
+	"_V02",
+	"_V01",
+	"_V00",
 };
 
 register_info_t registers[] =
@@ -229,8 +229,7 @@ static void apply_codemap()
 	msg("Applying codemap...\n");
 	for (size_t i = 0; i < MAX_ROM_SIZE; ++i)
 	{
-		std::pair<uint32, bool> _pair = g_codemap[i];
-		if (_pair.second && _pair.first)
+		if (g_codemap[i].second && g_codemap[i].first)
 		{
 			auto_make_code((ea_t)i);
 			noUsed((ea_t)i);
@@ -241,11 +240,10 @@ static void apply_codemap()
 
 	for (size_t i = 0; i < MAX_ROM_SIZE; ++i)
 	{
-		std::pair<uint32, bool> _pair = g_codemap[i];
-		if (_pair.second && _pair.first && !get_func((ea_t)i))
+		if (g_codemap[i].second && g_codemap[i].first && !get_func((ea_t)i))
 		{
 			add_func(i, BADADDR);
-			add_cref(_pair.first, i, fl_CN);
+			add_cref(g_codemap[i].first, i, fl_CN);
 			noUsed((ea_t)i);
 		}
 		showAddr((ea_t)i);
@@ -280,8 +278,6 @@ static void continue_execution()
 
 static void finish_execution()
 {
-	if (!Gens_Running) return;
-
 	if (gens_thread != NULL)
 	{
 		qthread_join(gens_thread);
@@ -506,26 +502,21 @@ static int idaapi thread_continue(thid_t tid) // Resume a suspended thread
 	return 0;
 }
 
-static int do_step(dbg_notification_t idx)
+static int idaapi set_step_mode(thid_t tid, resume_mode_t resmod) // Run one instruction in the thread
 {
-	switch (idx)
+	switch (resmod)
 	{
-	case dbg_step_into:
+	case RESMOD_INTO:    ///< step into call (the most typical single stepping)
 		M68kDW.StepInto = 1;
 		M68kDW.DebugStop = false;
 		break;
-	case dbg_step_over:
+	case RESMOD_OVER:    ///< step over call
 		M68kDW.DoStepOver();
 		M68kDW.DebugStop = false;
 		break;
 	}
-	
-	return 1;
-}
 
-static int idaapi thread_set_step(thid_t tid) // Run one instruction in the thread
-{
-	return do_step(get_running_notification());
+	return 1;
 }
 
 static UINT32 mask(UINT8 bit_idx, UINT8 bits_cnt = 1)
@@ -997,7 +988,8 @@ debugger_t debugger =
 	NULL, // bpt_bytes, // Array of bytes for a breakpoint instruction
 	NULL, // bpt_size, // Size of this array
 	0, // for miniidbs: use this value for the file type after attaching
-	0, // reserved
+
+	DBG_RESMOD_STEP_INTO | DBG_RESMOD_STEP_OVER, // Resume modes
 
 	init_debugger,
 	term_debugger,
@@ -1019,7 +1011,7 @@ debugger_t debugger =
 
 	thread_suspend,
 	thread_continue,
-	thread_set_step,
+	set_step_mode,
 
 	read_registers,
 	write_register,

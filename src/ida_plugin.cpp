@@ -12,7 +12,7 @@
 // A copy of the GPL 2.0 should have been included with the program.
 // If not, see http ://www.gnu.org/licenses/
 
-#define VERSION "1.1.2"
+#define VERSION "1.1.3"
 
 #include <Windows.h>
 
@@ -135,7 +135,7 @@ static int idaapi hook_ui(void *user_data, int notification_code, va_list va)
 						regval_t reg;
 						int reg_idx = idp_to_dbg_reg(op.reg);
 
-						const char *reg_name = dbg->registers[reg_idx].name;
+						const char *reg_name = dbg->registers(reg_idx).name;
 						if (get_reg_val(reg_name, &reg))
 						{
 							idaplace_t here;
@@ -165,13 +165,13 @@ static int idaapi hook_ui(void *user_data, int notification_code, va_list va)
 						add_reg.ival = 0;
 						if (op.specflag2 & 0x10)
 						{
-							get_reg_val(dbg->registers[add_reg_idx].name, &add_reg);
+							get_reg_val(dbg->registers(add_reg_idx).name, &add_reg);
 							if (op.specflag1 & 0x10)
 								add_reg.ival &= 0xFFFF;
 						}
 
 						if (main_reg_idx != R_PC)
-							get_reg_val(dbg->registers[main_reg_idx].name, &main_reg);
+							get_reg_val(dbg->registers(main_reg_idx).name, &main_reg);
 
 						idaplace_t here;
 						ea_t addr = (uint32)main_reg.ival + op.addr + (uint32)add_reg.ival; // TODO: displacements with PC and other regs unk_123(pc, d0.l); unk_111(d0, d2.w)
