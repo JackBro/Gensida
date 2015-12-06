@@ -556,14 +556,14 @@ static int idaapi read_registers(thid_t tid, int clsmask, regval_t *values)
 		values[R_PC].ival = M68kDW.last_pc;
 		values[R_SR].ival = main68k_context.sr;
 
-		values[R_VDP_DMA_LEN].ival = VDP_Reg.regs[R_DR19 - R_DR00] | (VDP_Reg.regs[R_DR20 - R_DR00] << 8);
+		values[R_VDP_DMA_LEN].ival = (BYTE)(VDP_Reg.regs[R_DR19 - R_DR00]) | ((BYTE)(VDP_Reg.regs[R_DR20 - R_DR00]) << 8);
 
-		values[R_VDP_DMA_SRC].ival = VDP_Reg.regs[R_DR21 - R_DR00] | (VDP_Reg.regs[R_DR22 - R_DR00] << 8);
+		values[R_VDP_DMA_SRC].ival = (BYTE)(VDP_Reg.regs[R_DR21 - R_DR00]) | ((BYTE)(VDP_Reg.regs[R_DR22 - R_DR00]) << 8);
 		UINT16 dma_high = VDP_Reg.regs[R_DR23 - R_DR00];
 		if (!(dma_high & 0x80))
-			values[R_VDP_DMA_SRC].ival |= ((VDP_Reg.regs[R_DR23 - R_DR00] & mask(0, 7)) << 16);
+			values[R_VDP_DMA_SRC].ival |= ((BYTE)(VDP_Reg.regs[R_DR23 - R_DR00] & mask(0, 7)) << 16);
 		else
-			values[R_VDP_DMA_SRC].ival |= ((VDP_Reg.regs[R_DR23 - R_DR00] & mask(0, 6)) << 16);
+			values[R_VDP_DMA_SRC].ival |= ((BYTE)(VDP_Reg.regs[R_DR23 - R_DR00] & mask(0, 6)) << 16);
 		values[R_VDP_DMA_SRC].ival <<= 1;
 
 		values[R_VDP_WRITE_ADDR].ival = 0xB0000000;
@@ -914,7 +914,7 @@ static int idaapi update_lowcnds(const lowcnd_t *lowcnds, int nlowcnds)
 		for (auto j = range.first; j != range.second; ++j)
 		{
 			if (start <= j->second.end && end >= j->second.start &&
-				is_vdp == is_vdp)
+				j->second.is_vdp == is_vdp)
 			{
 				j->second.is_forbid = (lowcnds[i].cndbody.empty() ? false : ((lowcnds[i].cndbody[0] == '1') ? true : false));
 			}
@@ -926,7 +926,7 @@ static int idaapi update_lowcnds(const lowcnd_t *lowcnds, int nlowcnds)
 			for (auto j = range.first; j != range.second; ++j)
 			{
 				if (start <= j->second.end && end >= j->second.start &&
-					is_vdp == is_vdp)
+					j->second.is_vdp == is_vdp)
 				{
 					j->second.is_forbid = (lowcnds[i].cndbody.empty() ? false : ((lowcnds[i].cndbody[0] == '1') ? true : false));
 				}
