@@ -27,11 +27,12 @@
     <ConfigurationType>DynamicLibrary</ConfigurationType>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
-  <PropertyGroup Condition="'$(Configuration)'=='Debug'">
-    <TargetExt>.plw</TargetExt>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)'=='Release'">
-    <TargetExt>.plw</TargetExt>
+  <PropertyGroup>
+    <TargetExt>.p64</TargetExt>
+    <TargetName>$(ProjectName)64</TargetName>
+    <OutDir>$(IDA_DIR)\plugins\</OutDir>
+    <IntDir>.\$(Configuration)\$(PlatformTarget)\</IntDir>
+    <GenerateManifest>false</GenerateManifest>
   </PropertyGroup>
   <PropertyGroup Label="UserMacros">
     <IDA_DIR>d:\ida68</IDA_DIR>
@@ -46,19 +47,13 @@
       <EnvironmentVariable>true</EnvironmentVariable>
     </BuildMacro>
   </ItemGroup>
-  <PropertyGroup>
-    <OutDir>$(IDA_DIR)\plugins\</OutDir>
-    <IntDir>.\$(Configuration)\$(PlatformTarget)\</IntDir>
-    <GenerateManifest>false</GenerateManifest>
-  </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
       <AdditionalIncludeDirectories>$(IDA_SDK)\include;7z\CPP;dependencies;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>__NT__;__IDP__;_WINDOWS;USE_STANDARD_FILE_FUNCTIONS;USE_DANGEROUS_FUNCTIONS;_CRT_SECURE_NO_DEPRECATE;WIN32;_WIN32;EXTRACT_ONLY;_NO_CRYPTO;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>__NT__;__IDP__;__EA64__;PTR64;__X64__;_WINDOWS;USE_STANDARD_FILE_FUNCTIONS;USE_DANGEROUS_FUNCTIONS;_CRT_SECURE_NO_DEPRECATE;WIN32;_WIN32;EXTRACT_ONLY;_NO_CRYPTO;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)'=='Debug'">_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)'=='Release'">NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <MinimalRebuild Condition="'$(Configuration)'=='Debug'">false</MinimalRebuild>
-      <MinimalRebuild Condition="'$(Configuration)'=='Release'">false</MinimalRebuild>
+      <MinimalRebuild>false</MinimalRebuild>
       <StringPooling Condition="'$(Configuration)'=='Release'">true</StringPooling>
       <BasicRuntimeChecks Condition="'$(Configuration)'=='Debug'">EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary Condition="'$(Configuration)'=='Debug'">MultiThreadedDebug</RuntimeLibrary>
@@ -73,8 +68,7 @@
       <PrecompiledHeader />
     </ClCompile>
     <Link>
-      <AdditionalLibraryDirectories Condition="'$(Configuration)'=='Debug'">$(IDA_SDK)\lib\x86_win_vc_32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalLibraryDirectories Condition="'$(Configuration)'=='Release'">$(IDA_SDK)\lib\x86_win_vc_32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(IDA_SDK)\lib\x86_win_vc_64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>ida.lib;advapi32.lib;ComDlg32.Lib;gdi32.lib;user32.lib;wsock32.lib;shell32.lib;oleaut32.lib;dependencies/directx/ddraw.lib;dependencies/directx/dsound.lib;dependencies/directx/dinput.lib;dependencies/directx/dxguid.lib;winmm.lib;dependencies/libs/zlib.lib;dependencies/libs/libpng.lib;htmlhelp.lib;vfw32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
       <IgnoreSpecificDefaultLibraries>LIBC.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
@@ -83,8 +77,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
       <ImportLibrary />
-      <ImageHasSafeExceptionHandlers Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ImageHasSafeExceptionHandlers>
-      <ImageHasSafeExceptionHandlers Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</ImageHasSafeExceptionHandlers>
+      <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>

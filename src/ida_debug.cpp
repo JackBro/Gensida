@@ -660,29 +660,8 @@ static int idaapi get_memory_info(meminfo_vec_t &areas)
 {
 	memory_info_t info;
 
-	for (int i = 0; i < get_segm_qty(); ++i)
-	{
-		char buf[MAX_PATH];
-
-		segment_t *segm = getnseg(i);
-
-		info.startEA = segm->startEA;
-		info.endEA = segm->endEA;
-
-		get_segm_name(segm, buf, sizeof(buf));
-		info.name = buf;
-
-		get_segm_class(segm, buf, sizeof(buf));
-		info.sclass = buf;
-
-		info.sbase = 0;
-		info.perm = SEGPERM_READ | SEGPERM_WRITE;
-		info.bitness = 1;
-		areas.push_back(info);
-	}
-
 	info.name = "DBG_VDP_VRAM";
-	info.startEA = 0xB0000000;
+	info.startEA = 0x0B000000;
 	info.endEA = info.startEA + 0x10000;
 	info.bitness = 1;
 	areas.push_back(info);
@@ -785,10 +764,10 @@ static int idaapi update_bpts(update_bpt_info_t *bpts, int nadd, int ndel)
 			break;
 		}
 
-		if (start >= 0xB0000000 && end < 0xB0030000)
+		if (start >= 0x0B000000 && end < 0x0B003000)
 		{
-			start -= 0xB0000000;
-			end -= 0xB0000000;
+			start -= 0x0B000000;
+			end -= 0x0B000000;
 			is_vdp = true;
 		}
 
@@ -829,10 +808,10 @@ static int idaapi update_bpts(update_bpt_info_t *bpts, int nadd, int ndel)
 			break;
 		}
 
-		if (start >= 0xB0000000 && end < 0xB0030000)
+		if (start >= 0x0B000000 && end < 0x0B003000)
 		{
-			start -= 0xB0000000;
-			end -= 0xB0000000;
+			start -= 0x0B000000;
+			end -= 0x0B000000;
 			is_vdp = true;
 		}
 
@@ -902,10 +881,10 @@ static int idaapi update_lowcnds(const lowcnd_t *lowcnds, int nlowcnds)
 			break;
 		}
 
-		if (start >= 0xB0000000 && end < 0xB0030000)
+		if (start >= 0x0B000000 && end < 0x0B003000)
 		{
-			start -= 0xB0000000;
-			end -= 0xB0000000;
+			start -= 0x0B000000;
+			end -= 0x0B000000;
 			is_vdp = true;
 		}
 
