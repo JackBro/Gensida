@@ -27,13 +27,6 @@
     <ConfigurationType>DynamicLibrary</ConfigurationType>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
-  <PropertyGroup>
-    <TargetExt>.p64</TargetExt>
-    <TargetName>$(ProjectName)64</TargetName>
-    <OutDir>$(IDA_DIR)\plugins\</OutDir>
-    <IntDir>.\$(Configuration)\$(PlatformTarget)\</IntDir>
-    <GenerateManifest>false</GenerateManifest>
-  </PropertyGroup>
   <PropertyGroup Label="UserMacros">
     <IDA_DIR>d:\ida68</IDA_DIR>
     <IDA_SDK>d:\idasdk68</IDA_SDK>
@@ -47,6 +40,13 @@
       <EnvironmentVariable>true</EnvironmentVariable>
     </BuildMacro>
   </ItemGroup>
+  <PropertyGroup>
+    <TargetExt>.p64</TargetExt>
+    <TargetName>$(ProjectName)64</TargetName>
+    <OutDir>$(IDA_DIR)\plugins\</OutDir>
+    <IntDir>.\$(Configuration)\$(PlatformTarget)\</IntDir>
+    <GenerateManifest>false</GenerateManifest>
+  </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
       <AdditionalIncludeDirectories>$(IDA_SDK)\include;7z\CPP;dependencies;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
