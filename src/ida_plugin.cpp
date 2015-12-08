@@ -12,7 +12,7 @@
 // A copy of the GPL 2.0 should have been included with the program.
 // If not, see http ://www.gnu.org/licenses/
 
-#define VERSION "1.1.5"
+#define VERSION "1.1.6"
 
 #include <Windows.h>
 
