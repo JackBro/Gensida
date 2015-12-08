@@ -298,6 +298,7 @@ static bool idaapi init_debugger(const char *hostname,
 	int port_num,
 	const char *password)
 {
+	set_processor_type(ph.psnames[2], SETPROC_COMPAT); // "68020"
 	return true;
 }
 
@@ -307,6 +308,7 @@ static bool idaapi init_debugger(const char *hostname,
 static bool idaapi term_debugger(void)
 {
 	finish_execution();
+	set_processor_type(ph.psnames[0], SETPROC_COMPAT); // "68020"
 	return true;
 }
 

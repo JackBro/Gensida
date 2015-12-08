@@ -1,5 +1,7 @@
 Debug/
 Release/
+Debug64/
+Release64/
 7z/Debug
 7z/Release
 *.cfg
