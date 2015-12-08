@@ -30,7 +30,7 @@ extern "C" {
 
     // from 0ahsbbbbggggrrrr into RGB555 if (Mode_555 & 1) else RGB565
     extern unsigned short Palette[0x8000];
-    extern unsigned long TAB336[336];
+    extern unsigned long TAB336[240];
     extern unsigned char Bits32;
 
     extern struct
