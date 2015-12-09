@@ -2465,9 +2465,6 @@ int Save_Config(char *File_Name)
         WritePrivateProfileString("Options", "Ram Cart Size", "-1", Conf_File);
     }
 
-    WritePrivateProfileString("Options", "GCOffline path", CGOffline_Path, Conf_File);
-    WritePrivateProfileString("Options", "Gens manual path", Manual_Path, Conf_File);
-
     wsprintf(Str_Tmp, "%d", Disable_Blue_Screen);//Modif
     WritePrivateProfileString("Options", "Disable Blue Screen", Str_Tmp, Conf_File);//Modif
     wsprintf(Str_Tmp, "%d", FrameCounterEnabled);//Modif
@@ -2969,8 +2966,6 @@ int Load_Config(char *File_Name, void *Game_Active)
     }
     else BRAM_Ex_State |= 0x100;
 
-    GetPrivateProfileString("Options", "GCOffline path", "GCOffline.chm", CGOffline_Path, 1024, Conf_File);
-    GetPrivateProfileString("Options", "Gens manual path", "manual.exe", Manual_Path, 1024, Conf_File);
     Disable_Blue_Screen = GetPrivateProfileInt("Options", "Disable Blue Screen", 1, Conf_File); //Modif
     FrameCounterEnabled = GetPrivateProfileInt("Options", "FrameCounterEnabled", 1, Conf_File); //Modif N
     FrameCounterFrames = GetPrivateProfileInt("Options", "FrameCounterFrames", 1, Conf_File); // Modif N

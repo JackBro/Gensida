@@ -14,7 +14,6 @@ struct K_Def {
 };
 
 extern struct K_Def Keys_Def[8];
-extern unsigned char Kaillera_Keys[16];
 extern unsigned int DelayFactor; // determines the timing of "continuous frame advance"
 extern bool BackgroundInput;
 

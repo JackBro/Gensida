@@ -45,7 +45,6 @@ int Blit_Soft;
 int Effect_Color = 7;
 int FPS_Style = EMU_MODE | WHITE;
 int Message_Style = EMU_MODE | WHITE | SIZE_X2;
-int Kaillera_Error = 0;
 extern "C" int disableSound, disableSound2, disableRamSearchUpdate;
 
 long int MovieSize;//Modif

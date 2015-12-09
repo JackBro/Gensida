@@ -34,7 +34,6 @@
 #include "gfx_cd.h"
 #include "cd_aspi.h"
 #include "pcm.h"
-#include "htmlhelp.h"
 #include "CCnet.h"
 #include "wave.h"
 #include "ram_search.h"
@@ -135,9 +134,6 @@ char Str_Tmp[1024];
 char Comment[256];
 char Gens_Path[1024];
 char Language_Path[1024];
-char CGOffline_Path[1024];
-char Manual_Path[1024];
-//FILE *dbgfile=fopen("c:\\gensdbg.txt","r+b");
 char **language_name = NULL;
 struct Rom *Game = NULL;
 int Active = 0;
@@ -158,7 +154,6 @@ int Auto_Fix_CS = 0;
 int Language = 0;
 int Country = -1;
 int Country_Order[3];
-int Kaillera_Client_Running = 0;
 int Intro_Style = 0;
 int SegaCD_Accurate = 1;
 int Gens_Running = 0;
@@ -1491,8 +1486,6 @@ BOOL Init(HINSTANCE hInst, int nCmdShow)
 
     GetCurrentDirectory(1024, Gens_Path);
     GetCurrentDirectory(1024, Language_Path);
-    strcpy(Manual_Path, "");
-    strcpy(CGOffline_Path, "");
 
     strcat(Gens_Path, "\\");
     strcat(Language_Path, "\\language.dat");
@@ -2407,9 +2400,7 @@ long PASCAL WinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         }
 
         EndPaint(hWnd, &ps);
-        break;
-    }
-    break;
+    } break;
 
     // drag and drop support
     case WM_DROPFILES:
@@ -2427,1564 +2418,1430 @@ long PASCAL WinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     }	break;
 
     case WM_COMMAND:
-        if ((LOWORD(wParam) >= ID_HELP_LANG) && (LOWORD(wParam) < ID_HELP_LANG + 50))
-        {
-            Language = LOWORD(wParam) - ID_HELP_LANG;
-            Build_Main_Menu();
-            return 0;
-        }
-        else
-        {
-            int command = LOWORD(wParam);
-
-            if (command >= ID_FILES_OPENRECENTROM0 &&
-                command <= ID_FILES_OPENRECENTROMMAX &&
-                command - ID_FILES_OPENRECENTROM0 < MAX_RECENT_ROMS)
-            {
-                GensLoadRom(Recent_Rom[command - ID_FILES_OPENRECENTROM0]);
-                return 0;
-            }
-
-            if (command >= ID_TOOLS_OPENRECENTMOVIE0 &&
-                command <= ID_TOOLS_OPENRECENTMOVIEMAX &&
-                command - ID_TOOLS_OPENRECENTMOVIE0 < MAX_RECENT_MOVIES)
-            {
-                GensPlayMovie(Recent_Movie[command - ID_TOOLS_OPENRECENTMOVIE0]);
-                return 0;
-            }
-
-            if (command >= ID_LUA_OPENRECENTSCRIPT0 &&
-                command <= ID_LUA_OPENRECENTSCRIPTMAX &&
-                command - ID_LUA_OPENRECENTSCRIPT0 < MAX_RECENT_SCRIPTS)
-            {
-                if (LuaScriptHWnds.size() < 16)
-                {
-                    char temp[1024];
-                    strcpy(temp, Recent_Scripts[command - ID_LUA_OPENRECENTSCRIPT0]);
-                    HWND IsScriptFileOpen(const char* Path);
-                    if (!IsScriptFileOpen(temp))
-                    {
-                        HWND hDlg = CreateDialog(ghInstance, MAKEINTRESOURCE(IDD_LUA), hWnd, (DLGPROC)LuaScriptProc);
-                        SendDlgItemMessage(hDlg, IDC_EDIT_LUAPATH, WM_SETTEXT, 0, (LPARAM)temp);
-                        DialogsOpen++;
-                    }
-                }
-            }
-
-            switch (command)
-            {
-            case ID_GRAPHICS_NEVER_SKIP_FRAME:
-                Never_Skip_Frame = !Never_Skip_Frame;
-                Build_Main_Menu();
-                return 0;
-            case ID_CHANGE_256RATIO:
-                Correct_256_Aspect_Ratio = !Correct_256_Aspect_Ratio;
-                InvalidateRect(hWnd, NULL, FALSE);
-                Build_Main_Menu();
-                return 0;
-            case ID_SLOW_SPEED_1:
-                SlowDownSpeed = 1;
-                Build_Main_Menu();
-                return 0;
-            case ID_SLOW_SPEED_2:
-                SlowDownSpeed = 2;
-                Build_Main_Menu();
-                return 0;
-            case ID_SLOW_SPEED_3:
-                SlowDownSpeed = 3;
-                Build_Main_Menu();
-                return 0;
-            case ID_SLOW_SPEED_4:
-                SlowDownSpeed = 4;
-                Build_Main_Menu();
-                return 0;
-            case ID_SLOW_SPEED_5:
-                SlowDownSpeed = 5;
-                Build_Main_Menu();
-                return 0;
-            case ID_SLOW_SPEED_9:
-                SlowDownSpeed = 9;
-                Build_Main_Menu();
-                return 0;
-            case ID_SLOW_SPEED_15:
-                SlowDownSpeed = 15;
-                Build_Main_Menu();
-                return 0;
-            case ID_SLOW_SPEED_31:
-                SlowDownSpeed = 31;
-                Build_Main_Menu();
-                return 0;
-            case ID_SLOW_MODE:
-                if (SlowDownMode == 1)
-                    SlowDownMode = 0;
-                else
-                    SlowDownMode = 1;
-                Build_Main_Menu();
-                return 0;
-            case ID_TOGGLE_TURBO:
-                TurboToggle = !TurboToggle;
-                return 0;
-            case ID_SLOW_SPEED_PLUS: //Modif N - for new "speed up" key:
-                if (SlowDownSpeed == 1 || SlowDownMode == 0)
-                    SlowDownMode = 0;
-                else
-                {
-                    SlowDownMode = 1;
-                    if (SlowDownSpeed <= 5)
-                        SlowDownSpeed--;
-                    else if (SlowDownSpeed == 9)
-                        SlowDownSpeed = 5;
-                    else if (SlowDownSpeed == 15)
-                        SlowDownSpeed = 9;
-                    else if (SlowDownSpeed == 31)
-                        SlowDownSpeed = 15;
-                }
-                Str_Tmp[0] = '\0';
-                if (SlowDownMode == 0)
-                    strcpy(Str_Tmp, "100%");
-                else switch (SlowDownSpeed)
-                {
-                case 1: strcpy(Str_Tmp, "50%"); break;
-                case 2: strcpy(Str_Tmp, "25%"); break;
-                case 3: strcpy(Str_Tmp, "20%"); break;
-                case 4: strcpy(Str_Tmp, "16%"); break;
-                case 5: strcpy(Str_Tmp, "10%"); break;
-                case 9: strcpy(Str_Tmp, "6%"); break;
-                case 15: strcpy(Str_Tmp, "3%"); break;
-                }
-                if (Str_Tmp[0])
-                    Put_Info(Str_Tmp);
-
-                Build_Main_Menu();
-                return 0;
-            case ID_SLOW_SPEED_MINUS: //Modif N - for new "speed down" key:
-                if (SlowDownMode != 0)
-                {
-                    if (SlowDownSpeed < 5)
-                        SlowDownSpeed++;
-                    else if (SlowDownSpeed == 5)
-                        SlowDownSpeed = 9;
-                    else if (SlowDownSpeed == 9)
-                        SlowDownSpeed = 15;
-                    else if (SlowDownSpeed == 15)
-                        SlowDownSpeed = 31;
-                }
-                SlowDownMode = 1;
-
-                Str_Tmp[0] = '\0';
-                switch (SlowDownSpeed)
-                {
-                case 1: strcpy(Str_Tmp, "50%"); break;
-                case 2: strcpy(Str_Tmp, "25%"); break;
-                case 3: strcpy(Str_Tmp, "20%"); break;
-                case 4: strcpy(Str_Tmp, "16%"); break;
-                case 5: strcpy(Str_Tmp, "10%"); break;
-                case 9: strcpy(Str_Tmp, "6%"); break;
-                case 15: strcpy(Str_Tmp, "3%"); break;
-                }
-                if (Str_Tmp[0])
-                    Put_Info(Str_Tmp);
-
-                Build_Main_Menu();
-                return 0;
-            case ID_TOGGLE_MOVIE_READONLY: //Modif N - for new toggle readonly key:
-                if (MainMovie.File)
-                {
-                    if (MainMovie.ReadOnly && (GetFileAttributes(MainMovie.PhysicalFileName) & FILE_ATTRIBUTE_READONLY))
-                    {
-                        Put_Info("Can't toggle read-only; write permission denied.");
-                    }
-                    else
-                    {
-                        MainMovie.ReadOnly = !MainMovie.ReadOnly;
-                        if (MainMovie.ReadOnly)
-                            Put_Info("Movie is now read-only.");
-                        else
-                            Put_Info("Movie is now editable.");
-                    }
-                }
-                else
-                {
-                    Put_Info("Can't toggle read-only; no movie is active.");
-                }
-                break;
-
-                // increase frameSearchFrames, then
-                // starting at initial frame (frameSearch_Start_State_Buffer)
-                // run game for (frameSearchFrames)
-                // with input = initial input (frameSearchInitialInput)
-                // then unpause and run game normally (with new input)
-                // TODO: add support for doing this during read-only mode meaning it switches to playback and the movie replaces frameSearchInitialInput for frameSearchFrames steps, then it switches to recording before unpausing
-            case ID_FRAME_SEARCH_NEXT:
-            {
-                if (!Game || (MainMovie.File && MainMovie.Status == MOVIE_PLAYING))
-                    break;
-                frameSearchFrames++;
-                MESSAGE_NUM_L("%d frame search", "%d frame search", frameSearchFrames);
-                if (frameSearchFrames == 0)
-                {	// setup initial frame
-                    frameSearchInitialInput = GetLastInputCondensed();
-                    Save_State_To_Buffer(frameSearch_Start_State_Buffer);
-                }
-                else
-                {
-                    Load_State_From_Buffer(frameSearch_End_State_Buffer);
-                    SetNextInputCondensed(frameSearchInitialInput);
-                    Update_Emulation_One(HWnd);
-                }
-                Save_State_To_Buffer(frameSearch_End_State_Buffer);
-                Update_Emulation_One(HWnd);
-                soundCleared = false;
-                frameSearchFinalInput = GetLastInputCondensed();
-                frameSearchInitialized = true;
-                Paused = 0;
-            }	break;
-
-            // decrease frameSearchFrames, then
-            // starting at initial frame (frameSearch_Start_State_Buffer)
-            // run game for (frameSearchFrames)
-            // with input = initial input (frameSearchInitialInput)
-            // then unpause and run game normally (with new input)
-            // TODO: optimize this to be O(1) amortized when key is held down instead of current slow O(n) where n = frameSearchFrames
-            case ID_FRAME_SEARCH_PREV:
-            {
-                if (frameSearchFrames <= 0 || !Game || (MainMovie.File && MainMovie.Status == MOVIE_PLAYING))
-                    break;
-                frameSearchFrames--;
-                MESSAGE_NUM_L("%d frame search", "%d frame search", frameSearchFrames);
-                Load_State_From_Buffer(frameSearch_Start_State_Buffer);
-                if (MainMovie.File && MainMovie.Status == MOVIE_RECORDING)
-                    MainMovie.NbRerecords++;
-                disableSound2 = true;
-                for (int i = 0; i < frameSearchFrames; i++)
-                {
-                    SetNextInputCondensed(frameSearchInitialInput);
-                    Update_Emulation_One_Before(HWnd);
-                    Update_Frame_Fast();
-                    Update_Emulation_After_Fast(HWnd);
-                }
-                disableSound2 = false;
-                Save_State_To_Buffer(frameSearch_End_State_Buffer);
-                Update_Emulation_One(HWnd);
-                soundCleared = false;
-                frameSearchFinalInput = GetLastInputCondensed();
-                Paused = 0;
-            }	break;
-
-            // starting at initial frame (frameSearch_Start_State_Buffer)
-            // run game for (frameSearchFrames)
-            // with input = initial input (frameSearchInitialInput)
-            // then run one frame with the last new input (frameSearchFinalInput)
-            // then pause and exit frame search mode
-            case ID_FRAME_SEARCH_END:
-                if (!frameSearchInitialized || !Game || (MainMovie.File && MainMovie.Status == MOVIE_PLAYING))
-                    break;
-                MESSAGE_L("Frame search result", "Frame search result");
-                Load_State_From_Buffer(frameSearch_End_State_Buffer);
-                if (MainMovie.File && MainMovie.Status == MOVIE_RECORDING)
-                    MainMovie.NbRerecords++;
-                SetNextInputCondensed(frameSearchFinalInput);
-                Update_Emulation_One(HWnd);
-                soundCleared = false;
-                Paused = 1;
-                frameSearchFrames = -1;
-                break;
-
-            case ID_RAM_SEARCH:
-                if (!RamSearchHWnd)
-                {
-                    RamSearchHWnd = CreateDialog(ghInstance, MAKEINTRESOURCE(IDD_RAMSEARCH), hWnd, (DLGPROC)RamSearchProc);
-                    DialogsOpen++;
-                }
-                else
-                    SetForegroundWindow(RamSearchHWnd);
-                break;
-
-            case ID_RAM_WATCH:
-                if (!RamWatchHWnd)
-                {
-                    RamWatchHWnd = CreateDialog(ghInstance, MAKEINTRESOURCE(IDD_RAMWATCH), hWnd, (DLGPROC)RamWatchProc);
-                    DialogsOpen++;
-                }
-                else
-                    SetForegroundWindow(RamWatchHWnd);
-                break;
-
-            case ID_HEX_EDITOR:
-                HexCreateDialog();
-                break;
-
-            case ID_PLANE_EXPLORER:
-                if (!PlaneExplorerHWnd)
-                {
-                    PlaneExplorerHWnd = CreateDialog(ghInstance, MAKEINTRESOURCE(IDD_PLANEEXPLORER), hWnd, (DLGPROC)PlaneExplorerDialogProc);
-                    DialogsOpen++;
-                }
-                else
-                    SetForegroundWindow(PlaneExplorerHWnd);
-                break;
-
-            case ID_VDP_RAM:
-                if (!VDPRamHWnd)
-                {
-                    VDPRamHWnd = CreateDialog(ghInstance, MAKEINTRESOURCE(IDD_VDPRAM), hWnd, (DLGPROC)VDPRamProc);
-                    DialogsOpen++;
-                }
-                else
-                    SetForegroundWindow(VDPRamHWnd);
-                break;
-
-            case ID_VDP_SPRITES:
-                if (!VDPSpritesHWnd)
-                {
-                    VDPSpritesHWnd = CreateDialog(ghInstance, MAKEINTRESOURCE(IDD_VDP_SPRITES), hWnd, (DLGPROC)VDPSpritesProc);
-                    DialogsOpen++;
-                }
-                else
-                    SetForegroundWindow(VDPSpritesHWnd);
-                break;
-
-            case IDC_NEW_LUA_SCRIPT:
-                if (LuaScriptHWnds.size() < 16)
-                {
-                    CreateDialog(ghInstance, MAKEINTRESOURCE(IDD_LUA), hWnd, (DLGPROC)LuaScriptProc);
-                    DialogsOpen++;
-                }
-                break;
-
-            case IDC_CLOSE_LUA_SCRIPTS:
-                for (int i = (int)LuaScriptHWnds.size() - 1; i >= 0; i--)
-                    SendMessage(LuaScriptHWnds[i], WM_CLOSE, 0, 0);
-                break;
-
-            case IDC_LUA_SCRIPT_0:
-            case IDC_LUA_SCRIPT_1:
-            case IDC_LUA_SCRIPT_2:
-            case IDC_LUA_SCRIPT_3:
-            case IDC_LUA_SCRIPT_4:
-            case IDC_LUA_SCRIPT_5:
-            case IDC_LUA_SCRIPT_6:
-            case IDC_LUA_SCRIPT_7:
-            case IDC_LUA_SCRIPT_8:
-            case IDC_LUA_SCRIPT_9:
-            case IDC_LUA_SCRIPT_10:
-            case IDC_LUA_SCRIPT_11:
-            case IDC_LUA_SCRIPT_12:
-            case IDC_LUA_SCRIPT_13:
-            case IDC_LUA_SCRIPT_14:
-            case IDC_LUA_SCRIPT_15:
-            {
-                unsigned int index = command - IDC_LUA_SCRIPT_0;
-                if (LuaScriptHWnds.size() > index)
-                    SetForegroundWindow(LuaScriptHWnds[index]);
-            }	break;
-
-            case IDC_LUA_SCRIPT_HOTKEY_1:
-            case IDC_LUA_SCRIPT_HOTKEY_2:
-            case IDC_LUA_SCRIPT_HOTKEY_3:
-            case IDC_LUA_SCRIPT_HOTKEY_4:
-            case IDC_LUA_SCRIPT_HOTKEY_5:
-            case IDC_LUA_SCRIPT_HOTKEY_6:
-            case IDC_LUA_SCRIPT_HOTKEY_7:
-            case IDC_LUA_SCRIPT_HOTKEY_8:
-            case IDC_LUA_SCRIPT_HOTKEY_9:
-            case IDC_LUA_SCRIPT_HOTKEY_10:
-            case IDC_LUA_SCRIPT_HOTKEY_11:
-            case IDC_LUA_SCRIPT_HOTKEY_12:
-            case IDC_LUA_SCRIPT_HOTKEY_13:
-            case IDC_LUA_SCRIPT_HOTKEY_14:
-            case IDC_LUA_SCRIPT_HOTKEY_15:
-            case IDC_LUA_SCRIPT_HOTKEY_16:
-            {
-                unsigned int index = command - IDC_LUA_SCRIPT_HOTKEY_1;
-                CallRegisteredLuaFunctions((LuaCallID)(LUACALL_SCRIPT_HOTKEY_1 + index));
-            }	break;
-
-            case ID_VOLUME_CONTROL:
-                if (!VolControlHWnd)
-                {
-                    VolControlHWnd = CreateDialog(ghInstance, MAKEINTRESOURCE(IDD_VOLUME), hWnd, (DLGPROC)VolumeProc);
-                    DialogsOpen++;
-                }
-                else
-                    SetForegroundWindow(VolControlHWnd);
-                break;
-            case ID_PLAY_FROM_START:
-                GensReplayMovie();
-                return 0;
-            case ID_RESUME_RECORD:
-                if (!(Game))
-                    return 0;
-                if (MainMovie.Status != MOVIE_PLAYING)
-                {
-                    MESSAGE_L("Error: no movie is playing", "Error: no movie is playing");
-                    return 0;
-                }
-                if (MainMovie.ReadOnly)
-                {
-                    MESSAGE_L("Error: movie is read only", "Error: movie is read only");
-                    return 0;
-                }
-                strncpy(Str_Tmp, MainMovie.FileName, 512);
-                if (AutoBackupEnabled)
-                {
-                    strcat(MainMovie.FileName, ".gmv");
-                    for (int i = strlen(MainMovie.FileName); i >= 0; i--) if (MainMovie.FileName[i] == '|') MainMovie.FileName[i] = '_';
-                    MainMovie.FileName[strlen(MainMovie.FileName) - 7] = 'b'; // ".bak"
-                    MainMovie.FileName[strlen(MainMovie.FileName) - 6] = 'a';
-                    MainMovie.FileName[strlen(MainMovie.FileName) - 5] = 'k';
-                    BackupMovieFile(&MainMovie);
-                    strncpy(MainMovie.FileName, Str_Tmp, 512);
-                }
-                MainMovie.Status = MOVIE_RECORDING;
-                MainMovie.NbRerecords++;
-                if (MainMovie.TriplePlayerHack)
-                    MainMovie.LastFrame = max(max(max(Track1_FrameCount, Track2_FrameCount), Track3_FrameCount), FrameCount);
-                else
-                    MainMovie.LastFrame = max(max(Track1_FrameCount, Track2_FrameCount), FrameCount);
-                MESSAGE_L("Recording from current frame", "Recording from current frame");
-                Build_Main_Menu();
-                return 0;
-            case ID_STOP_MOVIE:
-                if (!(Game))
-                    return 0;
-                if (MainMovie.Status == MOVIE_RECORDING)
-                    MovieRecordingStuff();
-                if (MainMovie.File != NULL)
-                    CloseMovieFile(&MainMovie);
-                MainMovie.Status = 0;
-                MESSAGE_L("Recording/Playing stop", "Recording/Playing stop");
-                Build_Main_Menu();
-                return 0;
-            case ID_RECORD_MOVIE:	//Modif
-                if (!(Game))
-                    if (SendMessage(hWnd, WM_COMMAND, ID_FILES_OPENROM, 0) <= 0) // Modif N. -- prompt once to load ROM if it's not already loaded
-                        return 0;
-                //					if(MainMovie.File!=NULL || MainMovie.Status==MOVIE_FINISHED) //Modif N - disabled; if the user chose record, they meant it!
-                //						return 0;
-                MINIMIZE
-                dialogAgain : //Nitsuja added this
-                DialogsOpen++;
-                DialogBox(ghInstance, MAKEINTRESOURCE(IDD_RECORD_A_MOVIE), hWnd, (DLGPROC)RecordMovieProc);
-                if (RecordMovieCanceled)
-                    return 0;
-                if (SegaCD_Started && !PCM_Enable)
-                {
-                    DialogsOpen++;
-                    int answer = MessageBox(hWnd, "Your \"PCM Audio\" option is off!\nThis could cause desyncs.\nWould you like to turn it on now?", "Alert", MB_YESNOCANCEL | MB_ICONQUESTION);
-                    DialogsOpen--;
-                    if (answer == IDCANCEL) { MainMovie.Status = 0; return 0; }
-                    if (answer == IDYES) PCM_Enable = 1;
-                }
-                if (SegaCD_Started && !SegaCD_Accurate)
-                {
-                    DialogsOpen++;
-                    int answer = MessageBox(hWnd, "Your \"Perfect SegaCD CPU Synchro\" option is off!\nThis could cause desyncs.\nWould you like to turn it on now?", "Alert", MB_YESNOCANCEL | MB_ICONQUESTION);
-                    DialogsOpen--;
-                    if (answer == IDCANCEL) { MainMovie.Status = 0; return 0; }
-                    if (answer == IDYES) SegaCD_Accurate = 1;
-                }
-                if (SegaCD_Started && SCD.TOC.Last_Track == 1)
-                {
-                    DialogsOpen++;
-                    int answer = MessageBox(hWnd, "You are missing the audio tracks for this game.\nThis could prevent other people from being able to watch your movie with audio.\nPlease ignore this message if you know this game does not use any CD audio.", "Warning", MB_OKCANCEL | MB_ICONWARNING);
-                    DialogsOpen--;
-                    if (answer == IDCANCEL) { MainMovie.Status = 0; return 0; }
-                }
-                if (MainMovie.StateRequired)
-                {
-                    FrameCount = 0;
-                    LagCount = 0;
-                    LagCountPersistent = 0;
-                    frameSearchFrames = -1; frameSearchInitialized = false;
-                    strncpy(Str_Tmp, Rom_Name, 507);
-                    strcat(Str_Tmp, "[GMV]");
-                    strcat(Str_Tmp, ".gst");
-                    Change_File_S(Str_Tmp, Movie_Dir, "Save state", "State Files\0*.gs?\0All Files\0*.*\0\0", "", hWnd);
-                    if (Save_State(Str_Tmp) == 0)
-                        return 0;
-                }
-                MainMovie.File = fopen(MainMovie.FileName, "wb");
-
-                if (!MainMovie.File)
-                {
-                    char pathError[256];
-                    char* slash = strrchr(MainMovie.FileName, '\\');
-                    char* slash2 = strrchr(MainMovie.FileName, '/');
-                    if (slash > slash2) *(slash + 1) = 0;
-                    if (slash2 > slash) *(slash2 + 1) = 0;
-                    sprintf(pathError, "Invalid path: %s", MainMovie.FileName);
-                    MessageBox(hWnd, pathError, "Error", MB_OK | MB_ICONERROR);
-                    MainMovie.Status = 0;
-                    goto dialogAgain;
-                    //char* div = strrchr(MainMovie.FileName, '\\');
-                    //if(!div) div = strrchr(MainMovie.FileName, '/');
-                    //if(div)
-                    //{
-                    //	memmove(MainMovie.FileName, div+1, strlen(div));
-                    //	MainMovie.File=fopen(MainMovie.FileName,"wb");
-                    //}
-                }
-
-                if (!MainMovie.File)
-                {
-                    MessageBox(hWnd, MainMovie.FileName, "Error", MB_OK);
-
-                    MainMovie.Status = 0;
-                    MESSAGE_L("File error", "File error")
-                        return 0;
-                }
-                MainMovie.Ok = 1;
-                fseek(MainMovie.File, 0, SEEK_SET);
-                fwrite(MainMovie.Header, 16, 1, MainMovie.File);
-                fseek(MainMovie.File, 24, SEEK_SET);
-                fwrite(MainMovie.Note, 40, 1, MainMovie.File);
-                fclose(MainMovie.File);
-                MainMovie.File = NULL;
-                if (OpenMovieFile(&MainMovie) == 0)
-                {
-                    MainMovie.Status = 0;
-                    MESSAGE_L("File error", "File error")
-                        return 0;
-                }
-                FrameCount = 0;
-                LagCount = 0;
-                LagCountPersistent = 0;
-                frameSearchFrames = -1; frameSearchInitialized = false;
-                MainMovie.NbRerecords = 0;
-                MainMovie.LastFrame = 0;
-                if (MainMovie.StateRequired)
-                {
-                    MESSAGE_L("Recording from now", "Recording from now")
-                }
-                else
-                {
-                    if (Genesis_Started)
-                    {
-                        Pre_Load_Rom(HWnd, Recent_Rom[0]);
-                        MESSAGE_L("Genesis reseted", "Genesis reset")
-                            memset(SRAM, 0, sizeof(SRAM));
-                    }
-                    else if (_32X_Started)
-                    {
-                        Pre_Load_Rom(HWnd, Recent_Rom[0]);
-                        MESSAGE_L("32X reseted", "32X reset")
-                            memset(SRAM, 0, sizeof(SRAM));
-                    }
-                    else if (SegaCD_Started)
-                    {
-                        g_dontResetAudioCache = 1;
-                        if (CD_Load_System == CDROM_)
-                        {
-                            MessageBox(GetActiveWindow(), "Warning: You are running from a mounted CD. To prevent desyncs, it is recommended you run the game from a CUE or ISO file instead.", "Recording Warning", MB_OK | MB_ICONWARNING);
-                            Reset_SegaCD();
-                        }
-                        else
-                            Pre_Load_Rom(HWnd, Recent_Rom[0]);
-                        g_dontResetAudioCache = 0;
-                        MESSAGE_L("SegaCD reseted", "SegaCD reset")
-                            memset(SRAM, 0, sizeof(SRAM));
-                        Format_Backup_Ram();
-                    }
-                    MESSAGE_L("Recording from start", "Recording from start")
-                }
-                Build_Main_Menu();
-                CallRegisteredLuaFunctions(LUACALL_ONSTART);
-                return 0;
-            case ID_PLAY_MOVIE:
-                GensPlayMovie(NULL, false);
-                return 0;
-
-            case ID_SPLICE:
-                if (SpliceFrame)
-                {
-                    DoMovieSplice();
-                    return 0;
-                }
-                else if (MainMovie.File != NULL)
-                {
-                    DialogsOpen++;
-                    DialogBox(ghInstance, MAKEINTRESOURCE(IDD_PROMPT), hWnd, (DLGPROC)PromptSpliceFrameProc);
-                    return 0;
-                }
-                else
-                    return 1;
-
-            case IDC_SEEK_FRAME:
-                if (SeekFrame)
-                {
-                    SeekFrame = 0;
-                    MustUpdateMenu = 1;
-                    MESSAGE_L("Seek Cancelled", "Seek Cancelled");
-                    return 0;
-                }
-                else
-                {
-                    DialogsOpen++;
-                    DialogBox(ghInstance, MAKEINTRESOURCE(IDD_PROMPT), hWnd, (DLGPROC)PromptSeekFrameProc);
-                    return 0;
-                }
-
-            case ID_FILES_QUIT:
-                PostMessage(hWnd, WM_CLOSE, 0, 0);
-                return 0;
-
-            case ID_FILES_OPENROM:
-            {
-                GensLoadRom(NULL);
-                return 0;
-            }
-
-            case ID_FILES_BOOTCD:
-                if (MainMovie.File != NULL)
-                    CloseMovieFile(&MainMovie);
-                if (Num_CD_Drive == 0)
-                {
-                    extern int failed_to_load_wnaspi_dll;
-                    if (failed_to_load_wnaspi_dll)
-                        if (!Full_Screen)
-                            MessageBox(HWnd, "You need WNASPI32.DLL to run from a CD drive.", "Error", MB_OK);
-                        else
-                            MESSAGE_L("You need WNASPI32.DLL to run from a CD drive.", "You need WNASPI32.DLL to run from a CD drive.")
-                            return 1;
-                }
-                Free_Rom(Game);			// Don't forget it !
-                SegaCD_Started = Init_SegaCD(NULL);
-                Build_Main_Menu();
-                FrameCount = 0;
-                LagCount = 0;
-                LagCountPersistent = 0;
-                frameSearchFrames = -1; frameSearchInitialized = false;
-                ReopenRamWindows();
-                return SegaCD_Started;
-
-            case ID_FILES_OPENCLOSECD:
-                if (MainMovie.File != NULL)
-                    CloseMovieFile(&MainMovie);
-                if (SegaCD_Started) Change_CD();
-                FrameCount = 0;
-                LagCount = 0;
-                LagCountPersistent = 0;
-                frameSearchFrames = -1; frameSearchInitialized = false;
-                return 0;
-
-            case ID_FILES_CLOSEROM:
-                if (MainMovie.File != NULL)
-                    CloseMovieFile(&MainMovie);
-                if (Sound_Initialised) Clear_Sound_Buffer();
-                if (Net_Play)
-                {
-                    if (Full_Screen) Set_Render(hWnd, 0, -1, true);
-                }
-                Free_Rom(Game);
-                ReleaseTempFileCategory("rom"); // delete the old temporary file if any
-                ReleaseTempFileCategory("bios"); // delete the old temporary file if any
-                Build_Main_Menu();
-                FrameCount = 0;
-                LagCount = 0;
-                LagCountPersistent = 0;
-                frameSearchFrames = -1; frameSearchInitialized = false;
-                return 0;
-
-            case ID_FILES_GAMEGENIE:
-                MINIMIZE
-                    DialogsOpen++;
-                DialogBox(ghInstance, MAKEINTRESOURCE(IDD_GAMEGENIE), hWnd, (DLGPROC)GGenieProc);
-                Build_Main_Menu();
-                return 0;
-
-            case ID_FILES_LOADSTATE:
-                Str_Tmp[0] = 0;
-                Get_State_File_Name(Str_Tmp);
-                Load_State(Str_Tmp);
-                return 0;
-
-            case ID_FILES_LOADSTATEAS:
-                Str_Tmp[0] = 0;
-                DialogsOpen++;
-                Change_File_L(Str_Tmp, State_Dir, "Load state", "State Files\0*.gs?\0All Files\0*.*\0\0", "", hWnd);
-                DialogsOpen--;
-                Load_State(Str_Tmp);
-                return 0;
-
-            case ID_FILES_SAVESTATE:
-                Str_Tmp[0] = 0;
-                Get_State_File_Name(Str_Tmp);
-                Save_State(Str_Tmp);
-                return 0;
-
-            case ID_FILES_SAVESTATEAS:
-                DialogsOpen++;
-                Change_File_S(Str_Tmp, State_Dir, "Save state", "State Files\0*.gs?\0All Files\0*.*\0\0", "", hWnd);
-                DialogsOpen--;
-                Save_State(Str_Tmp);
-                return 0;
-
-            case ID_FILES_PREVIOUSSTATE:
-                Set_Current_State((Current_State + 9) % 10, true, true);
-                return 0;
-
-            case ID_FILES_NEXTSTATE:
-                Set_Current_State((Current_State + 1) % 10, true, true);
-                return 0;
-
-            case ID_GRAPHICS_VSYNC:
-                Change_VSync(hWnd);
-                return 0;
-
-            case ID_GRAPHICS_SWITCH_MODE:
-                if (Full_Screen) Set_Render(hWnd, 0, -1, true);
-                else Set_Render(hWnd, 1, Render_FS, true);
-                return 0;
-
-            case ID_GRAPHICS_FS_SAME_RES: //Upth-Add - toggle the same-res fullscreen flag
-                FS_No_Res_Change = !(FS_No_Res_Change);
-                Build_Main_Menu();
-                if (Full_Screen) Set_Render(hWnd, 1, Render_FS, true); // Modif N. -- if already in fullscreen, take effect immediately
-                return 0;
-
-            case ID_GRAPHICS_COLOR_ADJUST:
-                MINIMIZE
-                    DialogsOpen++;
-                DialogBox(ghInstance, MAKEINTRESOURCE(IDD_COLOR), hWnd, (DLGPROC)ColorProc);
-                return 0;
-
-            case ID_GRAPHICS_RENDER_NORMAL:
-                Set_Render(hWnd, Full_Screen, 0, false);
-                return 0;
-
-            case ID_GRAPHICS_RENDER_DOUBLE:
-                Set_Render(hWnd, Full_Screen, 1, false);
-                return 0;
-
-            case ID_GRAPHICS_RENDER_EPX:
-                Set_Render(hWnd, Full_Screen, 2, false);
-                return 0;
-            case ID_GRAPHICS_RENDER_EPXPLUS:
-                Set_Render(hWnd, Full_Screen, 11, false);
-                return 0;
-
-            case ID_GRAPHICS_RENDER_DOUBLE_INT:
-                Set_Render(hWnd, Full_Screen, 3, false);
-                return 0;
-
-            case ID_GRAPHICS_RENDER_FULLSCANLINE:
-                Set_Render(hWnd, Full_Screen, 4, false);
-                return 0;
-
-            case ID_GRAPHICS_SIZE_1X:
-                if (ScaleFactor != 1.0)
-                {
-                    ScaleFactor = 1.0;
-                    Set_Window_Size(hWnd);
-                    Build_Main_Menu();
-                }
-                return 0;
-
-            case ID_GRAPHICS_SIZE_2X:
-                if (ScaleFactor != 2.0)
-                {
-                    ScaleFactor = 2.0;
-                    Set_Window_Size(hWnd);
-                    Build_Main_Menu();
-                }
-                return 0;
-
-            case ID_GRAPHICS_SIZE_3X:
-                if (ScaleFactor != 3.0)
-                {
-                    ScaleFactor = 3.0;
-                    Set_Window_Size(hWnd);
-                    Build_Main_Menu();
-                }
-                return 0;
-
-            case ID_GRAPHICS_SIZE_4X:
-                if (ScaleFactor != 4.0)
-                {
-                    ScaleFactor = 4.0;
-                    Set_Window_Size(hWnd);
-                    Build_Main_Menu();
-                }
-                return 0;
-
-            case ID_GRAPHICS_LAYER0: //Nitsuja added these
-            case ID_GRAPHICS_LAYER1:
-            case ID_GRAPHICS_LAYER2:
-            case ID_GRAPHICS_LAYER3:
-            case ID_GRAPHICS_LAYERSPRITE:
-            case ID_GRAPHICS_LAYERSPRITEHIGH:
-            case ID_GRAPHICS_LAYER32X_LOW:
-            case ID_GRAPHICS_LAYER32X_HIGH:
-                Change_Layer(command - ID_GRAPHICS_LAYER0);
-                return 0;
-
-            case ID_GRAPHICS_SPRITEALWAYS:
-                Change_SpriteTop();
-                return 0;
-
-            case ID_GRAPHICS_SPRITEBOXING:
-                Change_SpriteBoxing();
-                return 0;
-
-            case ID_GRAPHICS_LAYERSWAPA:
-            case ID_GRAPHICS_LAYERSWAPB:
-            case ID_GRAPHICS_LAYERSWAPS:
-            case ID_GRAPHICS_LAYERSWAP32X:
-                Change_LayerSwap(command - ID_GRAPHICS_LAYERSWAPA);
-                return 0;
-
-            case ID_GRAPHICS_TOGGLEA:
-            case ID_GRAPHICS_TOGGLEB:
-            case ID_GRAPHICS_TOGGLES:
-            case ID_GRAPHICS_TOGGLE32X:
-                Change_Plane(command - ID_GRAPHICS_TOGGLEA);
-                return 0;
-
-            case ID_GRAPHICS_PINKBG:
-            {
-                PinkBG = !PinkBG;
-                Build_Main_Menu();
-                Recalculate_Palettes();
-                Show_Genesis_Screen(hWnd);
-                char message[256];
-                sprintf(message, "Pink background %sabled", PinkBG ? "en" : "dis");
-                MESSAGE_L(message, message)
-
-                    return 0;
-            }
-
-            case ID_GRAPHICS_RENDER_50SCANLINE:
-                Set_Render(hWnd, Full_Screen, 5, false);
-                return 0;
-
-            case ID_GRAPHICS_RENDER_25SCANLINE:
-                Set_Render(hWnd, Full_Screen, 6, false);
-                return 0;
-
-            case ID_GRAPHICS_RENDER_INTESCANLINE:
-                Set_Render(hWnd, Full_Screen, 7, false);
-                return 0;
-
-            case ID_GRAPHICS_RENDER_INT50SCANLIN:
-                Set_Render(hWnd, Full_Screen, 8, false);
-                return 0;
-
-            case ID_GRAPHICS_RENDER_INT25SCANLIN:
-                Set_Render(hWnd, Full_Screen, 9, false);
-                return 0;
-
-            case ID_GRAPHICS_RENDER_2XSAI:
-                Set_Render(hWnd, Full_Screen, 10, false);
-                return 0;
-
-            case ID_GRAPHICS_PREVIOUS_RENDER:
-            case ID_GRAPHICS_NEXT_RENDER:
-            {
-                int& Rend = Full_Screen ? Render_FS : Render_W;
-                int RendOrder[] = { -1, 0, 1, 2, 11, Bits32 ? -2 : 10, 3, 4, 5, 6, 7, 8, 9, -1, -1 };
-                int index = 1; for (; RendOrder[index] != Rend && index < sizeof(RendOrder) / sizeof(*RendOrder) - 1; index++);
-                do { index += (command == ID_GRAPHICS_PREVIOUS_RENDER) ? -1 : 1; } while (RendOrder[index] == -2);
-                Set_Render(hWnd, Full_Screen, RendOrder[index], false);
-            }
-            return 0;
-
-            case ID_GRAPHICS_STRETCH:
-                Change_Stretch();
-                return 0;
-
-            case ID_GRAPHICS_FORCESOFT:
-                Change_Blit_Style();
-                return 0;
-
-            case ID_GRAPHICS_FRAMESKIP_AUTO:
-                Set_Frame_Skip(-1);
-                return 0;
-
-            case ID_GRAPHICS_FRAMESKIP_0:
-            case ID_GRAPHICS_FRAMESKIP_1:
-            case ID_GRAPHICS_FRAMESKIP_2:
-            case ID_GRAPHICS_FRAMESKIP_3:
-            case ID_GRAPHICS_FRAMESKIP_4:
-            case ID_GRAPHICS_FRAMESKIP_5:
-            case ID_GRAPHICS_FRAMESKIP_6:
-            case ID_GRAPHICS_FRAMESKIP_7:
-            case ID_GRAPHICS_FRAMESKIP_8:
-                Set_Frame_Skip(command - ID_GRAPHICS_FRAMESKIP_0);
-                return 0;
-
-            case ID_LATENCY_COMPENSATION_0:
-            case ID_LATENCY_COMPENSATION_1:
-            case ID_LATENCY_COMPENSATION_2:
-            case ID_LATENCY_COMPENSATION_3:
-            case ID_LATENCY_COMPENSATION_4:
-            case ID_LATENCY_COMPENSATION_5:
-                Set_Latency_Compensation(command - ID_LATENCY_COMPENSATION_0);
-                return 0;
-
-            case ID_GRAPHICS_FRAMESKIP_DECREASE:
-                if (Frame_Skip <= -1)
-                    Set_Frame_Skip(8);
-                else
-                    Set_Frame_Skip(Frame_Skip - 1);
-                return 0;
-
-            case ID_GRAPHICS_FRAMESKIP_INCREASE:
-                if (Frame_Skip >= 8)
-                    Set_Frame_Skip(-1);
-                else
-                    Set_Frame_Skip(Frame_Skip + 1);
-                return 0;
-
-            case ID_GRAPHICS_SPRITEOVER:
-                Set_Sprite_Over(Sprite_Over ^ 1);
-                return 0;
-
-            case ID_FILES_SAVESTATE_1:
-            case ID_FILES_SAVESTATE_2:
-            case ID_FILES_SAVESTATE_3:
-            case ID_FILES_SAVESTATE_4:
-            case ID_FILES_SAVESTATE_5:
-            case ID_FILES_SAVESTATE_6:
-            case ID_FILES_SAVESTATE_7:
-            case ID_FILES_SAVESTATE_8:
-            case ID_FILES_SAVESTATE_9:
-            case ID_FILES_SAVESTATE_0:
-            {
-                Set_Current_State((command - ID_FILES_SAVESTATE_1 + 1) % 10, false, false);
-                char Name[1024] = { 0 };
-                Get_State_File_Name(Name);
-                Save_State(Name);
-                return 0;
-            }
-            case ID_FILES_SAVESTATE_10:
-            {
-                Set_Current_State(10, false, false);
-                char Name[1024] = { 0 };
-                Get_State_File_Name(Name);
-                Save_State(Name);
-                return 0;
-            }
-            case ID_FILES_LOADSTATE_1:
-            case ID_FILES_LOADSTATE_2:
-            case ID_FILES_LOADSTATE_3:
-            case ID_FILES_LOADSTATE_4:
-            case ID_FILES_LOADSTATE_5:
-            case ID_FILES_LOADSTATE_6:
-            case ID_FILES_LOADSTATE_7:
-            case ID_FILES_LOADSTATE_8:
-            case ID_FILES_LOADSTATE_9:
-            case ID_FILES_LOADSTATE_0:
-            {
-                Set_Current_State((command - ID_FILES_LOADSTATE_1 + 1) % 10, false, true);
-                char Name[1024] = { 0 };
-                Get_State_File_Name(Name);
-                Load_State(Name);
-                return 0;
-            }
-            case ID_FILES_SETSTATE_1:
-            case ID_FILES_SETSTATE_2:
-            case ID_FILES_SETSTATE_3:
-            case ID_FILES_SETSTATE_4:
-            case ID_FILES_SETSTATE_5:
-            case ID_FILES_SETSTATE_6:
-            case ID_FILES_SETSTATE_7:
-            case ID_FILES_SETSTATE_8:
-            case ID_FILES_SETSTATE_9:
-            case ID_FILES_SETSTATE_0:
-                Set_Current_State((command - ID_FILES_SETSTATE_1 + 1) % 10, true, true);
-                return 0;
-
-            case ID_MOVIE_CHANGETRACK_ALL:
-                track = 1 | 2 | 4;
-                Put_Info("Recording all tracks");
-                if (!MainMovie.TriplePlayerHack) track &= 3;
-                return 0;
-            case ID_MOVIE_CHANGETRACK_1:
-            case ID_MOVIE_CHANGETRACK_2:
-            case ID_MOVIE_CHANGETRACK_3:
-            {
-                int chgtrack = command - ID_MOVIE_CHANGETRACK_ALL;
-                track ^= chgtrack;
-                sprintf(Str_Tmp, "Recording player %d %sed", min(chgtrack, 3), (track & chgtrack) ? "start" : "end");
-                Put_Info(Str_Tmp);
-                if (!MainMovie.TriplePlayerHack) track &= 3;
-                return 0;
-            }
-            case ID_PREV_TRACK:
-            {
-                int maxtrack = TRACK1 | TRACK2;
-                if (MainMovie.TriplePlayerHack) maxtrack |= TRACK3;
-                track &= maxtrack;
-                if (track == maxtrack)
-                    track = 2;
-                else
-                {
-                    track >>= 1;
-                    if (!track) track = maxtrack;
-                }
-                if (track == maxtrack) sprintf(Str_Tmp, "Recording all players.");
-                else sprintf(Str_Tmp, "Recording player %d.", min(track, 3));
-                Put_Info(Str_Tmp);
-            }
-            break;
-            case ID_NEXT_TRACK:
-            {
-                int maxtrack = TRACK1 | TRACK2;
-                if (MainMovie.TriplePlayerHack) maxtrack |= TRACK3;
-                track &= maxtrack;
-                if (track == maxtrack)
-                    track = 1;
-                else
-                {
-                    track <<= 1;
-                    track &= maxtrack;
-                    if (!track) track = maxtrack;
-                }
-                if (track == maxtrack) sprintf(Str_Tmp, "Recording all players.");
-                else sprintf(Str_Tmp, "Recording player %d.", min(track, 3));
-                Put_Info(Str_Tmp);
-            }
-            break;
-
-            case ID_LAG_RESET:
-                LagCount = 0;
-                // note: the whole point of LagCountPersistent is that it doesn't get reset here
-                return 0;
-
-            case ID_CPU_RESET:
-                if (!(Game))
-                    return 0;
-                if ((MainMovie.File != NULL) && (AutoCloseMovie)) //Upth-Modif - So movie close on reset is optional
-                {
-                    CloseMovieFile(&MainMovie);
-                    MainMovie.Status = 0;
-                }
-                if ((MainMovie.Status == MOVIE_RECORDING) && (!(AutoCloseMovie)) && (MainMovie.ReadOnly)) //Upth-Add - on reset, switch movie from recording
-                    MainMovie.Status = MOVIE_PLAYING; //Upth-Add - To playing, if read only has been toggled on
-
-                if (Genesis_Started)
-                    Reset_Genesis();
-                else if (_32X_Started)
-                    Reset_32X();
-                else if (SegaCD_Started)
-                    Reset_SegaCD();
-
-                FrameCount = 0;
-                LagCount = 0;
-                LagCountPersistent = 0;
-                frameSearchFrames = -1; frameSearchInitialized = false;
-
-                if (Genesis_Started)
-                    MESSAGE_L("Genesis reseted", "Genesis reset")
-                else if (_32X_Started)
-                MESSAGE_L("32X reseted", "32X reset")
-                else if (SegaCD_Started)
-                MESSAGE_L("SegaCD reseted", "SegaCD reset")
-
-                CallRegisteredLuaFunctions(LUACALL_ONSTART);
-
-                return 0;
-
-            case ID_CPU_RESET68K:
-                if (!(Game))
-                    return 0;
-                if (MainMovie.File != NULL)
-                    CloseMovieFile(&MainMovie);
-                MainMovie.Status = 0;
-
-                if (Game)
-                {
-                    Paused = 0;
-                    main68k_reset();
-                    if (Genesis_Started) MESSAGE_L("68000 CPU reseted", "68000 CPU reseted")
-                    else if (SegaCD_Started) MESSAGE_L("Main 68000 CPU reseted", "Main 68000 CPU reseted")
-                }
-                FrameCount = 0;
-                LagCount = 0;
-                LagCountPersistent = 0;
-                frameSearchFrames = -1; frameSearchInitialized = false;
-                return 0;
-
-            case ID_CPU_RESET_MSH2:
-                if (!(Game))
-                    return 0;
-                if (MainMovie.File != NULL)
-                    CloseMovieFile(&MainMovie);
-                MainMovie.Status = 0;
-
-                if ((Game) && (_32X_Started))
-                {
-                    Paused = 0;
-                    SH2_Reset(&M_SH2, 1);
-                    MESSAGE_L("Master SH2 reseted", "Master SH2 reseted")
-                }
-                FrameCount = 0;
-                LagCount = 0;
-                LagCountPersistent = 0;
-                frameSearchFrames = -1; frameSearchInitialized = false;
-                return 0;
-
-            case ID_CPU_RESET_SSH2:
-                if (!(Game))
-                    return 0;
-                if (MainMovie.File != NULL)
-                    CloseMovieFile(&MainMovie);
-                MainMovie.Status = 0;
-
-                if ((Game) && (_32X_Started))
-                {
-                    Paused = 0;
-                    SH2_Reset(&S_SH2, 1);
-                    MESSAGE_L("Slave SH2 reseted", "Slave SH2 reseted")
-                }
-                FrameCount = 0;
-                LagCount = 0;
-                LagCountPersistent = 0;
-                frameSearchFrames = -1; frameSearchInitialized = false;
-                return 0;
-
-            case ID_CPU_RESET_SUB68K:
-                if (!(Game))
-                    return 0;
-                if (MainMovie.File != NULL)
-                    CloseMovieFile(&MainMovie);
-                MainMovie.Status = 0;
-
-                if ((Game) && (SegaCD_Started))
-                {
-                    Paused = 0;
-                    sub68k_reset();
-                    MESSAGE_L("Sub 68000 CPU reseted", "Sub 68000 CPU reseted")
-                }
-                FrameCount = 0;
-                LagCount = 0;
-                LagCountPersistent = 0;
-                frameSearchFrames = -1; frameSearchInitialized = false;
-                return 0;
-
-            case ID_CPU_RESETZ80:
-                if (!(Game))
-                    return 0;
-                if (MainMovie.File != NULL)
-                    CloseMovieFile(&MainMovie);
-                MainMovie.Status = 0;
-
-                if (Game)
-                {
-                    z80_Reset(&M_Z80);
-                    MESSAGE_L("CPU Z80 reseted", "CPU Z80 reseted")
-                }
-                FrameCount = 0;
-                LagCount = 0;
-                LagCountPersistent = 0;
-                frameSearchFrames = -1; frameSearchInitialized = false;
-                return 0;
-
-            case ID_CPU_ACCURATE_SYNCHRO:
-                Change_SegaCD_Synchro();
-                return 0;
-
-            case ID_CPU_COUNTRY_AUTO:
-                Change_Country(hWnd, -1);
-                return 0;
-
-            case ID_CPU_COUNTRY_JAPAN:
-                Change_Country(hWnd, 0);
-                return 0;
-
-            case ID_CPU_COUNTRY_USA:
-                Change_Country(hWnd, 1);
-                return 0;
-
-            case ID_CPU_COUNTRY_EUROPE:
-                Change_Country(hWnd, 2);
-                return 0;
-
-            case ID_CPU_COUNTRY_MISC:
-                Change_Country(hWnd, 3);
-                return 0;
-
-            case ID_CPU_COUNTRY_ORDER + 0:
-            case ID_CPU_COUNTRY_ORDER + 1:
-            case ID_CPU_COUNTRY_ORDER + 2:
-                Change_Country_Order(command - ID_CPU_COUNTRY_ORDER);
-                return 0;
-
-            case ID_SOUND_Z80ENABLE:
-                Change_Z80();
-                return 0;
-
-            case ID_SOUND_YM2612ENABLE:
-                Change_YM2612();
-                return 0;
-
-            case ID_SOUND_PSGENABLE:
-                Change_PSG();
-                return 0;
-
-            case ID_SOUND_DACENABLE:
-                Change_DAC();
-                return 0;
-
-            case ID_SOUND_PCMENABLE:
-                Change_PCM();
-                return 0;
-
-            case ID_SOUND_PWMENABLE:
-                Change_PWM();
-                return 0;
-
-            case ID_SOUND_CDDAENABLE:
-                Change_CDDA();
-                return 0;
-
-            case ID_SOUND_DACIMPROV:
-                Change_DAC_Improv();
-                return 0;
-
-            case ID_SOUND_PSGIMPROV:
-                //					Change_PSG_Improv(hWnd);
-                return 0;
-
-            case ID_SOUND_YMIMPROV:
-                Change_YM2612_Improv();
-                return 0;
-
-            case ID_SOUND_ENABLE:
-                Change_Sound(hWnd);
-                return 0;
-
-            case ID_SOUND_RATE_11000:
-                Change_Sample_Rate(hWnd, 0);
-                return 0;
-
-            case ID_SOUND_RATE_22000:
-                Change_Sample_Rate(hWnd, 1);
-                return 0;
-
-            case ID_SOUND_RATE_44000:
-                Change_Sample_Rate(hWnd, 2);
-                return 0;
-
-            case ID_SOUND_STEREO:
-                Change_Sound_Stereo(hWnd);
-                return 0;
-
-            case ID_SOUND_SOFTEN: //Nitsuja added this
-                Change_Sound_Soften(hWnd);
-                return 0;
-
-            case ID_SOUND_HOG: //Nitsuja added this
-                Change_Sound_Hog();
-                return 0;
-
-            case ID_OPTIONS_FASTBLUR:
-                Change_Fast_Blur();
-                return 0;
-
-            case ID_OPTIONS_SHOWFPS:
-                if (Show_FPS) Show_FPS = 0;
-                else Show_FPS = 1;
-                return 0;
-
-            case ID_OPTIONS_GENERAL:
-                MINIMIZE
-                    DialogsOpen++;
-                DialogBox(ghInstance, MAKEINTRESOURCE(IDD_OPTION), hWnd, (DLGPROC)OptionProc);
-                Build_Main_Menu();
-                return 0;
-
-            case ID_OPTIONS_JOYPADSETTING:
-                MINIMIZE
-                    End_Input();
-                DialogsOpen++;
-                DialogBox(ghInstance, MAKEINTRESOURCE(IDD_CONTROLLER), hWnd, (DLGPROC)ControllerProc);
-                if (!Init_Input(ghInstance, HWnd)) return false;
-                Build_Main_Menu();
-                return 0;
-
-            case ID_OPTIONS_CHANGEDIR:
-                MINIMIZE
-                    DialogsOpen++;
-                DialogBox(ghInstance, MAKEINTRESOURCE(IDD_DIRECTORIES), hWnd, (DLGPROC)DirectoriesProc);
-                Build_Main_Menu();
-                return 0;
-
-            case ID_OPTIONS_CHANGEFILES:
-                MINIMIZE
-                    DialogsOpen++;
-                DialogBox(ghInstance, MAKEINTRESOURCE(IDD_FILES), hWnd, (DLGPROC)FilesProc);
-                Build_Main_Menu();
-                return 0;
-
-            case ID_TOGGLE_SHOWFRAMEANDLAGCOUNT:
-                FrameCounterEnabled = !FrameCounterEnabled;
-                LagCounterEnabled = FrameCounterEnabled;
-                if (FrameCounterEnabled) Flip(hWnd); else Show_Genesis_Screen(hWnd);
-                break;
-            case ID_TOGGLE_TIMEUNIT:
-                FrameCounterFrames = !FrameCounterFrames;
-                LagCounterFrames = FrameCounterFrames;
-                Show_Genesis_Screen(hWnd);
-                break;
-            case ID_TOGGLE_SHOWFRAMECOUNT:
-                FrameCounterEnabled = !FrameCounterEnabled;
-                if (FrameCounterEnabled) Flip(hWnd); else Show_Genesis_Screen(hWnd);
-                break;
-            case ID_TOGGLE_SHOWLAGCOUNT:
-                LagCounterEnabled = !LagCounterEnabled;
-                if (LagCounterEnabled) Flip(hWnd); else Show_Genesis_Screen(hWnd);
-                break;
-            case ID_TOGGLE_SHOWINPUT:
-                ShowInputEnabled = !ShowInputEnabled;
-                if (ShowInputEnabled) Flip(hWnd); else Show_Genesis_Screen(hWnd);
-                break;
-            case ID_TOGGLE_SHOWFPS:
-                Show_FPS = !Show_FPS;
-                if (Show_FPS) Flip(hWnd); else Show_Genesis_Screen(hWnd);
-                break;
-            case ID_TOGGLE_SHOWLED:
-                Show_LED = !Show_LED;
-                Show_Genesis_Screen(hWnd);
-                break;
-
-            case ID_OPTION_CDDRIVE_0:
-            case ID_OPTION_CDDRIVE_1:
-            case ID_OPTION_CDDRIVE_2:
-            case ID_OPTION_CDDRIVE_3:
-            case ID_OPTION_CDDRIVE_4:
-            case ID_OPTION_CDDRIVE_5:
-            case ID_OPTION_CDDRIVE_6:
-            case ID_OPTION_CDDRIVE_7:
-                if (Num_CD_Drive > (command - ID_OPTION_CDDRIVE_0))
-                {
-                    CUR_DEV = command - ID_OPTION_CDDRIVE_0;
-                }
-                Build_Main_Menu();
-                return 0;
-
-            case ID_OPTION_SRAMSIZE_0:
-                Change_SegaCD_SRAM_Size(-1);
-                return 0;
-
-            case ID_OPTION_SRAMSIZE_8:
-                Change_SegaCD_SRAM_Size(0);
-                return 0;
-
-            case ID_OPTION_SRAMSIZE_16:
-                Change_SegaCD_SRAM_Size(1);
-                return 0;
-
-            case ID_OPTION_SRAMSIZE_32:
-                Change_SegaCD_SRAM_Size(2);
-                return 0;
-
-            case ID_OPTION_SRAMSIZE_64:
-                Change_SegaCD_SRAM_Size(3);
-                return 0;
-
-            case ID_OPTION_SRAMON:
-                SRAM_ON = !SRAM_ON;
-                Build_Main_Menu();
-                return 0;
-
-            case ID_OPTIONS_SAVECONFIG:
-                strcpy(Str_Tmp, Gens_Path);
-                strcat(Str_Tmp, "Gens.cfg");
-                Save_Config(Str_Tmp);
-                return 0;
-
-            case ID_OPTIONS_LOADCONFIG:
-                MINIMIZE
-                    DialogsOpen++;
-                Load_As_Config(hWnd, Game);
-                DialogsOpen--;
-                return 0;
-
-            case ID_OPTIONS_SAVEASCONFIG:
-                MINIMIZE
-                    DialogsOpen++;
-                Save_As_Config(hWnd);
-                DialogsOpen--;
-                return 0;
-
-            case ID_HELP_ABOUT:
-                Clear_Sound_Buffer();
-                DialogsOpen++;
-                DialogBox(ghInstance, MAKEINTRESOURCE(ABOUTDIAL), hWnd, (DLGPROC)AboutProc);
-                return 0;
-
-            case ID_HELP_HELP:
-                if (Game)
-                {
-                    if (Genesis_Started)
-                    {
-                        HtmlHelp(GetDesktopWindow(), CGOffline_Path, HH_HELP_CONTEXT, Calculate_CRC32());
-                    }
-                }
-                else
-                {
-                    if (Detect_Format(Manual_Path) != -1)		// Can be used to test if file exist
-                    {
-                        strcpy(Str_Tmp, Manual_Path);
-                        strcat(Str_Tmp, " index.html");
-                        system(Str_Tmp);
-                    }
-                }
-
-                /* Gens manual file :
-                **
-                **	File menu						manual.exe helpfilemenu.html
-                **	Graphics menu					manual.exe helpgraphicsmenu.html
-                **	CPU menu						manual.exe helpcpumenu.html
-                **	Sound menu						manual.exe helpsoundmenu.html
-                **	Options menu					manual.exe helpoptionmenu.html
-                **	Netplay							manual.exe helpnetplay.html
-                **
-                **	Game Genie						manual.exe helpgamegenie.html
-                **	Misc/General options			manual.exe helpmisc.html
-                **	Joypad/Controllers settings		manual.exe helpjoypads.html
-                **	Directories/file configuration	manual.exe helpdir.html
-                **
-                **	Help menu						manual.exe helphelpmenu.html
-                **	Mega-CD                         manual.exe helpmegacd.html
-                **	FAQ                             manual.exe helpfaq.html
-                **	Default Keys/keyboard shortcuts manual.exe helpkeys.html
-                **	Multitap                        manual.exe helpmultitap.html
-                */
-                return 0;
-
-            case ID_HELP_MENU_FILE:
-                if (Detect_Format(Manual_Path) != -1)		// Can be used to test if file exist
-                {
-                    strcpy(Str_Tmp, Manual_Path);
-                    strcat(Str_Tmp, " helpfilemenu.html");
-                    system(Str_Tmp);
-                }
-                return 0;
-
-            case ID_HELP_MENU_GRAPHICS:
-                if (Detect_Format(Manual_Path) != -1)		// Can be used to test if file exist
-                {
-                    strcpy(Str_Tmp, Manual_Path);
-                    strcat(Str_Tmp, " helpgraphicsmenu.html");
-                    system(Str_Tmp);
-                }
-                return 0;
-
-            case ID_HELP_MENU_CPU:
-                if (Detect_Format(Manual_Path) != -1)		// Can be used to test if file exist
-                {
-                    strcpy(Str_Tmp, Manual_Path);
-                    strcat(Str_Tmp, " helpcpumenu.html");
-                    system(Str_Tmp);
-                }
-                return 0;
-
-            case ID_HELP_MENU_SOUND:
-                if (Detect_Format(Manual_Path) != -1)		// Can be used to test if file exist
-                {
-                    strcpy(Str_Tmp, Manual_Path);
-                    strcat(Str_Tmp, " helpsoundmenu.html");
-                    system(Str_Tmp);
-                }
-                return 0;
-
-            case ID_HELP_MENU_OPTIONS:
-                if (Detect_Format(Manual_Path) != -1)		// Can be used to test if file exist
-                {
-                    strcpy(Str_Tmp, Manual_Path);
-                    strcat(Str_Tmp, " helpoptionmenu.html");
-                    system(Str_Tmp);
-                }
-                return 0;
-
-            case ID_HELP_NETPLAY:
-                if (Detect_Format(Manual_Path) != -1)		// Can be used to test if file exist
-                {
-                    strcpy(Str_Tmp, Manual_Path);
-                    strcat(Str_Tmp, " helpnetplay.html");
-                    system(Str_Tmp);
-                }
-                return 0;
-
-            case ID_HELP_MEGACD:
-                if (Detect_Format(Manual_Path) != -1)		// Can be used to test if file exist
-                {
-                    strcpy(Str_Tmp, Manual_Path);
-                    strcat(Str_Tmp, " helpmegacd.html");
-                    system(Str_Tmp);
-                }
-                return 0;
-
-            case ID_HELP_FAQ:
-                if (Detect_Format(Manual_Path) != -1)		// Can be used to test if file exist
-                {
-                    strcpy(Str_Tmp, Manual_Path);
-                    strcat(Str_Tmp, " helpfaq.html");
-                    system(Str_Tmp);
-                }
-                return 0;
-
-            case ID_HELP_KEYS:
-                if (Detect_Format(Manual_Path) != -1)		// Can be used to test if file exist
-                {
-                    strcpy(Str_Tmp, Manual_Path);
-                    strcat(Str_Tmp, " helpkeys.html");
-                    system(Str_Tmp);
-                }
-                return 0;
-            case ID_CHANGE_PALLOCK:
-            {
-                PalLock = !PalLock;
-                for (int i = 0; i < 0x40; ++i)
-                    LockedPalette[i] = CRam[i];
-                Build_Main_Menu();
-                char message[256];
-                sprintf(message, "Palette %sed", PalLock ? "lock" : "unlock");
-                MESSAGE_L(message, message)
-
-                    return 0;
-            }
-
-            case ID_EMULATION_PAUSED:
-                if (Paused)
-                {
-                    Paused = 0;
-                }
-                else
-                {
-                    Paused = 1;
-                    Pause_Screen();
-                    Clear_Sound_Buffer();
-                    Flip(HWnd);
-
-					debug_event_t ev;
-					ev.pid = 1;
-					ev.tid = 1;
-					ev.ea = M68kDW.last_pc;
-					ev.handled = true;
-					ev.eid = PROCESS_SUSPEND;
-
-					g_events.enqueue(ev, IN_BACK);
-                }
-                return 0;
-            }
-        }
-        break;
-
-        /*
-                    // A device has be modified (new CD inserted for instance)
-                    case WM_DEVICECHANGE:
-                    ASPI_Mechanism_State(0, NULL);
-                    break;
-                    */
+	{
+		int command = LOWORD(wParam);
+
+		if (command >= ID_FILES_OPENRECENTROM0 &&
+			command <= ID_FILES_OPENRECENTROMMAX &&
+			command - ID_FILES_OPENRECENTROM0 < MAX_RECENT_ROMS)
+		{
+			GensLoadRom(Recent_Rom[command - ID_FILES_OPENRECENTROM0]);
+			return 0;
+		}
+
+		if (command >= ID_TOOLS_OPENRECENTMOVIE0 &&
+			command <= ID_TOOLS_OPENRECENTMOVIEMAX &&
+			command - ID_TOOLS_OPENRECENTMOVIE0 < MAX_RECENT_MOVIES)
+		{
+			GensPlayMovie(Recent_Movie[command - ID_TOOLS_OPENRECENTMOVIE0]);
+			return 0;
+		}
+
+		if (command >= ID_LUA_OPENRECENTSCRIPT0 &&
+			command <= ID_LUA_OPENRECENTSCRIPTMAX &&
+			command - ID_LUA_OPENRECENTSCRIPT0 < MAX_RECENT_SCRIPTS)
+		{
+			if (LuaScriptHWnds.size() < 16)
+			{
+				char temp[1024];
+				strcpy(temp, Recent_Scripts[command - ID_LUA_OPENRECENTSCRIPT0]);
+				HWND IsScriptFileOpen(const char* Path);
+				if (!IsScriptFileOpen(temp))
+				{
+					HWND hDlg = CreateDialog(ghInstance, MAKEINTRESOURCE(IDD_LUA), hWnd, (DLGPROC)LuaScriptProc);
+					SendDlgItemMessage(hDlg, IDC_EDIT_LUAPATH, WM_SETTEXT, 0, (LPARAM)temp);
+					DialogsOpen++;
+				}
+			}
+		}
+
+		switch (command)
+		{
+		case ID_GRAPHICS_NEVER_SKIP_FRAME:
+			Never_Skip_Frame = !Never_Skip_Frame;
+			Build_Main_Menu();
+			return 0;
+		case ID_CHANGE_256RATIO:
+			Correct_256_Aspect_Ratio = !Correct_256_Aspect_Ratio;
+			InvalidateRect(hWnd, NULL, FALSE);
+			Build_Main_Menu();
+			return 0;
+		case ID_SLOW_SPEED_1:
+			SlowDownSpeed = 1;
+			Build_Main_Menu();
+			return 0;
+		case ID_SLOW_SPEED_2:
+			SlowDownSpeed = 2;
+			Build_Main_Menu();
+			return 0;
+		case ID_SLOW_SPEED_3:
+			SlowDownSpeed = 3;
+			Build_Main_Menu();
+			return 0;
+		case ID_SLOW_SPEED_4:
+			SlowDownSpeed = 4;
+			Build_Main_Menu();
+			return 0;
+		case ID_SLOW_SPEED_5:
+			SlowDownSpeed = 5;
+			Build_Main_Menu();
+			return 0;
+		case ID_SLOW_SPEED_9:
+			SlowDownSpeed = 9;
+			Build_Main_Menu();
+			return 0;
+		case ID_SLOW_SPEED_15:
+			SlowDownSpeed = 15;
+			Build_Main_Menu();
+			return 0;
+		case ID_SLOW_SPEED_31:
+			SlowDownSpeed = 31;
+			Build_Main_Menu();
+			return 0;
+		case ID_SLOW_MODE:
+			if (SlowDownMode == 1)
+				SlowDownMode = 0;
+			else
+				SlowDownMode = 1;
+			Build_Main_Menu();
+			return 0;
+		case ID_TOGGLE_TURBO:
+			TurboToggle = !TurboToggle;
+			return 0;
+		case ID_SLOW_SPEED_PLUS: //Modif N - for new "speed up" key:
+			if (SlowDownSpeed == 1 || SlowDownMode == 0)
+				SlowDownMode = 0;
+			else
+			{
+				SlowDownMode = 1;
+				if (SlowDownSpeed <= 5)
+					SlowDownSpeed--;
+				else if (SlowDownSpeed == 9)
+					SlowDownSpeed = 5;
+				else if (SlowDownSpeed == 15)
+					SlowDownSpeed = 9;
+				else if (SlowDownSpeed == 31)
+					SlowDownSpeed = 15;
+			}
+			Str_Tmp[0] = '\0';
+			if (SlowDownMode == 0)
+				strcpy(Str_Tmp, "100%");
+			else switch (SlowDownSpeed)
+			{
+			case 1: strcpy(Str_Tmp, "50%"); break;
+			case 2: strcpy(Str_Tmp, "25%"); break;
+			case 3: strcpy(Str_Tmp, "20%"); break;
+			case 4: strcpy(Str_Tmp, "16%"); break;
+			case 5: strcpy(Str_Tmp, "10%"); break;
+			case 9: strcpy(Str_Tmp, "6%"); break;
+			case 15: strcpy(Str_Tmp, "3%"); break;
+			}
+			if (Str_Tmp[0])
+				Put_Info(Str_Tmp);
+
+			Build_Main_Menu();
+			return 0;
+		case ID_SLOW_SPEED_MINUS: //Modif N - for new "speed down" key:
+			if (SlowDownMode != 0)
+			{
+				if (SlowDownSpeed < 5)
+					SlowDownSpeed++;
+				else if (SlowDownSpeed == 5)
+					SlowDownSpeed = 9;
+				else if (SlowDownSpeed == 9)
+					SlowDownSpeed = 15;
+				else if (SlowDownSpeed == 15)
+					SlowDownSpeed = 31;
+			}
+			SlowDownMode = 1;
+
+			Str_Tmp[0] = '\0';
+			switch (SlowDownSpeed)
+			{
+			case 1: strcpy(Str_Tmp, "50%"); break;
+			case 2: strcpy(Str_Tmp, "25%"); break;
+			case 3: strcpy(Str_Tmp, "20%"); break;
+			case 4: strcpy(Str_Tmp, "16%"); break;
+			case 5: strcpy(Str_Tmp, "10%"); break;
+			case 9: strcpy(Str_Tmp, "6%"); break;
+			case 15: strcpy(Str_Tmp, "3%"); break;
+			}
+			if (Str_Tmp[0])
+				Put_Info(Str_Tmp);
+
+			Build_Main_Menu();
+			return 0;
+		case ID_TOGGLE_MOVIE_READONLY: //Modif N - for new toggle readonly key:
+			if (MainMovie.File)
+			{
+				if (MainMovie.ReadOnly && (GetFileAttributes(MainMovie.PhysicalFileName) & FILE_ATTRIBUTE_READONLY))
+				{
+					Put_Info("Can't toggle read-only; write permission denied.");
+				}
+				else
+				{
+					MainMovie.ReadOnly = !MainMovie.ReadOnly;
+					if (MainMovie.ReadOnly)
+						Put_Info("Movie is now read-only.");
+					else
+						Put_Info("Movie is now editable.");
+				}
+			}
+			else
+			{
+				Put_Info("Can't toggle read-only; no movie is active.");
+			}
+			break;
+
+			// increase frameSearchFrames, then
+			// starting at initial frame (frameSearch_Start_State_Buffer)
+			// run game for (frameSearchFrames)
+			// with input = initial input (frameSearchInitialInput)
+			// then unpause and run game normally (with new input)
+			// TODO: add support for doing this during read-only mode meaning it switches to playback and the movie replaces frameSearchInitialInput for frameSearchFrames steps, then it switches to recording before unpausing
+		case ID_FRAME_SEARCH_NEXT:
+		{
+			if (!Game || (MainMovie.File && MainMovie.Status == MOVIE_PLAYING))
+				break;
+			frameSearchFrames++;
+			MESSAGE_NUM_L("%d frame search", "%d frame search", frameSearchFrames);
+			if (frameSearchFrames == 0)
+			{	// setup initial frame
+				frameSearchInitialInput = GetLastInputCondensed();
+				Save_State_To_Buffer(frameSearch_Start_State_Buffer);
+			}
+			else
+			{
+				Load_State_From_Buffer(frameSearch_End_State_Buffer);
+				SetNextInputCondensed(frameSearchInitialInput);
+				Update_Emulation_One(HWnd);
+			}
+			Save_State_To_Buffer(frameSearch_End_State_Buffer);
+			Update_Emulation_One(HWnd);
+			soundCleared = false;
+			frameSearchFinalInput = GetLastInputCondensed();
+			frameSearchInitialized = true;
+			Paused = 0;
+		}	break;
+
+		// decrease frameSearchFrames, then
+		// starting at initial frame (frameSearch_Start_State_Buffer)
+		// run game for (frameSearchFrames)
+		// with input = initial input (frameSearchInitialInput)
+		// then unpause and run game normally (with new input)
+		// TODO: optimize this to be O(1) amortized when key is held down instead of current slow O(n) where n = frameSearchFrames
+		case ID_FRAME_SEARCH_PREV:
+		{
+			if (frameSearchFrames <= 0 || !Game || (MainMovie.File && MainMovie.Status == MOVIE_PLAYING))
+				break;
+			frameSearchFrames--;
+			MESSAGE_NUM_L("%d frame search", "%d frame search", frameSearchFrames);
+			Load_State_From_Buffer(frameSearch_Start_State_Buffer);
+			if (MainMovie.File && MainMovie.Status == MOVIE_RECORDING)
+				MainMovie.NbRerecords++;
+			disableSound2 = true;
+			for (int i = 0; i < frameSearchFrames; i++)
+			{
+				SetNextInputCondensed(frameSearchInitialInput);
+				Update_Emulation_One_Before(HWnd);
+				Update_Frame_Fast();
+				Update_Emulation_After_Fast(HWnd);
+			}
+			disableSound2 = false;
+			Save_State_To_Buffer(frameSearch_End_State_Buffer);
+			Update_Emulation_One(HWnd);
+			soundCleared = false;
+			frameSearchFinalInput = GetLastInputCondensed();
+			Paused = 0;
+		}	break;
+
+		// starting at initial frame (frameSearch_Start_State_Buffer)
+		// run game for (frameSearchFrames)
+		// with input = initial input (frameSearchInitialInput)
+		// then run one frame with the last new input (frameSearchFinalInput)
+		// then pause and exit frame search mode
+		case ID_FRAME_SEARCH_END:
+			if (!frameSearchInitialized || !Game || (MainMovie.File && MainMovie.Status == MOVIE_PLAYING))
+				break;
+			MESSAGE_L("Frame search result", "Frame search result");
+			Load_State_From_Buffer(frameSearch_End_State_Buffer);
+			if (MainMovie.File && MainMovie.Status == MOVIE_RECORDING)
+				MainMovie.NbRerecords++;
+			SetNextInputCondensed(frameSearchFinalInput);
+			Update_Emulation_One(HWnd);
+			soundCleared = false;
+			Paused = 1;
+			frameSearchFrames = -1;
+			break;
+
+		case ID_RAM_SEARCH:
+			if (!RamSearchHWnd)
+			{
+				RamSearchHWnd = CreateDialog(ghInstance, MAKEINTRESOURCE(IDD_RAMSEARCH), hWnd, (DLGPROC)RamSearchProc);
+				DialogsOpen++;
+			}
+			else
+				SetForegroundWindow(RamSearchHWnd);
+			break;
+
+		case ID_RAM_WATCH:
+			if (!RamWatchHWnd)
+			{
+				RamWatchHWnd = CreateDialog(ghInstance, MAKEINTRESOURCE(IDD_RAMWATCH), hWnd, (DLGPROC)RamWatchProc);
+				DialogsOpen++;
+			}
+			else
+				SetForegroundWindow(RamWatchHWnd);
+			break;
+
+		case ID_HEX_EDITOR:
+			HexCreateDialog();
+			break;
+
+		case ID_PLANE_EXPLORER:
+			if (!PlaneExplorerHWnd)
+			{
+				PlaneExplorerHWnd = CreateDialog(ghInstance, MAKEINTRESOURCE(IDD_PLANEEXPLORER), hWnd, (DLGPROC)PlaneExplorerDialogProc);
+				DialogsOpen++;
+			}
+			else
+				SetForegroundWindow(PlaneExplorerHWnd);
+			break;
+
+		case ID_VDP_RAM:
+			if (!VDPRamHWnd)
+			{
+				VDPRamHWnd = CreateDialog(ghInstance, MAKEINTRESOURCE(IDD_VDPRAM), hWnd, (DLGPROC)VDPRamProc);
+				DialogsOpen++;
+			}
+			else
+				SetForegroundWindow(VDPRamHWnd);
+			break;
+
+		case ID_VDP_SPRITES:
+			if (!VDPSpritesHWnd)
+			{
+				VDPSpritesHWnd = CreateDialog(ghInstance, MAKEINTRESOURCE(IDD_VDP_SPRITES), hWnd, (DLGPROC)VDPSpritesProc);
+				DialogsOpen++;
+			}
+			else
+				SetForegroundWindow(VDPSpritesHWnd);
+			break;
+
+		case IDC_NEW_LUA_SCRIPT:
+			if (LuaScriptHWnds.size() < 16)
+			{
+				CreateDialog(ghInstance, MAKEINTRESOURCE(IDD_LUA), hWnd, (DLGPROC)LuaScriptProc);
+				DialogsOpen++;
+			}
+			break;
+
+		case IDC_CLOSE_LUA_SCRIPTS:
+			for (int i = (int)LuaScriptHWnds.size() - 1; i >= 0; i--)
+				SendMessage(LuaScriptHWnds[i], WM_CLOSE, 0, 0);
+			break;
+
+		case IDC_LUA_SCRIPT_0:
+		case IDC_LUA_SCRIPT_1:
+		case IDC_LUA_SCRIPT_2:
+		case IDC_LUA_SCRIPT_3:
+		case IDC_LUA_SCRIPT_4:
+		case IDC_LUA_SCRIPT_5:
+		case IDC_LUA_SCRIPT_6:
+		case IDC_LUA_SCRIPT_7:
+		case IDC_LUA_SCRIPT_8:
+		case IDC_LUA_SCRIPT_9:
+		case IDC_LUA_SCRIPT_10:
+		case IDC_LUA_SCRIPT_11:
+		case IDC_LUA_SCRIPT_12:
+		case IDC_LUA_SCRIPT_13:
+		case IDC_LUA_SCRIPT_14:
+		case IDC_LUA_SCRIPT_15:
+		{
+			unsigned int index = command - IDC_LUA_SCRIPT_0;
+			if (LuaScriptHWnds.size() > index)
+				SetForegroundWindow(LuaScriptHWnds[index]);
+		}	break;
+
+		case IDC_LUA_SCRIPT_HOTKEY_1:
+		case IDC_LUA_SCRIPT_HOTKEY_2:
+		case IDC_LUA_SCRIPT_HOTKEY_3:
+		case IDC_LUA_SCRIPT_HOTKEY_4:
+		case IDC_LUA_SCRIPT_HOTKEY_5:
+		case IDC_LUA_SCRIPT_HOTKEY_6:
+		case IDC_LUA_SCRIPT_HOTKEY_7:
+		case IDC_LUA_SCRIPT_HOTKEY_8:
+		case IDC_LUA_SCRIPT_HOTKEY_9:
+		case IDC_LUA_SCRIPT_HOTKEY_10:
+		case IDC_LUA_SCRIPT_HOTKEY_11:
+		case IDC_LUA_SCRIPT_HOTKEY_12:
+		case IDC_LUA_SCRIPT_HOTKEY_13:
+		case IDC_LUA_SCRIPT_HOTKEY_14:
+		case IDC_LUA_SCRIPT_HOTKEY_15:
+		case IDC_LUA_SCRIPT_HOTKEY_16:
+		{
+			unsigned int index = command - IDC_LUA_SCRIPT_HOTKEY_1;
+			CallRegisteredLuaFunctions((LuaCallID)(LUACALL_SCRIPT_HOTKEY_1 + index));
+		}	break;
+
+		case ID_VOLUME_CONTROL:
+			if (!VolControlHWnd)
+			{
+				VolControlHWnd = CreateDialog(ghInstance, MAKEINTRESOURCE(IDD_VOLUME), hWnd, (DLGPROC)VolumeProc);
+				DialogsOpen++;
+			}
+			else
+				SetForegroundWindow(VolControlHWnd);
+			break;
+		case ID_PLAY_FROM_START:
+			GensReplayMovie();
+			return 0;
+		case ID_RESUME_RECORD:
+			if (!(Game))
+				return 0;
+			if (MainMovie.Status != MOVIE_PLAYING)
+			{
+				MESSAGE_L("Error: no movie is playing", "Error: no movie is playing");
+				return 0;
+			}
+			if (MainMovie.ReadOnly)
+			{
+				MESSAGE_L("Error: movie is read only", "Error: movie is read only");
+				return 0;
+			}
+			strncpy(Str_Tmp, MainMovie.FileName, 512);
+			if (AutoBackupEnabled)
+			{
+				strcat(MainMovie.FileName, ".gmv");
+				for (int i = strlen(MainMovie.FileName); i >= 0; i--) if (MainMovie.FileName[i] == '|') MainMovie.FileName[i] = '_';
+				MainMovie.FileName[strlen(MainMovie.FileName) - 7] = 'b'; // ".bak"
+				MainMovie.FileName[strlen(MainMovie.FileName) - 6] = 'a';
+				MainMovie.FileName[strlen(MainMovie.FileName) - 5] = 'k';
+				BackupMovieFile(&MainMovie);
+				strncpy(MainMovie.FileName, Str_Tmp, 512);
+			}
+			MainMovie.Status = MOVIE_RECORDING;
+			MainMovie.NbRerecords++;
+			if (MainMovie.TriplePlayerHack)
+				MainMovie.LastFrame = max(max(max(Track1_FrameCount, Track2_FrameCount), Track3_FrameCount), FrameCount);
+			else
+				MainMovie.LastFrame = max(max(Track1_FrameCount, Track2_FrameCount), FrameCount);
+			MESSAGE_L("Recording from current frame", "Recording from current frame");
+			Build_Main_Menu();
+			return 0;
+		case ID_STOP_MOVIE:
+			if (!(Game))
+				return 0;
+			if (MainMovie.Status == MOVIE_RECORDING)
+				MovieRecordingStuff();
+			if (MainMovie.File != NULL)
+				CloseMovieFile(&MainMovie);
+			MainMovie.Status = 0;
+			MESSAGE_L("Recording/Playing stop", "Recording/Playing stop");
+			Build_Main_Menu();
+			return 0;
+		case ID_RECORD_MOVIE:	//Modif
+			if (!(Game))
+				if (SendMessage(hWnd, WM_COMMAND, ID_FILES_OPENROM, 0) <= 0) // Modif N. -- prompt once to load ROM if it's not already loaded
+					return 0;
+			//					if(MainMovie.File!=NULL || MainMovie.Status==MOVIE_FINISHED) //Modif N - disabled; if the user chose record, they meant it!
+			//						return 0;
+			MINIMIZE
+				dialogAgain : //Nitsuja added this
+			DialogsOpen++;
+			DialogBox(ghInstance, MAKEINTRESOURCE(IDD_RECORD_A_MOVIE), hWnd, (DLGPROC)RecordMovieProc);
+			if (RecordMovieCanceled)
+				return 0;
+			if (SegaCD_Started && !PCM_Enable)
+			{
+				DialogsOpen++;
+				int answer = MessageBox(hWnd, "Your \"PCM Audio\" option is off!\nThis could cause desyncs.\nWould you like to turn it on now?", "Alert", MB_YESNOCANCEL | MB_ICONQUESTION);
+				DialogsOpen--;
+				if (answer == IDCANCEL) { MainMovie.Status = 0; return 0; }
+				if (answer == IDYES) PCM_Enable = 1;
+			}
+			if (SegaCD_Started && !SegaCD_Accurate)
+			{
+				DialogsOpen++;
+				int answer = MessageBox(hWnd, "Your \"Perfect SegaCD CPU Synchro\" option is off!\nThis could cause desyncs.\nWould you like to turn it on now?", "Alert", MB_YESNOCANCEL | MB_ICONQUESTION);
+				DialogsOpen--;
+				if (answer == IDCANCEL) { MainMovie.Status = 0; return 0; }
+				if (answer == IDYES) SegaCD_Accurate = 1;
+			}
+			if (SegaCD_Started && SCD.TOC.Last_Track == 1)
+			{
+				DialogsOpen++;
+				int answer = MessageBox(hWnd, "You are missing the audio tracks for this game.\nThis could prevent other people from being able to watch your movie with audio.\nPlease ignore this message if you know this game does not use any CD audio.", "Warning", MB_OKCANCEL | MB_ICONWARNING);
+				DialogsOpen--;
+				if (answer == IDCANCEL) { MainMovie.Status = 0; return 0; }
+			}
+			if (MainMovie.StateRequired)
+			{
+				FrameCount = 0;
+				LagCount = 0;
+				LagCountPersistent = 0;
+				frameSearchFrames = -1; frameSearchInitialized = false;
+				strncpy(Str_Tmp, Rom_Name, 507);
+				strcat(Str_Tmp, "[GMV]");
+				strcat(Str_Tmp, ".gst");
+				Change_File_S(Str_Tmp, Movie_Dir, "Save state", "State Files\0*.gs?\0All Files\0*.*\0\0", "", hWnd);
+				if (Save_State(Str_Tmp) == 0)
+					return 0;
+			}
+			MainMovie.File = fopen(MainMovie.FileName, "wb");
+
+			if (!MainMovie.File)
+			{
+				char pathError[256];
+				char* slash = strrchr(MainMovie.FileName, '\\');
+				char* slash2 = strrchr(MainMovie.FileName, '/');
+				if (slash > slash2) *(slash + 1) = 0;
+				if (slash2 > slash) *(slash2 + 1) = 0;
+				sprintf(pathError, "Invalid path: %s", MainMovie.FileName);
+				MessageBox(hWnd, pathError, "Error", MB_OK | MB_ICONERROR);
+				MainMovie.Status = 0;
+				goto dialogAgain;
+				//char* div = strrchr(MainMovie.FileName, '\\');
+				//if(!div) div = strrchr(MainMovie.FileName, '/');
+				//if(div)
+				//{
+				//	memmove(MainMovie.FileName, div+1, strlen(div));
+				//	MainMovie.File=fopen(MainMovie.FileName,"wb");
+				//}
+			}
+
+			if (!MainMovie.File)
+			{
+				MessageBox(hWnd, MainMovie.FileName, "Error", MB_OK);
+
+				MainMovie.Status = 0;
+				MESSAGE_L("File error", "File error")
+					return 0;
+			}
+			MainMovie.Ok = 1;
+			fseek(MainMovie.File, 0, SEEK_SET);
+			fwrite(MainMovie.Header, 16, 1, MainMovie.File);
+			fseek(MainMovie.File, 24, SEEK_SET);
+			fwrite(MainMovie.Note, 40, 1, MainMovie.File);
+			fclose(MainMovie.File);
+			MainMovie.File = NULL;
+			if (OpenMovieFile(&MainMovie) == 0)
+			{
+				MainMovie.Status = 0;
+				MESSAGE_L("File error", "File error")
+					return 0;
+			}
+			FrameCount = 0;
+			LagCount = 0;
+			LagCountPersistent = 0;
+			frameSearchFrames = -1; frameSearchInitialized = false;
+			MainMovie.NbRerecords = 0;
+			MainMovie.LastFrame = 0;
+			if (MainMovie.StateRequired)
+			{
+				MESSAGE_L("Recording from now", "Recording from now")
+			}
+			else
+			{
+				if (Genesis_Started)
+				{
+					Pre_Load_Rom(HWnd, Recent_Rom[0]);
+					MESSAGE_L("Genesis reseted", "Genesis reset")
+						memset(SRAM, 0, sizeof(SRAM));
+				}
+				else if (_32X_Started)
+				{
+					Pre_Load_Rom(HWnd, Recent_Rom[0]);
+					MESSAGE_L("32X reseted", "32X reset")
+						memset(SRAM, 0, sizeof(SRAM));
+				}
+				else if (SegaCD_Started)
+				{
+					g_dontResetAudioCache = 1;
+					if (CD_Load_System == CDROM_)
+					{
+						MessageBox(GetActiveWindow(), "Warning: You are running from a mounted CD. To prevent desyncs, it is recommended you run the game from a CUE or ISO file instead.", "Recording Warning", MB_OK | MB_ICONWARNING);
+						Reset_SegaCD();
+					}
+					else
+						Pre_Load_Rom(HWnd, Recent_Rom[0]);
+					g_dontResetAudioCache = 0;
+					MESSAGE_L("SegaCD reseted", "SegaCD reset")
+						memset(SRAM, 0, sizeof(SRAM));
+					Format_Backup_Ram();
+				}
+				MESSAGE_L("Recording from start", "Recording from start")
+			}
+			Build_Main_Menu();
+			CallRegisteredLuaFunctions(LUACALL_ONSTART);
+			return 0;
+		case ID_PLAY_MOVIE:
+			GensPlayMovie(NULL, false);
+			return 0;
+
+		case ID_SPLICE:
+			if (SpliceFrame)
+			{
+				DoMovieSplice();
+				return 0;
+			}
+			else if (MainMovie.File != NULL)
+			{
+				DialogsOpen++;
+				DialogBox(ghInstance, MAKEINTRESOURCE(IDD_PROMPT), hWnd, (DLGPROC)PromptSpliceFrameProc);
+				return 0;
+			}
+			else
+				return 1;
+
+		case IDC_SEEK_FRAME:
+			if (SeekFrame)
+			{
+				SeekFrame = 0;
+				MustUpdateMenu = 1;
+				MESSAGE_L("Seek Cancelled", "Seek Cancelled");
+				return 0;
+			}
+			else
+			{
+				DialogsOpen++;
+				DialogBox(ghInstance, MAKEINTRESOURCE(IDD_PROMPT), hWnd, (DLGPROC)PromptSeekFrameProc);
+				return 0;
+			}
+
+		case ID_FILES_QUIT:
+			PostMessage(hWnd, WM_CLOSE, 0, 0);
+			return 0;
+
+		case ID_FILES_OPENROM:
+		{
+			GensLoadRom(NULL);
+			return 0;
+		}
+
+		case ID_FILES_BOOTCD:
+			if (MainMovie.File != NULL)
+				CloseMovieFile(&MainMovie);
+			if (Num_CD_Drive == 0)
+			{
+				extern int failed_to_load_wnaspi_dll;
+				if (failed_to_load_wnaspi_dll)
+					if (!Full_Screen)
+						MessageBox(HWnd, "You need WNASPI32.DLL to run from a CD drive.", "Error", MB_OK);
+					else
+						MESSAGE_L("You need WNASPI32.DLL to run from a CD drive.", "You need WNASPI32.DLL to run from a CD drive.")
+						return 1;
+			}
+			Free_Rom(Game);			// Don't forget it !
+			SegaCD_Started = Init_SegaCD(NULL);
+			Build_Main_Menu();
+			FrameCount = 0;
+			LagCount = 0;
+			LagCountPersistent = 0;
+			frameSearchFrames = -1; frameSearchInitialized = false;
+			ReopenRamWindows();
+			return SegaCD_Started;
+
+		case ID_FILES_OPENCLOSECD:
+			if (MainMovie.File != NULL)
+				CloseMovieFile(&MainMovie);
+			if (SegaCD_Started) Change_CD();
+			FrameCount = 0;
+			LagCount = 0;
+			LagCountPersistent = 0;
+			frameSearchFrames = -1; frameSearchInitialized = false;
+			return 0;
+
+		case ID_FILES_CLOSEROM:
+			if (MainMovie.File != NULL)
+				CloseMovieFile(&MainMovie);
+			if (Sound_Initialised) Clear_Sound_Buffer();
+			if (Net_Play)
+			{
+				if (Full_Screen) Set_Render(hWnd, 0, -1, true);
+			}
+			Free_Rom(Game);
+			ReleaseTempFileCategory("rom"); // delete the old temporary file if any
+			ReleaseTempFileCategory("bios"); // delete the old temporary file if any
+			Build_Main_Menu();
+			FrameCount = 0;
+			LagCount = 0;
+			LagCountPersistent = 0;
+			frameSearchFrames = -1; frameSearchInitialized = false;
+			return 0;
+
+		case ID_FILES_GAMEGENIE:
+			MINIMIZE
+				DialogsOpen++;
+			DialogBox(ghInstance, MAKEINTRESOURCE(IDD_GAMEGENIE), hWnd, (DLGPROC)GGenieProc);
+			Build_Main_Menu();
+			return 0;
+
+		case ID_FILES_LOADSTATE:
+			Str_Tmp[0] = 0;
+			Get_State_File_Name(Str_Tmp);
+			Load_State(Str_Tmp);
+			return 0;
+
+		case ID_FILES_LOADSTATEAS:
+			Str_Tmp[0] = 0;
+			DialogsOpen++;
+			Change_File_L(Str_Tmp, State_Dir, "Load state", "State Files\0*.gs?\0All Files\0*.*\0\0", "", hWnd);
+			DialogsOpen--;
+			Load_State(Str_Tmp);
+			return 0;
+
+		case ID_FILES_SAVESTATE:
+			Str_Tmp[0] = 0;
+			Get_State_File_Name(Str_Tmp);
+			Save_State(Str_Tmp);
+			return 0;
+
+		case ID_FILES_SAVESTATEAS:
+			DialogsOpen++;
+			Change_File_S(Str_Tmp, State_Dir, "Save state", "State Files\0*.gs?\0All Files\0*.*\0\0", "", hWnd);
+			DialogsOpen--;
+			Save_State(Str_Tmp);
+			return 0;
+
+		case ID_FILES_PREVIOUSSTATE:
+			Set_Current_State((Current_State + 9) % 10, true, true);
+			return 0;
+
+		case ID_FILES_NEXTSTATE:
+			Set_Current_State((Current_State + 1) % 10, true, true);
+			return 0;
+
+		case ID_GRAPHICS_VSYNC:
+			Change_VSync(hWnd);
+			return 0;
+
+		case ID_GRAPHICS_SWITCH_MODE:
+			if (Full_Screen) Set_Render(hWnd, 0, -1, true);
+			else Set_Render(hWnd, 1, Render_FS, true);
+			return 0;
+
+		case ID_GRAPHICS_FS_SAME_RES: //Upth-Add - toggle the same-res fullscreen flag
+			FS_No_Res_Change = !(FS_No_Res_Change);
+			Build_Main_Menu();
+			if (Full_Screen) Set_Render(hWnd, 1, Render_FS, true); // Modif N. -- if already in fullscreen, take effect immediately
+			return 0;
+
+		case ID_GRAPHICS_COLOR_ADJUST:
+			MINIMIZE
+				DialogsOpen++;
+			DialogBox(ghInstance, MAKEINTRESOURCE(IDD_COLOR), hWnd, (DLGPROC)ColorProc);
+			return 0;
+
+		case ID_GRAPHICS_RENDER_NORMAL:
+			Set_Render(hWnd, Full_Screen, 0, false);
+			return 0;
+
+		case ID_GRAPHICS_RENDER_DOUBLE:
+			Set_Render(hWnd, Full_Screen, 1, false);
+			return 0;
+
+		case ID_GRAPHICS_RENDER_EPX:
+			Set_Render(hWnd, Full_Screen, 2, false);
+			return 0;
+		case ID_GRAPHICS_RENDER_EPXPLUS:
+			Set_Render(hWnd, Full_Screen, 11, false);
+			return 0;
+
+		case ID_GRAPHICS_RENDER_DOUBLE_INT:
+			Set_Render(hWnd, Full_Screen, 3, false);
+			return 0;
+
+		case ID_GRAPHICS_RENDER_FULLSCANLINE:
+			Set_Render(hWnd, Full_Screen, 4, false);
+			return 0;
+
+		case ID_GRAPHICS_SIZE_1X:
+			if (ScaleFactor != 1.0)
+			{
+				ScaleFactor = 1.0;
+				Set_Window_Size(hWnd);
+				Build_Main_Menu();
+			}
+			return 0;
+
+		case ID_GRAPHICS_SIZE_2X:
+			if (ScaleFactor != 2.0)
+			{
+				ScaleFactor = 2.0;
+				Set_Window_Size(hWnd);
+				Build_Main_Menu();
+			}
+			return 0;
+
+		case ID_GRAPHICS_SIZE_3X:
+			if (ScaleFactor != 3.0)
+			{
+				ScaleFactor = 3.0;
+				Set_Window_Size(hWnd);
+				Build_Main_Menu();
+			}
+			return 0;
+
+		case ID_GRAPHICS_SIZE_4X:
+			if (ScaleFactor != 4.0)
+			{
+				ScaleFactor = 4.0;
+				Set_Window_Size(hWnd);
+				Build_Main_Menu();
+			}
+			return 0;
+
+		case ID_GRAPHICS_LAYER0: //Nitsuja added these
+		case ID_GRAPHICS_LAYER1:
+		case ID_GRAPHICS_LAYER2:
+		case ID_GRAPHICS_LAYER3:
+		case ID_GRAPHICS_LAYERSPRITE:
+		case ID_GRAPHICS_LAYERSPRITEHIGH:
+		case ID_GRAPHICS_LAYER32X_LOW:
+		case ID_GRAPHICS_LAYER32X_HIGH:
+			Change_Layer(command - ID_GRAPHICS_LAYER0);
+			return 0;
+
+		case ID_GRAPHICS_SPRITEALWAYS:
+			Change_SpriteTop();
+			return 0;
+
+		case ID_GRAPHICS_SPRITEBOXING:
+			Change_SpriteBoxing();
+			return 0;
+
+		case ID_GRAPHICS_LAYERSWAPA:
+		case ID_GRAPHICS_LAYERSWAPB:
+		case ID_GRAPHICS_LAYERSWAPS:
+		case ID_GRAPHICS_LAYERSWAP32X:
+			Change_LayerSwap(command - ID_GRAPHICS_LAYERSWAPA);
+			return 0;
+
+		case ID_GRAPHICS_TOGGLEA:
+		case ID_GRAPHICS_TOGGLEB:
+		case ID_GRAPHICS_TOGGLES:
+		case ID_GRAPHICS_TOGGLE32X:
+			Change_Plane(command - ID_GRAPHICS_TOGGLEA);
+			return 0;
+
+		case ID_GRAPHICS_PINKBG:
+		{
+			PinkBG = !PinkBG;
+			Build_Main_Menu();
+			Recalculate_Palettes();
+			Show_Genesis_Screen(hWnd);
+			char message[256];
+			sprintf(message, "Pink background %sabled", PinkBG ? "en" : "dis");
+			MESSAGE_L(message, message)
+
+				return 0;
+		}
+
+		case ID_GRAPHICS_RENDER_50SCANLINE:
+			Set_Render(hWnd, Full_Screen, 5, false);
+			return 0;
+
+		case ID_GRAPHICS_RENDER_25SCANLINE:
+			Set_Render(hWnd, Full_Screen, 6, false);
+			return 0;
+
+		case ID_GRAPHICS_RENDER_INTESCANLINE:
+			Set_Render(hWnd, Full_Screen, 7, false);
+			return 0;
+
+		case ID_GRAPHICS_RENDER_INT50SCANLIN:
+			Set_Render(hWnd, Full_Screen, 8, false);
+			return 0;
+
+		case ID_GRAPHICS_RENDER_INT25SCANLIN:
+			Set_Render(hWnd, Full_Screen, 9, false);
+			return 0;
+
+		case ID_GRAPHICS_RENDER_2XSAI:
+			Set_Render(hWnd, Full_Screen, 10, false);
+			return 0;
+
+		case ID_GRAPHICS_PREVIOUS_RENDER:
+		case ID_GRAPHICS_NEXT_RENDER:
+		{
+			int& Rend = Full_Screen ? Render_FS : Render_W;
+			int RendOrder[] = { -1, 0, 1, 2, 11, Bits32 ? -2 : 10, 3, 4, 5, 6, 7, 8, 9, -1, -1 };
+			int index = 1; for (; RendOrder[index] != Rend && index < sizeof(RendOrder) / sizeof(*RendOrder) - 1; index++);
+			do { index += (command == ID_GRAPHICS_PREVIOUS_RENDER) ? -1 : 1; } while (RendOrder[index] == -2);
+			Set_Render(hWnd, Full_Screen, RendOrder[index], false);
+		}
+		return 0;
+
+		case ID_GRAPHICS_STRETCH:
+			Change_Stretch();
+			return 0;
+
+		case ID_GRAPHICS_FORCESOFT:
+			Change_Blit_Style();
+			return 0;
+
+		case ID_GRAPHICS_FRAMESKIP_AUTO:
+			Set_Frame_Skip(-1);
+			return 0;
+
+		case ID_GRAPHICS_FRAMESKIP_0:
+		case ID_GRAPHICS_FRAMESKIP_1:
+		case ID_GRAPHICS_FRAMESKIP_2:
+		case ID_GRAPHICS_FRAMESKIP_3:
+		case ID_GRAPHICS_FRAMESKIP_4:
+		case ID_GRAPHICS_FRAMESKIP_5:
+		case ID_GRAPHICS_FRAMESKIP_6:
+		case ID_GRAPHICS_FRAMESKIP_7:
+		case ID_GRAPHICS_FRAMESKIP_8:
+			Set_Frame_Skip(command - ID_GRAPHICS_FRAMESKIP_0);
+			return 0;
+
+		case ID_LATENCY_COMPENSATION_0:
+		case ID_LATENCY_COMPENSATION_1:
+		case ID_LATENCY_COMPENSATION_2:
+		case ID_LATENCY_COMPENSATION_3:
+		case ID_LATENCY_COMPENSATION_4:
+		case ID_LATENCY_COMPENSATION_5:
+			Set_Latency_Compensation(command - ID_LATENCY_COMPENSATION_0);
+			return 0;
+
+		case ID_GRAPHICS_FRAMESKIP_DECREASE:
+			if (Frame_Skip <= -1)
+				Set_Frame_Skip(8);
+			else
+				Set_Frame_Skip(Frame_Skip - 1);
+			return 0;
+
+		case ID_GRAPHICS_FRAMESKIP_INCREASE:
+			if (Frame_Skip >= 8)
+				Set_Frame_Skip(-1);
+			else
+				Set_Frame_Skip(Frame_Skip + 1);
+			return 0;
+
+		case ID_GRAPHICS_SPRITEOVER:
+			Set_Sprite_Over(Sprite_Over ^ 1);
+			return 0;
+
+		case ID_FILES_SAVESTATE_1:
+		case ID_FILES_SAVESTATE_2:
+		case ID_FILES_SAVESTATE_3:
+		case ID_FILES_SAVESTATE_4:
+		case ID_FILES_SAVESTATE_5:
+		case ID_FILES_SAVESTATE_6:
+		case ID_FILES_SAVESTATE_7:
+		case ID_FILES_SAVESTATE_8:
+		case ID_FILES_SAVESTATE_9:
+		case ID_FILES_SAVESTATE_0:
+		{
+			Set_Current_State((command - ID_FILES_SAVESTATE_1 + 1) % 10, false, false);
+			char Name[1024] = { 0 };
+			Get_State_File_Name(Name);
+			Save_State(Name);
+			return 0;
+		}
+		case ID_FILES_SAVESTATE_10:
+		{
+			Set_Current_State(10, false, false);
+			char Name[1024] = { 0 };
+			Get_State_File_Name(Name);
+			Save_State(Name);
+			return 0;
+		}
+		case ID_FILES_LOADSTATE_1:
+		case ID_FILES_LOADSTATE_2:
+		case ID_FILES_LOADSTATE_3:
+		case ID_FILES_LOADSTATE_4:
+		case ID_FILES_LOADSTATE_5:
+		case ID_FILES_LOADSTATE_6:
+		case ID_FILES_LOADSTATE_7:
+		case ID_FILES_LOADSTATE_8:
+		case ID_FILES_LOADSTATE_9:
+		case ID_FILES_LOADSTATE_0:
+		{
+			Set_Current_State((command - ID_FILES_LOADSTATE_1 + 1) % 10, false, true);
+			char Name[1024] = { 0 };
+			Get_State_File_Name(Name);
+			Load_State(Name);
+			return 0;
+		}
+		case ID_FILES_SETSTATE_1:
+		case ID_FILES_SETSTATE_2:
+		case ID_FILES_SETSTATE_3:
+		case ID_FILES_SETSTATE_4:
+		case ID_FILES_SETSTATE_5:
+		case ID_FILES_SETSTATE_6:
+		case ID_FILES_SETSTATE_7:
+		case ID_FILES_SETSTATE_8:
+		case ID_FILES_SETSTATE_9:
+		case ID_FILES_SETSTATE_0:
+			Set_Current_State((command - ID_FILES_SETSTATE_1 + 1) % 10, true, true);
+			return 0;
+
+		case ID_MOVIE_CHANGETRACK_ALL:
+			track = 1 | 2 | 4;
+			Put_Info("Recording all tracks");
+			if (!MainMovie.TriplePlayerHack) track &= 3;
+			return 0;
+		case ID_MOVIE_CHANGETRACK_1:
+		case ID_MOVIE_CHANGETRACK_2:
+		case ID_MOVIE_CHANGETRACK_3:
+		{
+			int chgtrack = command - ID_MOVIE_CHANGETRACK_ALL;
+			track ^= chgtrack;
+			sprintf(Str_Tmp, "Recording player %d %sed", min(chgtrack, 3), (track & chgtrack) ? "start" : "end");
+			Put_Info(Str_Tmp);
+			if (!MainMovie.TriplePlayerHack) track &= 3;
+			return 0;
+		}
+		case ID_PREV_TRACK:
+		{
+			int maxtrack = TRACK1 | TRACK2;
+			if (MainMovie.TriplePlayerHack) maxtrack |= TRACK3;
+			track &= maxtrack;
+			if (track == maxtrack)
+				track = 2;
+			else
+			{
+				track >>= 1;
+				if (!track) track = maxtrack;
+			}
+			if (track == maxtrack) sprintf(Str_Tmp, "Recording all players.");
+			else sprintf(Str_Tmp, "Recording player %d.", min(track, 3));
+			Put_Info(Str_Tmp);
+		}
+		break;
+		case ID_NEXT_TRACK:
+		{
+			int maxtrack = TRACK1 | TRACK2;
+			if (MainMovie.TriplePlayerHack) maxtrack |= TRACK3;
+			track &= maxtrack;
+			if (track == maxtrack)
+				track = 1;
+			else
+			{
+				track <<= 1;
+				track &= maxtrack;
+				if (!track) track = maxtrack;
+			}
+			if (track == maxtrack) sprintf(Str_Tmp, "Recording all players.");
+			else sprintf(Str_Tmp, "Recording player %d.", min(track, 3));
+			Put_Info(Str_Tmp);
+		}
+		break;
+
+		case ID_LAG_RESET:
+			LagCount = 0;
+			// note: the whole point of LagCountPersistent is that it doesn't get reset here
+			return 0;
+
+		case ID_CPU_RESET:
+			if (!(Game))
+				return 0;
+			if ((MainMovie.File != NULL) && (AutoCloseMovie)) //Upth-Modif - So movie close on reset is optional
+			{
+				CloseMovieFile(&MainMovie);
+				MainMovie.Status = 0;
+			}
+			if ((MainMovie.Status == MOVIE_RECORDING) && (!(AutoCloseMovie)) && (MainMovie.ReadOnly)) //Upth-Add - on reset, switch movie from recording
+				MainMovie.Status = MOVIE_PLAYING; //Upth-Add - To playing, if read only has been toggled on
+
+			if (Genesis_Started)
+				Reset_Genesis();
+			else if (_32X_Started)
+				Reset_32X();
+			else if (SegaCD_Started)
+				Reset_SegaCD();
+
+			FrameCount = 0;
+			LagCount = 0;
+			LagCountPersistent = 0;
+			frameSearchFrames = -1; frameSearchInitialized = false;
+
+			if (Genesis_Started)
+				MESSAGE_L("Genesis reseted", "Genesis reset")
+			else if (_32X_Started)
+				MESSAGE_L("32X reseted", "32X reset")
+			else if (SegaCD_Started)
+				MESSAGE_L("SegaCD reseted", "SegaCD reset")
+
+				CallRegisteredLuaFunctions(LUACALL_ONSTART);
+
+			return 0;
+
+		case ID_CPU_RESET68K:
+			if (!(Game))
+				return 0;
+			if (MainMovie.File != NULL)
+				CloseMovieFile(&MainMovie);
+			MainMovie.Status = 0;
+
+			if (Game)
+			{
+				Paused = 0;
+				main68k_reset();
+				if (Genesis_Started) MESSAGE_L("68000 CPU reseted", "68000 CPU reseted")
+				else if (SegaCD_Started) MESSAGE_L("Main 68000 CPU reseted", "Main 68000 CPU reseted")
+			}
+			FrameCount = 0;
+			LagCount = 0;
+			LagCountPersistent = 0;
+			frameSearchFrames = -1; frameSearchInitialized = false;
+			return 0;
+
+		case ID_CPU_RESET_MSH2:
+			if (!(Game))
+				return 0;
+			if (MainMovie.File != NULL)
+				CloseMovieFile(&MainMovie);
+			MainMovie.Status = 0;
+
+			if ((Game) && (_32X_Started))
+			{
+				Paused = 0;
+				SH2_Reset(&M_SH2, 1);
+				MESSAGE_L("Master SH2 reseted", "Master SH2 reseted")
+			}
+			FrameCount = 0;
+			LagCount = 0;
+			LagCountPersistent = 0;
+			frameSearchFrames = -1; frameSearchInitialized = false;
+			return 0;
+
+		case ID_CPU_RESET_SSH2:
+			if (!(Game))
+				return 0;
+			if (MainMovie.File != NULL)
+				CloseMovieFile(&MainMovie);
+			MainMovie.Status = 0;
+
+			if ((Game) && (_32X_Started))
+			{
+				Paused = 0;
+				SH2_Reset(&S_SH2, 1);
+				MESSAGE_L("Slave SH2 reseted", "Slave SH2 reseted")
+			}
+			FrameCount = 0;
+			LagCount = 0;
+			LagCountPersistent = 0;
+			frameSearchFrames = -1; frameSearchInitialized = false;
+			return 0;
+
+		case ID_CPU_RESET_SUB68K:
+			if (!(Game))
+				return 0;
+			if (MainMovie.File != NULL)
+				CloseMovieFile(&MainMovie);
+			MainMovie.Status = 0;
+
+			if ((Game) && (SegaCD_Started))
+			{
+				Paused = 0;
+				sub68k_reset();
+				MESSAGE_L("Sub 68000 CPU reseted", "Sub 68000 CPU reseted")
+			}
+			FrameCount = 0;
+			LagCount = 0;
+			LagCountPersistent = 0;
+			frameSearchFrames = -1; frameSearchInitialized = false;
+			return 0;
+
+		case ID_CPU_RESETZ80:
+			if (!(Game))
+				return 0;
+			if (MainMovie.File != NULL)
+				CloseMovieFile(&MainMovie);
+			MainMovie.Status = 0;
+
+			if (Game)
+			{
+				z80_Reset(&M_Z80);
+				MESSAGE_L("CPU Z80 reseted", "CPU Z80 reseted")
+			}
+			FrameCount = 0;
+			LagCount = 0;
+			LagCountPersistent = 0;
+			frameSearchFrames = -1; frameSearchInitialized = false;
+			return 0;
+
+		case ID_CPU_ACCURATE_SYNCHRO:
+			Change_SegaCD_Synchro();
+			return 0;
+
+		case ID_CPU_COUNTRY_AUTO:
+			Change_Country(hWnd, -1);
+			return 0;
+
+		case ID_CPU_COUNTRY_JAPAN:
+			Change_Country(hWnd, 0);
+			return 0;
+
+		case ID_CPU_COUNTRY_USA:
+			Change_Country(hWnd, 1);
+			return 0;
+
+		case ID_CPU_COUNTRY_EUROPE:
+			Change_Country(hWnd, 2);
+			return 0;
+
+		case ID_CPU_COUNTRY_MISC:
+			Change_Country(hWnd, 3);
+			return 0;
+
+		case ID_CPU_COUNTRY_ORDER + 0:
+		case ID_CPU_COUNTRY_ORDER + 1:
+		case ID_CPU_COUNTRY_ORDER + 2:
+			Change_Country_Order(command - ID_CPU_COUNTRY_ORDER);
+			return 0;
+
+		case ID_SOUND_Z80ENABLE:
+			Change_Z80();
+			return 0;
+
+		case ID_SOUND_YM2612ENABLE:
+			Change_YM2612();
+			return 0;
+
+		case ID_SOUND_PSGENABLE:
+			Change_PSG();
+			return 0;
+
+		case ID_SOUND_DACENABLE:
+			Change_DAC();
+			return 0;
+
+		case ID_SOUND_PCMENABLE:
+			Change_PCM();
+			return 0;
+
+		case ID_SOUND_PWMENABLE:
+			Change_PWM();
+			return 0;
+
+		case ID_SOUND_CDDAENABLE:
+			Change_CDDA();
+			return 0;
+
+		case ID_SOUND_DACIMPROV:
+			Change_DAC_Improv();
+			return 0;
+
+		case ID_SOUND_PSGIMPROV:
+			//					Change_PSG_Improv(hWnd);
+			return 0;
+
+		case ID_SOUND_YMIMPROV:
+			Change_YM2612_Improv();
+			return 0;
+
+		case ID_SOUND_ENABLE:
+			Change_Sound(hWnd);
+			return 0;
+
+		case ID_SOUND_RATE_11000:
+			Change_Sample_Rate(hWnd, 0);
+			return 0;
+
+		case ID_SOUND_RATE_22000:
+			Change_Sample_Rate(hWnd, 1);
+			return 0;
+
+		case ID_SOUND_RATE_44000:
+			Change_Sample_Rate(hWnd, 2);
+			return 0;
+
+		case ID_SOUND_STEREO:
+			Change_Sound_Stereo(hWnd);
+			return 0;
+
+		case ID_SOUND_SOFTEN: //Nitsuja added this
+			Change_Sound_Soften(hWnd);
+			return 0;
+
+		case ID_SOUND_HOG: //Nitsuja added this
+			Change_Sound_Hog();
+			return 0;
+
+		case ID_OPTIONS_FASTBLUR:
+			Change_Fast_Blur();
+			return 0;
+
+		case ID_OPTIONS_SHOWFPS:
+			if (Show_FPS) Show_FPS = 0;
+			else Show_FPS = 1;
+			return 0;
+
+		case ID_OPTIONS_GENERAL:
+			MINIMIZE
+				DialogsOpen++;
+			DialogBox(ghInstance, MAKEINTRESOURCE(IDD_OPTION), hWnd, (DLGPROC)OptionProc);
+			Build_Main_Menu();
+			return 0;
+
+		case ID_OPTIONS_JOYPADSETTING:
+			MINIMIZE
+				End_Input();
+			DialogsOpen++;
+			DialogBox(ghInstance, MAKEINTRESOURCE(IDD_CONTROLLER), hWnd, (DLGPROC)ControllerProc);
+			if (!Init_Input(ghInstance, HWnd)) return false;
+			Build_Main_Menu();
+			return 0;
+
+		case ID_OPTIONS_CHANGEDIR:
+			MINIMIZE
+				DialogsOpen++;
+			DialogBox(ghInstance, MAKEINTRESOURCE(IDD_DIRECTORIES), hWnd, (DLGPROC)DirectoriesProc);
+			Build_Main_Menu();
+			return 0;
+
+		case ID_OPTIONS_CHANGEFILES:
+			MINIMIZE
+				DialogsOpen++;
+			DialogBox(ghInstance, MAKEINTRESOURCE(IDD_FILES), hWnd, (DLGPROC)FilesProc);
+			Build_Main_Menu();
+			return 0;
+
+		case ID_TOGGLE_SHOWFRAMEANDLAGCOUNT:
+			FrameCounterEnabled = !FrameCounterEnabled;
+			LagCounterEnabled = FrameCounterEnabled;
+			if (FrameCounterEnabled) Flip(hWnd); else Show_Genesis_Screen(hWnd);
+			break;
+		case ID_TOGGLE_TIMEUNIT:
+			FrameCounterFrames = !FrameCounterFrames;
+			LagCounterFrames = FrameCounterFrames;
+			Show_Genesis_Screen(hWnd);
+			break;
+		case ID_TOGGLE_SHOWFRAMECOUNT:
+			FrameCounterEnabled = !FrameCounterEnabled;
+			if (FrameCounterEnabled) Flip(hWnd); else Show_Genesis_Screen(hWnd);
+			break;
+		case ID_TOGGLE_SHOWLAGCOUNT:
+			LagCounterEnabled = !LagCounterEnabled;
+			if (LagCounterEnabled) Flip(hWnd); else Show_Genesis_Screen(hWnd);
+			break;
+		case ID_TOGGLE_SHOWINPUT:
+			ShowInputEnabled = !ShowInputEnabled;
+			if (ShowInputEnabled) Flip(hWnd); else Show_Genesis_Screen(hWnd);
+			break;
+		case ID_TOGGLE_SHOWFPS:
+			Show_FPS = !Show_FPS;
+			if (Show_FPS) Flip(hWnd); else Show_Genesis_Screen(hWnd);
+			break;
+		case ID_TOGGLE_SHOWLED:
+			Show_LED = !Show_LED;
+			Show_Genesis_Screen(hWnd);
+			break;
+
+		case ID_OPTION_CDDRIVE_0:
+		case ID_OPTION_CDDRIVE_1:
+		case ID_OPTION_CDDRIVE_2:
+		case ID_OPTION_CDDRIVE_3:
+		case ID_OPTION_CDDRIVE_4:
+		case ID_OPTION_CDDRIVE_5:
+		case ID_OPTION_CDDRIVE_6:
+		case ID_OPTION_CDDRIVE_7:
+			if (Num_CD_Drive > (command - ID_OPTION_CDDRIVE_0))
+			{
+				CUR_DEV = command - ID_OPTION_CDDRIVE_0;
+			}
+			Build_Main_Menu();
+			return 0;
+
+		case ID_OPTION_SRAMSIZE_0:
+			Change_SegaCD_SRAM_Size(-1);
+			return 0;
+
+		case ID_OPTION_SRAMSIZE_8:
+			Change_SegaCD_SRAM_Size(0);
+			return 0;
+
+		case ID_OPTION_SRAMSIZE_16:
+			Change_SegaCD_SRAM_Size(1);
+			return 0;
+
+		case ID_OPTION_SRAMSIZE_32:
+			Change_SegaCD_SRAM_Size(2);
+			return 0;
+
+		case ID_OPTION_SRAMSIZE_64:
+			Change_SegaCD_SRAM_Size(3);
+			return 0;
+
+		case ID_OPTION_SRAMON:
+			SRAM_ON = !SRAM_ON;
+			Build_Main_Menu();
+			return 0;
+
+		case ID_OPTIONS_SAVECONFIG:
+			strcpy(Str_Tmp, Gens_Path);
+			strcat(Str_Tmp, "Gens.cfg");
+			Save_Config(Str_Tmp);
+			return 0;
+
+		case ID_OPTIONS_LOADCONFIG:
+			MINIMIZE
+				DialogsOpen++;
+			Load_As_Config(hWnd, Game);
+			DialogsOpen--;
+			return 0;
+
+		case ID_OPTIONS_SAVEASCONFIG:
+			MINIMIZE
+				DialogsOpen++;
+			Save_As_Config(hWnd);
+			DialogsOpen--;
+			return 0;
+
+		case ID_HELP_ABOUT:
+			Clear_Sound_Buffer();
+			DialogsOpen++;
+			DialogBox(ghInstance, MAKEINTRESOURCE(ABOUTDIAL), hWnd, (DLGPROC)AboutProc);
+			return 0;
+
+		case ID_CHANGE_PALLOCK:
+		{
+			PalLock = !PalLock;
+			for (int i = 0; i < 0x40; ++i)
+				LockedPalette[i] = CRam[i];
+			Build_Main_Menu();
+			char message[256];
+			sprintf(message, "Palette %sed", PalLock ? "lock" : "unlock");
+			MESSAGE_L(message, message)
+
+				return 0;
+		}
+
+		case ID_EMULATION_PAUSED:
+			if (Paused)
+			{
+				Paused = 0;
+			}
+			else
+			{
+				Paused = 1;
+				Pause_Screen();
+				Clear_Sound_Buffer();
+				Flip(HWnd);
+
+				debug_event_t ev;
+				ev.pid = 1;
+				ev.tid = 1;
+				ev.ea = M68kDW.last_pc;
+				ev.handled = true;
+				ev.eid = PROCESS_SUSPEND;
+
+				g_events.enqueue(ev, IN_BACK);
+			}
+			return 0;
+		}
+	}
+	break;
 
     case WM_KNUX:
         MESSAGE_L("Communicating", "Communicating ...")
 
-            switch (wParam)
+        switch (wParam)
         {
             case 0:
                 switch (lParam)
@@ -4061,7 +3918,8 @@ long PASCAL WinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             default:
                 return(-1);
         }
-    }
+		break;
+	}
 
     return DefWindowProc(hWnd, message, wParam, lParam);
 }
@@ -5113,48 +4971,6 @@ HMENU Build_Main_Menu(void)
     MENU_L(Help, i++, Flags,
         ID_HELP_ABOUT, "About", "", "&About");
 
-    InsertMenu(Help, i++, MF_SEPARATOR, NULL, NULL);
-
-    j = 0;
-    while (language_name[j])
-    {
-        GetPrivateProfileString(language_name[j], "Menu Language", "Undefined language", Str_Tmp, 1024, Language_Path);
-        if (Language == j)
-            InsertMenu(Help, i++, Flags | MF_CHECKED,
-            ID_HELP_LANG + j, Str_Tmp);
-        else
-            InsertMenu(Help, i++, Flags | MF_UNCHECKED,
-            ID_HELP_LANG + j, Str_Tmp);
-        j++;
-    }
-
-    if (Detect_Format(Manual_Path) != -1)		// can be used to detect if file exist
-    {
-        InsertMenu(Help, i++, MF_SEPARATOR, NULL, NULL);
-
-        MENU_L(Help, i++, Flags,
-            ID_HELP_MENU_FILE, "File menu", "", "&File menu");
-        MENU_L(Help, i++, Flags,
-            ID_HELP_MENU_GRAPHICS, "Graphics menu", "", "&Graphics menu");
-        MENU_L(Help, i++, Flags,
-            ID_HELP_MENU_CPU, "CPU menu", "", "&CPU menu");
-        MENU_L(Help, i++, Flags,
-            ID_HELP_MENU_SOUND, "Sound menu", "", "&Sound menu");
-        MENU_L(Help, i++, Flags,
-            ID_HELP_MENU_OPTIONS, "Options menu", "", "&Options menu");
-
-        InsertMenu(Help, i++, MF_SEPARATOR, NULL, NULL);
-
-        MENU_L(Help, i++, Flags,
-            ID_HELP_NETPLAY, "Netplay", "", "&Netplay");
-        MENU_L(Help, i++, Flags,
-            ID_HELP_MEGACD, "Mega/Sega CD", "", "&Mega/Sega CD");
-        MENU_L(Help, i++, Flags,
-            ID_HELP_FAQ, "FAQ", "", "&FAQ");
-        MENU_L(Help, i++, Flags,
-            ID_HELP_KEYS, "Shortcuts", "", "&Defaults keys && Shortcuts");
-    }
-
     ///////////////////////////////////////////
     //                  END                  //
     ///////////////////////////////////////////
@@ -5254,7 +5070,6 @@ LRESULT CALLBACK GGenieProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
             }
         }
         return true;
-        break;
 
     case WM_COMMAND:
         switch (LOWORD(wParam))
@@ -5277,7 +5092,6 @@ LRESULT CALLBACK GGenieProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
                 }
             }
             return true;
-            break;
 
         case ID_GGREMOVE:
             value = SendDlgItemMessage(hDlg, IDC_LIST1, LB_GETCOUNT, (WPARAM)0, (LPARAM)0);
@@ -5289,7 +5103,6 @@ LRESULT CALLBACK GGenieProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
                     SendDlgItemMessage(hDlg, IDC_LIST1, LB_DELETESTRING, (WPARAM)i, (LPARAM)0);
             }
             return true;
-            break;
 
         case ID_GGDEACTIVATE:
             value = SendDlgItemMessage(hDlg, IDC_LIST1, LB_GETCOUNT, (WPARAM)0, (LPARAM)0);
@@ -5300,7 +5113,6 @@ LRESULT CALLBACK GGenieProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
                 SendDlgItemMessage(hDlg, IDC_LIST1, LB_SETSEL, (WPARAM)0, (LPARAM)i);
             }
             return true;
-            break;
 
         case ID_OK:
             value = SendDlgItemMessage(hDlg, IDC_LIST1, LB_GETCOUNT, (WPARAM)0, (LPARAM)0);
@@ -5361,21 +5173,6 @@ LRESULT CALLBACK GGenieProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
             DialogsOpen--;
             EndDialog(hDlg, true);
             return true;
-            break;
-
-        case ID_HELP_HELP:
-            if (Detect_Format(Manual_Path) != -1)		// can be used to detect if file exist
-            {
-                strcpy(Str_Tmp, Manual_Path);
-                strcat(Str_Tmp, " helpgamegenie.html");
-                system(Str_Tmp);
-            }
-            else
-            {
-                MessageBox(HWnd, "You need to configure the Manual Path to have help", "info", MB_OK);
-            }
-            return true;
-            break;
         }
         break;
 
@@ -5383,7 +5180,6 @@ LRESULT CALLBACK GGenieProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
         DialogsOpen--;
         EndDialog(hDlg, true);
         return true;
-        break;
     }
 
     return false;
@@ -5506,21 +5302,6 @@ LRESULT CALLBACK DirectoriesProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPa
             DialogsOpen--;
             EndDialog(hDlg, true);
             return true;
-            break;
-
-        case ID_HELP_HELP:
-            if (Detect_Format(Manual_Path) != -1)		// can be used to detect if file exist
-            {
-                strcpy(Str_Tmp, Manual_Path);
-                strcat(Str_Tmp, " helpdir.html");
-                system(Str_Tmp);
-            }
-            else
-            {
-                MessageBox(HWnd, "You need to configure the Manual Path to have help", "info", MB_OK);
-            }
-            return true;
-            break;
         }
         break;
 
@@ -5528,7 +5309,6 @@ LRESULT CALLBACK DirectoriesProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPa
         DialogsOpen--;
         EndDialog(hDlg, true);
         return true;
-        break;
     }
 
     return false;
@@ -5572,8 +5352,6 @@ LRESULT CALLBACK FilesProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
         WORD_L(ID_CHANGE_USBIOS, "Change", "", "Change");
         WORD_L(ID_CHANGE_EUBIOS, "Change", "", "Change");
         WORD_L(ID_CHANGE_JABIOS, "Change", "", "Change");
-        WORD_L(ID_CHANGE_CGOFFLINE, "Change", "", "Change");
-        WORD_L(ID_CHANGE_MANUAL, "Change", "", "Change");
 
         WORD_L(IDC_STATIC_GENESISBIOS, "Genesis bios static", "", "Genesis");
         WORD_L(IDC_STATIC_32XGBIOS, "M68000 bios static", "", "M68000");
@@ -5582,8 +5360,6 @@ LRESULT CALLBACK FilesProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
         WORD_L(IDC_STATIC_USBIOS, "US bios static", "", "USA");
         WORD_L(IDC_STATIC_EUBIOS, "EU bios static", "", "Europe");
         WORD_L(IDC_STATIC_JABIOS, "JA bios static", "", "Japan");
-        WORD_L(IDC_STATIC_CGOFFLINE, "CGOffline static", "", "CGOffline");
-        WORD_L(IDC_STATIC_MANUAL, "Manual static", "", "Manual");
 
         SetDlgItemText(hDlg, IDC_EDIT_GENESISBIOS, Genesis_Bios);
         SetDlgItemText(hDlg, IDC_EDIT_32XGBIOS, _32X_Genesis_Bios);
@@ -5592,8 +5368,6 @@ LRESULT CALLBACK FilesProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
         SetDlgItemText(hDlg, IDC_EDIT_USBIOS, US_CD_Bios);
         SetDlgItemText(hDlg, IDC_EDIT_EUBIOS, EU_CD_Bios);
         SetDlgItemText(hDlg, IDC_EDIT_JABIOS, JA_CD_Bios);
-        SetDlgItemText(hDlg, IDC_EDIT_CGOFFLINE, CGOffline_Path);
-        SetDlgItemText(hDlg, IDC_EDIT_MANUAL, Manual_Path);
 
         return true;
         break;
@@ -5664,22 +5438,6 @@ LRESULT CALLBACK FilesProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
             DialogsOpen--;
             break;
 
-        case ID_CHANGE_CGOFFLINE:
-            GetDlgItemText(hDlg, IDC_EDIT_CGOFFLINE, Str_Tmp2, 1024);
-            strcpy(Str_Tmp, "GCOffline.chm");
-            if (Change_File_S(Str_Tmp, Str_Tmp2, "Genesis Collective - CGOffline file", "html help files\0*.chm\0\0", "chm", hDlg))
-                SetDlgItemText(hDlg, IDC_EDIT_CGOFFLINE, Str_Tmp);
-            DialogsOpen--;
-            break;
-
-        case ID_CHANGE_MANUAL:
-            GetDlgItemText(hDlg, IDC_EDIT_MANUAL, Str_Tmp2, 1024);
-            strcpy(Str_Tmp, "Manual.exe");
-            if (Change_File_S(Str_Tmp, Str_Tmp2, "Gens Manual", "executable files\0*.exe\0\0", "exe", hDlg))
-                SetDlgItemText(hDlg, IDC_EDIT_MANUAL, Str_Tmp);
-            DialogsOpen--;
-            break;
-
         case ID_OK:
             GetDlgItemText(hDlg, IDC_EDIT_GENESISBIOS, Genesis_Bios, 1024);
 
@@ -5691,29 +5449,11 @@ LRESULT CALLBACK FilesProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
             GetDlgItemText(hDlg, IDC_EDIT_EUBIOS, EU_CD_Bios, 1024);
             GetDlgItemText(hDlg, IDC_EDIT_JABIOS, JA_CD_Bios, 1024);
 
-            GetDlgItemText(hDlg, IDC_EDIT_CGOFFLINE, CGOffline_Path, 1024);
-            GetDlgItemText(hDlg, IDC_EDIT_MANUAL, Manual_Path, 1024);
-
         case ID_CANCEL:
         case IDCANCEL:
             DialogsOpen--;
             EndDialog(hDlg, true);
             return true;
-            break;
-
-        case ID_HELP_HELP:
-            if (Detect_Format(Manual_Path) != -1)		// can be used to detect if file exist
-            {
-                strcpy(Str_Tmp, Manual_Path);
-                strcat(Str_Tmp, " helpdir.html");
-                system(Str_Tmp);
-            }
-            else
-            {
-                MessageBox(HWnd, "You need to configure the Manual Path to have help", "info", MB_OK);
-            }
-            return true;
-            break;
         }
         break;
 
@@ -5721,7 +5461,6 @@ LRESULT CALLBACK FilesProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
         DialogsOpen--;
         EndDialog(hDlg, true);
         return true;
-        break;
     }
 
     return false;
@@ -7121,19 +6860,6 @@ LRESULT CALLBACK ColorProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
             SendDlgItemMessage(hDlg, IDC_CHECK_GREYSCALE, BM_SETCHECK, BST_UNCHECKED, 0);
             SendDlgItemMessage(hDlg, IDC_CHECK_INVERT, BM_SETCHECK, BST_UNCHECKED, 0);
             return true;
-
-        case ID_HELP_HELP:
-            /*					if (Detect_Format(Manual_Path) != -1)		// can be used to detect if file exist
-                                {
-                                strcpy(Str_Tmp, Manual_Path);
-                                strcat(Str_Tmp, " helpmisc.html");
-                                system(Str_Tmp);
-                                }
-                                else
-                                {
-                                MessageBox(HWnd, "You need to configure the Manual Path to have help", "info", MB_OK);
-                                }
-                                */					return true;
         }
         break;
 
@@ -7339,20 +7065,6 @@ LRESULT CALLBACK OptionProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
             DialogsOpen--;
             EndDialog(hDlg, true);
             return true;
-            break;
-        case ID_HELP_HELP:
-            if (Detect_Format(Manual_Path) != -1)		// can be used to detect if file exist
-            {
-                strcpy(Str_Tmp, Manual_Path);
-                strcat(Str_Tmp, " helpmisc.html");
-                system(Str_Tmp);
-            }
-            else
-            {
-                MessageBox(HWnd, "You need to configure the Manual Path to have help", "info", MB_OK);
-            }
-            return true;
-            break;
         }
         break;
 
@@ -7573,19 +7285,6 @@ LRESULT CALLBACK ControllerProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPar
             break;
         case INPUT_FRAMEADVSKIPLAG:
             frameadvSkipLag ^= 1;
-            break;
-        case ID_HELP_HELP:
-            if (Detect_Format(Manual_Path) != -1)		// can be used to detect if file exist
-            {
-                strcpy(Str_Tmp, Manual_Path);
-                strcat(Str_Tmp, " helpjoypads.html");
-                system(Str_Tmp);
-            }
-            else
-            {
-                MessageBox(HWnd, "You need to configure the Manual Path to have help", "info", MB_OK);
-            }
-            return true;
             break;
 
         case IDC_COMBO_PORT1:

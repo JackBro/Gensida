@@ -25,7 +25,6 @@ extern int Correct_256_Aspect_Ratio;
 extern int Effect_Color;
 extern int FPS_Style;
 extern int Message_Style;
-extern int Kaillera_Error;
 extern bool frameadvSkipLag;
 extern bool justlagged;
 

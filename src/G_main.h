@@ -87,8 +87,6 @@ extern "C" {
     extern char Str_Tmp[1024];
     extern char Gens_Path[1024];
     extern char Language_Path[1024];
-    extern char CGOffline_Path[1024];
-    extern char Manual_Path[1024];
     extern POINT Window_Pos;
 
 #define MAX_RECENT_SCRIPTS 15
