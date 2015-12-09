@@ -2176,6 +2176,11 @@ int YM2612_Write(unsigned char adr, unsigned char data)
                 CHANNEL_SET(YM2612.OPNAadr, data);
             }
         }
+		else					// YM2612
+		{
+			YM2612.REG[0][YM2612.OPNAadr] = data;
+			YM_SET(YM2612.OPNAadr, data);
+		}
         break;
 
     case 2:
