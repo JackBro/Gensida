@@ -7,7 +7,6 @@
 #include "movie.h"
 #include "mem_M68K.h"
 #include "luascript.h"
-#include "OpenArchive.h"
 
 long unsigned int FrameCount = 0;
 long unsigned int LagCount = 0;
@@ -554,11 +553,8 @@ int GetMovieInfo(char *FileName, typeMovie *aMovie)
 
     // use ObtainFile to support loading movies from archives
     char LogicalName[1024], PhysicalName[1024];
-    if (!ObtainFile(FileName, LogicalName, PhysicalName, "submov", s_nonMovieExtensions, sizeof(s_nonMovieExtensions) / sizeof(*s_nonMovieExtensions)))
-    {
-        aMovie->Ok = 0;
-        return -1;
-    }
+	strcpy(LogicalName, FileName);
+	strcpy(PhysicalName, FileName);
 
     test = fopen(PhysicalName, "rb");
     if (test == NULL)
@@ -572,7 +568,6 @@ int GetMovieInfo(char *FileName, typeMovie *aMovie)
     {
         aMovie->Ok = 0;
         fclose(test);
-        ReleaseTempFileCategory("submov"); // delete the temporary file if any
         return -2;
     }
 
@@ -585,7 +580,6 @@ int GetMovieInfo(char *FileName, typeMovie *aMovie)
     {
         aMovie->Ok = 0;
         fclose(test);
-        ReleaseTempFileCategory("submov"); // delete the temporary file if any
         return -3;
     }
 
@@ -638,7 +632,6 @@ int GetMovieInfo(char *FileName, typeMovie *aMovie)
         aMovie->Vfreq = (CPU_Mode) ? 1 : 0;
     }
     fclose(test);
-    ReleaseTempFileCategory("submov"); // delete the temporary file if any
     return 0;
 }
 
@@ -683,17 +676,17 @@ int OpenMovieFile(typeMovie *aMovie)
 
     // use ObtainFile to support loading movies from archives (read-only)
     char LogicalName[1024], PhysicalName[1024];
-    if (ObtainFile(aMovie->FileName, LogicalName, PhysicalName, "mov", s_nonMovieExtensions, sizeof(s_nonMovieExtensions) / sizeof(*s_nonMovieExtensions)))
-    {
-        aMovie->File = fopen(PhysicalName, "r+b"); // so we can toggle readonly later without re-opening file
-        if (!aMovie->File)
-        {
-            aMovie->File = fopen(PhysicalName, "rb");
-            aMovie->ReadOnly = 2; // really read-only
-        }
-        strncpy(aMovie->PhysicalFileName, PhysicalName, 1024);
-        Update_Recent_Movie(LogicalName);
-    }
+	strcpy(LogicalName, aMovie->FileName);
+	strcpy(PhysicalName, aMovie->FileName);
+
+	aMovie->File = fopen(PhysicalName, "r+b"); // so we can toggle readonly later without re-opening file
+	if (!aMovie->File)
+	{
+		aMovie->File = fopen(PhysicalName, "rb");
+		aMovie->ReadOnly = 2; // really read-only
+	}
+	strncpy(aMovie->PhysicalFileName, PhysicalName, 1024);
+	Update_Recent_Movie(LogicalName);
 
     if (!aMovie->File)
         return 0;
@@ -777,8 +770,6 @@ int CloseMovieFile(typeMovie *aMovie)
 {
     if (!FlushMovieFile(aMovie))
         return 0;
-
-    ReleaseTempFileCategory("mov"); // delete the temporary file if any
 
     char status = aMovie->Status;
     InitMovie(aMovie);

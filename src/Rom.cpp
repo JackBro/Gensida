@@ -15,13 +15,11 @@
 #include "mem_SH2.h"
 #include "vdp_io.h"
 #include "save.h"
-#include "ccnet.h"
 #include "misc.h"
 #include "unzip.h"
 #include "wave.h"
 #include "cd_file.h"
 #include "luascript.h"
-#include "OpenArchive.h"
 #include <assert.h>
 
 int File_Type_Index;
@@ -177,34 +175,6 @@ int Detect_Format(char *FileName)
         size_t isoname_len = strlen(isoname);
         if (isoname[0] && !(isoname_len > 3 && (!stricmp("CUE", &isoname[isoname_len - 3]))))
             return Detect_Format(isoname);
-    }
-
-    {
-        ArchiveFile archive(Name);
-        if (archive.IsCompressed())
-        {
-            // we could find out exactly what type the ROM inside the archive is,
-            // but that potentially involves decompressing many megabytes of data,
-            // which would be bad because Detect_Format gets called very often.
-            // if a completely accurate result is needed, use ObtainFile() before calling Detect_Format().
-
-            // guess based on filename/extension
-            const char* dot = strrchr(FileName, '.');
-            const char* fname = FileName;
-            if (strrchr(fname, '\\')) fname = strrchr(fname, '\\') + 1;
-            if (strrchr(fname, '/')) fname = strrchr(fname, '/') + 1;
-            if (strrchr(fname, '|')) fname = strrchr(fname, '|') + 1;
-            if (dot && (!stricmp(dot, ".cue") || !stricmp(dot, ".iso") || !stricmp(dot, ".raw")))
-                return SEGACD_IMAGE;
-            if (dot && (!stricmp(dot, ".smd") || !stricmp(dot, ".gen")))
-                return GENESIS_ROM;
-            if ((dot && !stricmp(dot, ".32x")) || strstr(fname, "32x") || strstr(fname, "32X"))
-                return _32X_ROM;
-            if (dot && (!stricmp(dot, ".bin")))
-                return GENESIS_ROM;
-
-            return COMPRESSED_IMAGE;
-        }
     }
 
     char buf[1024] = { 0 };
@@ -370,7 +340,7 @@ int Get_Rom(HWND hWnd)
     ofn.nMaxFile = 1023;
     ofn.lpstrTitle = "Open ROM";
 
-    const char* supportedArchives = GetSupportedFormatsFilter();
+    const char* supportedArchives = "";
 
     char filterString[2048];
     char* filterPtr = filterString;
@@ -413,11 +383,10 @@ int Get_Rom(HWND hWnd)
     if (GetOpenFileName(&ofn) == NULL) return 0;
 
     char LogicalName[1024], PhysicalName[1024];
-    if (!ObtainFile(Name, LogicalName, PhysicalName, "rom", s_nonRomExtensions, sizeof(s_nonRomExtensions) / sizeof(*s_nonRomExtensions)))
-        return 0;
+	strcpy(LogicalName, Name);
+	strcpy(PhysicalName, Name);
 
     Free_Rom(Game);
-    ReleaseTempFileCategory("rom", PhysicalName); // delete the old temporary file if any
 
     sys = Detect_Format(PhysicalName);
 
@@ -438,7 +407,6 @@ int Get_Rom(HWND hWnd)
     if ((sys >> 1) < 3)		// Have to load a rom
     {
         Game = Load_Rom(hWnd, PhysicalName, sys & 1);
-        ReleaseTempFileCategory("rom"); // delete the temp file right away since it's fully in memory now
     }
 
     switch (sys >> 1)
@@ -479,11 +447,10 @@ int Pre_Load_Rom(HWND hWnd, const char *NameTemp)
     SetCurrentDirectory(Gens_Path);
 
     char LogicalName[1024], PhysicalName[1024];
-    if (!ObtainFile(Name, LogicalName, PhysicalName, "rom", s_nonRomExtensions, sizeof(s_nonRomExtensions) / sizeof(*s_nonRomExtensions)))
-        return 0;
+	strcpy(LogicalName, Name);
+	strcpy(PhysicalName, Name);
 
     Free_Rom(Game);
-    ReleaseTempFileCategory("rom", PhysicalName); // delete the old temporary file if any
 
     sys = Detect_Format(PhysicalName);
 
@@ -496,7 +463,6 @@ int Pre_Load_Rom(HWND hWnd, const char *NameTemp)
     if ((sys >> 1) < 3)		// Have to load a rom
     {
         Game = Load_Rom(hWnd, PhysicalName, sys & 1);
-        ReleaseTempFileCategory("rom"); // delete the temp file right away since it's fully in memory now
     }
 
     switch (sys >> 1)
@@ -554,14 +520,12 @@ Rom *Load_Bios(HWND hWnd, char *Name)
     SetCurrentDirectory(Gens_Path);
 
     char LogicalName[1024], PhysicalName[1024];
-    if (!ObtainFile(Name, LogicalName, PhysicalName, "bios", s_nonRomExtensions, sizeof(s_nonRomExtensions) / sizeof(*s_nonRomExtensions)))
-        return 0;
+	strcpy(LogicalName, Name);
+	strcpy(PhysicalName, Name);
 
     Free_Rom(Game);
-    ReleaseTempFileCategory("bios", PhysicalName); // delete the old temporary file if any
 
     Game = Load_Rom(hWnd, PhysicalName, 0);
-    ReleaseTempFileCategory("bios"); // delete the temp file right away since it's fully in memory now
 
     return Game;
 }
@@ -727,7 +691,6 @@ void Free_Rom(Rom *Rom_MD)
     Save_SRAM();
     Save_Patch_File();
     if (SegaCD_Started) Stop_CD();
-    Net_Play = 0;
     Genesis_Started = 0;
     _32X_Started = 0;
     SegaCD_Started = 0;

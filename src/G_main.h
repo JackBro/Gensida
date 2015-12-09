@@ -26,7 +26,6 @@ extern "C" {
     extern HMENU Context_Menu;
 
     extern int Paused;
-    extern int Net_Play;
     extern int Current_State;
     extern int Full_Screen;
     extern int Fast_Blur;

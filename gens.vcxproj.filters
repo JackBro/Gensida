@@ -36,13 +36,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\7zip.cpp">
-      <Filter>C/C++ Sources</Filter>
-    </ClCompile>
     <ClCompile Include="src\cblit.cpp">
-      <Filter>C/C++ Sources</Filter>
-    </ClCompile>
-    <ClCompile Include="src\CCnet.c">
       <Filter>C/C++ Sources</Filter>
     </ClCompile>
     <ClCompile Include="src\cd_aspi.cpp">
@@ -111,9 +105,6 @@
     <ClCompile Include="src\movie.cpp">
       <Filter>C/C++ Sources</Filter>
     </ClCompile>
-    <ClCompile Include="src\OpenArchive.cpp">
-      <Filter>C/C++ Sources</Filter>
-    </ClCompile>
     <ClCompile Include="src\ParseCmdLine.cpp">
       <Filter>C/C++ Sources</Filter>
     </ClCompile>
@@ -148,9 +139,6 @@
       <Filter>C/C++ Sources</Filter>
     </ClCompile>
     <ClCompile Include="src\tracer_cd.cpp">
-      <Filter>C/C++ Sources</Filter>
-    </ClCompile>
-    <ClCompile Include="src\unzip.c">
       <Filter>C/C++ Sources</Filter>
     </ClCompile>
     <ClCompile Include="src\wave.c">
@@ -346,22 +334,7 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\7zip.h">
-      <Filter>Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="src\7zipstreams.h">
-      <Filter>Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="src\AVIWrite.h">
-      <Filter>Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="src\base64.h">
-      <Filter>Headers</Filter>
-    </ClInclude>
     <ClInclude Include="src\blit.h">
-      <Filter>Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="src\CCnet.h">
       <Filter>Headers</Filter>
     </ClInclude>
     <ClInclude Include="src\cd_aspi.h">
@@ -418,13 +391,7 @@
     <ClInclude Include="src\guidraw.h">
       <Filter>Headers</Filter>
     </ClInclude>
-    <ClInclude Include="src\htmlhelp.h">
-      <Filter>Headers</Filter>
-    </ClInclude>
     <ClInclude Include="src\io.h">
-      <Filter>Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="src\kailleraclient.h">
       <Filter>Headers</Filter>
     </ClInclude>
     <ClInclude Include="src\keycode.h">
@@ -460,19 +427,10 @@
     <ClInclude Include="src\moviegfx.h">
       <Filter>Headers</Filter>
     </ClInclude>
-    <ClInclude Include="src\net.h">
-      <Filter>Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="src\OpenArchive.h">
-      <Filter>Headers</Filter>
-    </ClInclude>
     <ClInclude Include="src\ParseCmdLine.h">
       <Filter>Headers</Filter>
     </ClInclude>
     <ClInclude Include="src\pcm.h">
-      <Filter>Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="src\png.h">
       <Filter>Headers</Filter>
     </ClInclude>
     <ClInclude Include="src\psg.h">
@@ -491,9 +449,6 @@
       <Filter>Headers</Filter>
     </ClInclude>
     <ClInclude Include="src\save.h">
-      <Filter>Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="src\scrshot.h">
       <Filter>Headers</Filter>
     </ClInclude>
     <ClInclude Include="src\SH2.h">

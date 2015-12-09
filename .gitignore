@@ -6,6 +6,7 @@ Release64/
 7z/Release
 *.cfg
 *.opensdf
+*.opendb
 *.sdf
 *.suo
 *.aps

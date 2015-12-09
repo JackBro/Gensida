@@ -97,7 +97,7 @@
       <PrecompiledHeader />
     </ClCompile>
     <Link>
-      <AdditionalDependencies>ida.lib;advapi32.lib;ComDlg32.Lib;gdi32.lib;user32.lib;wsock32.lib;shell32.lib;oleaut32.lib;dependencies/directx/ddraw.lib;dependencies/directx/dsound.lib;dependencies/directx/dinput.lib;dependencies/directx/dxguid.lib;winmm.lib;dependencies/libs/zlib.lib;dependencies/libs/libpng.lib;htmlhelp.lib;vfw32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>ida.lib;advapi32.lib;ComDlg32.Lib;gdi32.lib;user32.lib;shell32.lib;oleaut32.lib;dependencies/directx/ddraw.lib;dependencies/directx/dsound.lib;dependencies/directx/dinput.lib;dependencies/directx/dxguid.lib;winmm.lib;dependencies/libs/zlib.lib;vfw32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories Condition="'$(Configuration)'=='Debug'">$(IDA_SDK)\lib\x86_win_vc_32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalLibraryDirectories Condition="'$(Configuration)'=='Release64'">$(IDA_SDK)\lib\x86_win_vc_64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalLibraryDirectories Condition="'$(Configuration)'=='Release'">$(IDA_SDK)\lib\x86_win_vc_32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
@@ -144,13 +144,7 @@
     <ClCompile Include="dependencies\lua\src\lundump.c" />
     <ClCompile Include="dependencies\lua\src\lvm.c" />
     <ClCompile Include="dependencies\lua\src\lzio.c" />
-    <ClCompile Include="src\7zip.cpp">
-      <AdditionalIncludeDirectories>$(SolutionDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </ClCompile>
     <ClCompile Include="src\cblit.cpp" />
-    <ClCompile Include="src\CCnet.c">
-      <PreprocessorDefinitions>%(PreprocessorDefinitions)</PreprocessorDefinitions>
-    </ClCompile>
     <ClCompile Include="src\cd_aspi.cpp">
       <PreprocessorDefinitions>%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
@@ -208,7 +202,6 @@
     </ClCompile>
     <ClCompile Include="src\m68k_debugwindow.cpp" />
     <ClCompile Include="src\movie.cpp" />
-    <ClCompile Include="src\OpenArchive.cpp" />
     <ClCompile Include="src\ParseCmdLine.cpp" />
     <ClCompile Include="src\pcm.c">
       <PreprocessorDefinitions>%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -237,9 +230,6 @@
     </ClCompile>
     <ClCompile Include="src\tracer.cpp" />
     <ClCompile Include="src\tracer_cd.cpp" />
-    <ClCompile Include="src\unzip.c">
-      <PreprocessorDefinitions>%(PreprocessorDefinitions)</PreprocessorDefinitions>
-    </ClCompile>
     <ClCompile Include="src\vdp_ram.cpp" />
     <ClCompile Include="src\vdp_sprites.cpp" />
     <ClCompile Include="src\wave.c">
@@ -411,12 +401,7 @@
     <ClInclude Include="dependencies\lua\src\lundump.h" />
     <ClInclude Include="dependencies\lua\src\lvm.h" />
     <ClInclude Include="dependencies\lua\src\lzio.h" />
-    <ClInclude Include="src\7zip.h" />
-    <ClInclude Include="src\7zipstreams.h" />
-    <ClInclude Include="src\AVIWrite.h" />
-    <ClInclude Include="src\base64.h" />
     <ClInclude Include="src\blit.h" />
-    <ClInclude Include="src\CCnet.h" />
     <ClInclude Include="src\cd_aspi.h" />
     <ClInclude Include="src\cd_file.h" />
     <ClInclude Include="src\Cd_sys.h" />
@@ -437,12 +422,10 @@
     <ClInclude Include="src\gm2_structs.h" />
     <ClInclude Include="src\guidraw.h" />
     <ClInclude Include="src\hexeditor.h" />
-    <ClInclude Include="src\htmlhelp.h" />
     <ClInclude Include="src\ida_debmod.h" />
     <ClInclude Include="src\ida_debug.h" />
     <ClInclude Include="src\ida_registers.h" />
     <ClInclude Include="src\io.h" />
-    <ClInclude Include="src\kailleraclient.h" />
     <ClInclude Include="src\keycode.h" />
     <ClInclude Include="src\LC89510.h" />
     <ClInclude Include="src\luascript.h" />
@@ -455,12 +438,9 @@
     <ClInclude Include="src\Misc.h" />
     <ClInclude Include="src\movie.h" />
     <ClInclude Include="src\moviegfx.h" />
-    <ClInclude Include="src\net.h" />
-    <ClInclude Include="src\OpenArchive.h" />
     <ClInclude Include="src\ParseCmdLine.h" />
     <ClInclude Include="src\pcm.h" />
     <ClInclude Include="src\plane_explorer_kmod.h" />
-    <ClInclude Include="src\png.h" />
     <ClInclude Include="src\psg.h" />
     <ClInclude Include="src\pwm.h" />
     <ClInclude Include="src\ram_dump.h" />
@@ -468,7 +448,6 @@
     <ClInclude Include="src\ramwatch.h" />
     <ClInclude Include="src\Rom.h" />
     <ClInclude Include="src\save.h" />
-    <ClInclude Include="src\scrshot.h" />
     <ClInclude Include="src\SH2.h" />
     <ClInclude Include="src\SH2D.h" />
     <ClInclude Include="src\Star_68k.h" />

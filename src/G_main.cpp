@@ -34,7 +34,6 @@
 #include "gfx_cd.h"
 #include "cd_aspi.h"
 #include "pcm.h"
-#include "CCnet.h"
 #include "wave.h"
 #include "ram_search.h"
 #include "movie.h"
@@ -44,13 +43,6 @@
 #include "ParseCmdLine.h"
 #include <errno.h>
 #include <vector>
-#ifdef _DEBUG
-#include <io.h>
-#include <fcntl.h>
-#include <ios>
-#endif
-#include "7zip.h"
-#include "OpenArchive.h"
 #include "m68k_debugwindow.h"
 #include "plane_explorer_kmod.h"
 #include "tracer.h"
@@ -138,7 +130,6 @@ char **language_name = NULL;
 struct Rom *Game = NULL;
 int Active = 0;
 int Paused = 0;
-int Net_Play = 0;
 int Full_Screen = -1;
 int Resolution = 1;
 int Fast_Blur = 0;
@@ -1399,9 +1390,6 @@ BOOL Init(HINSTANCE hInst, int nCmdShow)
 
     timeBeginPeriod(1);
 
-    InitDecoder();
-
-    Net_Play = 0;
     Full_Screen = -1;
     VDP_Num_Vis_Lines = 224;
     Resolution = 1;
@@ -1564,8 +1552,6 @@ void End_All(void)
     SystemParametersInfo(SPI_SETSCREENSAVEACTIVE, SS_Actived, NULL, 0);
     if (MainMovie.File != NULL)
         CloseMovieFile(&MainMovie);
-
-    CleanupDecoder();
 
     timeEndPeriod(1);
 }
@@ -3056,13 +3042,8 @@ long PASCAL WinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			if (MainMovie.File != NULL)
 				CloseMovieFile(&MainMovie);
 			if (Sound_Initialised) Clear_Sound_Buffer();
-			if (Net_Play)
-			{
-				if (Full_Screen) Set_Render(hWnd, 0, -1, true);
-			}
+
 			Free_Rom(Game);
-			ReleaseTempFileCategory("rom"); // delete the old temporary file if any
-			ReleaseTempFileCategory("bios"); // delete the old temporary file if any
 			Build_Main_Menu();
 			FrameCount = 0;
 			LagCount = 0;
@@ -5671,75 +5652,70 @@ void GensOpenFile(const char* filename)
 {
     // use ObtainFile to support opening files within archives
     char LogicalName[1024], PhysicalName[1024];
-    if (ObtainFile(filename, LogicalName, PhysicalName, "drop", s_dropIgnoreExtensions, sizeof(s_dropIgnoreExtensions) / sizeof(*s_dropIgnoreExtensions)))
-    {
-        const char* fileExt = strrchr(LogicalName, '.');
-        if (!fileExt++)
-            fileExt = "";
+	strcpy(LogicalName, filename);
+	strcpy(PhysicalName, filename);
+    
+	const char* fileExt = strrchr(LogicalName, '.');
+	if (!fileExt++)
+		fileExt = "";
 
-        // guess what type of file it is
-        GensFileType fileType = GuessFileType(PhysicalName, fileExt);
+	// guess what type of file it is
+	GensFileType fileType = GuessFileType(PhysicalName, fileExt);
 
-        // open the file in a way that depends on what type we decided it is
-        switch (fileType)
-        {
-        case FILETYPE_MOVIE:
-            ReleaseTempFileCategory("drop"); // movie playing supports archives directly, and there's currently no way to transfer temporary file ownership, so delete any temporary file first (this makes PhysicalName invalid)
-            GensPlayMovie(LogicalName);
-            break;
-        case FILETYPE_ROM:
-            ReleaseTempFileCategory("drop");
-            GensLoadRom(LogicalName);
-            break;
-        case FILETYPE_SCRIPT:
-            ReleaseTempFileCategory("drop");
-            GensOpenScript(LogicalName);
-            break;
-        case FILETYPE_SAVESTATE:
-            if (Game)
-                Load_State(PhysicalName);
-            break;
-        case FILETYPE_WATCH:
-            Load_Watches(true, PhysicalName);
-            break;
-        case FILETYPE_CONFIG:
-            if (FILE* file = fopen(PhysicalName, "rb"))
-            {
-                fclose(file);
-                Load_Config(PhysicalName, Game);
-                strcpy(Str_Tmp, "config loaded from ");
-                strcat(Str_Tmp, LogicalName);
-                Put_Info(Str_Tmp);
-            }
-            break;
-        case FILETYPE_SRAM:
-            if (Game)
-                if (FILE* file = fopen(PhysicalName, "rb"))
-                {
-                    fread(SRAM, 1, 64 * 1024, file);
-                    fclose(file);
-                    strcpy(Str_Tmp, "SRAM loaded from ");
-                    strcat(Str_Tmp, LogicalName);
-                    Put_Info(Str_Tmp);
-                }
-            break;
-        case FILETYPE_BRAM:
-            if (SegaCD_Started)
-                if (FILE* file = fopen(PhysicalName, "rb"))
-                {
-                    fread(Ram_Backup, 1, 8 * 1024, file);
-                    if (BRAM_Ex_State & 0x100)
-                        fread(Ram_Backup_Ex, 1, (8 << BRAM_Ex_Size) * 1024, file);
-                    fclose(file);
-                    strcpy(Str_Tmp, "BRAM loaded from ");
-                    strcat(Str_Tmp, LogicalName);
-                    Put_Info(Str_Tmp);
-                }
-            break;
-        }
-
-        ReleaseTempFileCategory("drop"); // delete the temporary (physical) file if any was created and hasn't already been deleted and isn't still in use
-    }
+	// open the file in a way that depends on what type we decided it is
+	switch (fileType)
+	{
+	case FILETYPE_MOVIE:
+		GensPlayMovie(LogicalName);
+		break;
+	case FILETYPE_ROM:
+		GensLoadRom(LogicalName);
+		break;
+	case FILETYPE_SCRIPT:
+		GensOpenScript(LogicalName);
+		break;
+	case FILETYPE_SAVESTATE:
+		if (Game)
+			Load_State(PhysicalName);
+		break;
+	case FILETYPE_WATCH:
+		Load_Watches(true, PhysicalName);
+		break;
+	case FILETYPE_CONFIG:
+		if (FILE* file = fopen(PhysicalName, "rb"))
+		{
+			fclose(file);
+			Load_Config(PhysicalName, Game);
+			strcpy(Str_Tmp, "config loaded from ");
+			strcat(Str_Tmp, LogicalName);
+			Put_Info(Str_Tmp);
+		}
+		break;
+	case FILETYPE_SRAM:
+		if (Game)
+			if (FILE* file = fopen(PhysicalName, "rb"))
+			{
+				fread(SRAM, 1, 64 * 1024, file);
+				fclose(file);
+				strcpy(Str_Tmp, "SRAM loaded from ");
+				strcat(Str_Tmp, LogicalName);
+				Put_Info(Str_Tmp);
+			}
+		break;
+	case FILETYPE_BRAM:
+		if (SegaCD_Started)
+			if (FILE* file = fopen(PhysicalName, "rb"))
+			{
+				fread(Ram_Backup, 1, 8 * 1024, file);
+				if (BRAM_Ex_State & 0x100)
+					fread(Ram_Backup_Ex, 1, (8 << BRAM_Ex_Size) * 1024, file);
+				fclose(file);
+				strcpy(Str_Tmp, "BRAM loaded from ");
+				strcat(Str_Tmp, LogicalName);
+				Put_Info(Str_Tmp);
+			}
+		break;
+	}
 }
 
 const char* MakeRomPathAbsolute(const char* filename, const char* extraDirToCheck)
@@ -5834,8 +5810,6 @@ LRESULT CALLBACK PlayMovieProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
         strcpy(Str_Tmp, "");
         SendDlgItemMessage(hDlg, IDC_STATIC_SAVESTATEREQ, WM_SETTEXT, 0, (LPARAM)Str_Tmp);
         SendDlgItemMessage(hDlg, IDC_STATIC_3PLAYERS, WM_SETTEXT, 0, (LPARAM)Str_Tmp);
-
-        SetArchiveParentHWND(hDlg);
 
         InitMovie(&SubMovie);
 
@@ -6093,7 +6067,6 @@ LRESULT CALLBACK PlayMovieProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
                 while (ShowCursor(false) >= 0);
             }
             PlaySubMovie();
-            SetArchiveParentHWND(NULL);
             DragAcceptFiles(hDlg, FALSE);
             DialogsOpen--;
             EndDialog(hDlg, true);
@@ -6115,7 +6088,6 @@ LRESULT CALLBACK PlayMovieProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
                 MainMovie.Status = MOVIE_RECORDING;
                 PlayMovieCanceled = 0;
             }
-            SetArchiveParentHWND(NULL);
             DragAcceptFiles(hDlg, FALSE);
             DialogsOpen--;
             EndDialog(hDlg, true);
@@ -6128,7 +6100,6 @@ LRESULT CALLBACK PlayMovieProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
                 while (ShowCursor(false) >= 0);
             }
             PlayMovieCanceled = 1;
-            SetArchiveParentHWND(NULL);
             DragAcceptFiles(hDlg, FALSE);
             DialogsOpen--;
             EndDialog(hDlg, true);
@@ -6144,7 +6115,6 @@ LRESULT CALLBACK PlayMovieProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
             while (ShowCursor(false) >= 0);
         }
         PlayMovieCanceled = 1;
-        SetArchiveParentHWND(NULL);
         DragAcceptFiles(hDlg, FALSE);
         DialogsOpen--;
         EndDialog(hDlg, true);
