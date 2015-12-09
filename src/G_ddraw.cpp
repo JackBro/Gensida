@@ -12,8 +12,6 @@
 #include "vdp_rend.h"
 #include "misc.h"
 #include "blit.h"
-#include "scrshot.h"
-#include "net.h"
 #include "save.h"
 
 #include "cdda_mp3.h"
@@ -21,7 +19,6 @@
 #include "movie.h"
 #include "moviegfx.h"
 #include "io.h"
-#include "hackscommon.h"
 #include "drawutil.h"
 #include "luascript.h"
 
@@ -49,7 +46,6 @@ int Effect_Color = 7;
 int FPS_Style = EMU_MODE | WHITE;
 int Message_Style = EMU_MODE | WHITE | SIZE_X2;
 int Kaillera_Error = 0;
-unsigned char CleanAvi = 1;
 extern "C" int disableSound, disableSound2, disableRamSearchUpdate;
 
 long int MovieSize;//Modif
@@ -79,21 +75,6 @@ static int Debug_yPos = 0;
 // then it might help to define this.
 // absolutely don't leave it enabled by default though, not even in _DEBUG
 //#define DISABLE_EXCLUSIVE_FULLSCREEN_LOCK
-
-//#define MAPHACK
-#if ((!defined SONICMAPHACK) && (!defined SONICROUTEHACK))
-#define Update_RAM_Cheats();
-#else
-#include "SonicHackSuite.h"
-#endif
-
-#ifdef SONICCAMHACK
-#include "SonicHackSuite.h"
-#elif defined RKABOXHACK
-#include "RKABoxHack.h"
-#elif (defined ECCOBOXHACK) || (defined ECCO1BOXHACK)
-#include "EccoBoxHack.h"
-#endif
 
 int Update_Frame_Adjusted()
 {
@@ -136,42 +117,7 @@ int Update_Frame_Hook()
     // because it needs to run immediately before SetCurrentInputCondensed() might get called
     // in order for joypad.get() and joypad.set() to work as expected
 
-#ifdef SONICCAMHACK
-    int retval = SonicCamHack();
-#else
     int retval = Update_Frame_Adjusted();
-
-#ifdef RKABOXHACK
-    RKADrawBoxes();
-    CamX = CheatRead<short>(0xFFB158);
-    CamY = CheatRead<short>(0xFFB1D6);
-#elif (defined ECCOBOXHACK) || (defined ECCO1BOXHACK)
-    unsigned char curlev = CheatRead<unsigned char>(0xFFA7E0);
-    static int PrevX = 0, PrevY = 0;
-    int xpos, ypos;
-    //			switch (CheatRead<unsigned char>(0xFFA555))
-    //			{
-    //				case 0x20:
-    //				case 0x28:
-    //				case 0xAC:
-    EccoDrawBoxes();
-    xpos = CheatRead<int>(0xFFA8F0);
-    ypos = CheatRead<int>(0xFFA8F4);
-    //					break;
-    //				case 0xF6:
-    //					EccoDraw3D();
-    //					xpos = ypos = CheatRead<int>(0xFFB13E);
-    //					break;
-    //				default:
-    //					xpos = PrevX + 1;
-    //					ypos = PrevY + 1;
-    //			}
-    //			if ((xpos == PrevX) && (ypos == PrevY) && CheatRead<int>(0xFFAA32)) Lag_Frame = 1;
-    //			else	PrevX = xpos,PrevY = ypos;
-    CamX = CheatRead<short>(CAMXPOS);
-    CamY = CheatRead<short>(CAMYPOS);
-#endif
-#endif
 
     CallRegisteredLuaFunctions(LUACALL_AFTEREMULATION);
 
@@ -1441,8 +1387,6 @@ int Update_Emulation(HWND hWnd)
     }
     if (Temp_Frame_Skip != -1)
     {
-        if (AVIRecording && CleanAvi && (AVIWaitMovie == 0 || MainMovie.Status == MOVIE_PLAYING || MainMovie.Status == MOVIE_FINISHED))
-            Temp_Frame_Skip = 0;
         if (Sound_Enable)
         {
             WP = (WP + 1) & (Sound_Segs - 1);
@@ -1452,7 +1396,6 @@ int Update_Emulation(HWND hWnd)
 
             Write_Sound_Buffer(NULL);
         }
-        if (!CleanAvi) Take_Shot_AVI(hWnd);
         UpdateInput(); //Modif N
         if (MainMovie.Status == MOVIE_RECORDING)	//Modif
             MovieRecordingStuff();
@@ -1462,7 +1405,6 @@ int Update_Emulation(HWND hWnd)
         {
             Lag_Frame = 1;
             Update_Frame_Fast_Hook();
-            Update_RAM_Cheats();
             UpdateLagCount();
         }
         else
@@ -1470,9 +1412,7 @@ int Update_Emulation(HWND hWnd)
             Frame_Number = 0;
             Lag_Frame = 1;
             Update_Frame_Hook();
-            Update_RAM_Cheats();
             UpdateLagCount();
-            if (CleanAvi) Take_Shot_AVI(hWnd);
             Flip(hWnd);
         }
     }
@@ -1494,52 +1434,44 @@ int Update_Emulation(HWND hWnd)
                     {
                         SlowFrame = SlowDownSpeed;
                         UpdateInput(); //Modif N
-                        if (!CleanAvi) Take_Shot_AVI(hWnd);
                         if (MainMovie.Status == MOVIE_RECORDING)	//Modif
                             MovieRecordingStuff();
                         FrameCount++; //Modif
 
                         // note: we check for RamSearchHWnd because if it's open then it's likely causing most of any slowdown we get, in which case skipping renders will only make the slowdown appear worse
-                        if (WP != RP && AVIRecording == 0 && Never_Skip_Frame == 0 && !Dont_Skip_Next_Frame && !(RamSearchHWnd || RamWatchHWnd))
+                        if (WP != RP && Never_Skip_Frame == 0 && !Dont_Skip_Next_Frame && !(RamSearchHWnd || RamWatchHWnd))
                         {
                             Lag_Frame = 1;
                             Update_Frame_Fast_Hook();
-                            Update_RAM_Cheats();
                             UpdateLagCount();
                         }
                         else
                         {
                             Lag_Frame = 1;
                             Update_Frame_Hook();
-                            Update_RAM_Cheats();
                             UpdateLagCount();
-                            if (CleanAvi) Take_Shot_AVI(hWnd);
                             Flip(hWnd);
                         }
                     }
                 }
                 else
                 {
-                    if (!CleanAvi) Take_Shot_AVI(hWnd);
                     UpdateInput(); //Modif N
                     if (MainMovie.Status == MOVIE_RECORDING)	//Modif
                         MovieRecordingStuff();
                     FrameCount++; //Modif
 
-                    if (WP != RP && AVIRecording == 0 && Never_Skip_Frame == 0 && !Dont_Skip_Next_Frame && !(RamSearchHWnd || RamWatchHWnd))
+                    if (WP != RP && Never_Skip_Frame == 0 && !Dont_Skip_Next_Frame && !(RamSearchHWnd || RamWatchHWnd))
                     {
                         Lag_Frame = 1;
                         Update_Frame_Fast_Hook();
-                        Update_RAM_Cheats();
                         UpdateLagCount();
                     }
                     else
                     {
                         Lag_Frame = 1;
                         Update_Frame_Hook();
-                        Update_RAM_Cheats();
                         UpdateLagCount();
-                        if (CleanAvi) Take_Shot_AVI(hWnd);
                         Flip(hWnd);
                     }
                 }
@@ -1577,42 +1509,35 @@ int Update_Emulation(HWND hWnd)
 
             for (; Frame_Number > 1; Frame_Number--)
             {
-                if (!CleanAvi) Take_Shot_AVI(hWnd);
                 UpdateInput(); //Modif N
                 if (MainMovie.Status == MOVIE_RECORDING)	//Modif
                     MovieRecordingStuff();
                 FrameCount++; //Modif
 
-                if (AVIRecording == 0 && Never_Skip_Frame == 0 && !Dont_Skip_Next_Frame)
+                if (Never_Skip_Frame == 0 && !Dont_Skip_Next_Frame)
                 {
                     Lag_Frame = 1;
                     Update_Frame_Fast_Hook();
-                    Update_RAM_Cheats();
                     UpdateLagCount();
                 }
                 else
                 {
                     Lag_Frame = 1;
                     Update_Frame_Hook();
-                    Update_RAM_Cheats();
                     UpdateLagCount();
-                    if (CleanAvi) Take_Shot_AVI(hWnd);
                     Flip(hWnd);
                 }
             }
 
             if (Frame_Number)
             {
-                if (!CleanAvi) Take_Shot_AVI(hWnd);
                 UpdateInput(); //Modif N
                 if (MainMovie.Status == MOVIE_RECORDING)	//Modif
                     MovieRecordingStuff();
                 FrameCount++; //Modif
                 Lag_Frame = 1;
                 Update_Frame_Hook();
-                Update_RAM_Cheats();
                 UpdateLagCount();
-                if (CleanAvi) Take_Shot_AVI(hWnd);
                 Flip(hWnd);
             }
             else Sleep(Sleep_Time);
@@ -1639,7 +1564,6 @@ void Update_Emulation_One_Before(HWND hWnd)
     UpdateInput(); //Modif N
     if (MainMovie.Status == MOVIE_RECORDING)	//Modif
         MovieRecordingStuff();
-    if (!CleanAvi) Take_Shot_AVI(hWnd);
     FrameCount++; //Modif
     Lag_Frame = 1;
 }
@@ -1655,39 +1579,31 @@ void Update_Emulation_One_Before_Minimal()
 
 void Update_Emulation_One_After(HWND hWnd)
 {
-    Update_RAM_Cheats();
     UpdateLagCount();
-    if (CleanAvi) Take_Shot_AVI(hWnd);
     Flip(hWnd);
 }
 
 void Update_Emulation_After_Fast(HWND hWnd)
 {
-    Update_RAM_Cheats();
     UpdateLagCount();
 
     int Temp_Frame_Skip = Frame_Skip;
     if (TurboMode)
         Temp_Frame_Skip = 8;
-    if (AVIRecording && CleanAvi && (AVIWaitMovie == 0 || MainMovie.Status == MOVIE_PLAYING || MainMovie.Status == MOVIE_FINISHED))
-        Temp_Frame_Skip = 0;
     if (Frame_Number > 8) Frame_Number = 8;
     if (Frame_Number++ < Temp_Frame_Skip)
         return;
     Frame_Number = 0;
 
-    if (CleanAvi) Take_Shot_AVI(hWnd);
     Flip(hWnd);
 }
 
 void Update_Emulation_After_Controlled(HWND hWnd, bool flip)
 {
-    Update_RAM_Cheats();
     UpdateLagCount();
 
     if (flip)
     {
-        if (CleanAvi) Take_Shot_AVI(hWnd);
         Flip(hWnd);
     }
 }
@@ -1697,77 +1613,6 @@ int Update_Emulation_One(HWND hWnd)
     Update_Emulation_One_Before(hWnd);
     Update_Frame_Hook();
     Update_Emulation_One_After(hWnd);
-    return 1;
-}
-
-int Update_Emulation_Netplay(HWND hWnd, int player, int num_player)
-{
-    static int Over_Time = 0;
-    int current_div;
-
-    if (CPU_Mode) current_div = 20;
-    else current_div = 16 + (Over_Time ^= 1);
-
-    New_Time = GetTickCount();
-    Used_Time += (New_Time - Last_Time);
-    Frame_Number = Used_Time / current_div;
-    Used_Time %= current_div;
-    Last_Time = New_Time;
-
-    if (Frame_Number > 6) Frame_Number = 6;
-
-    for (; Frame_Number > 1; Frame_Number--)
-    {
-        if (Sound_Enable)
-        {
-            if (WP == Get_Current_Seg()) WP = (WP - 1) & (Sound_Segs - 1);
-            Write_Sound_Buffer(NULL);
-            WP = (WP + 1) & (Sound_Segs - 1);
-        }
-
-        Scan_Player_Net(player);
-        if (Kaillera_Error != -1) Kaillera_Error = Kaillera_Modify_Play_Values((void *)(Kaillera_Keys), 2);
-        //Kaillera_Error = Kaillera_Modify_Play_Values((void *) (Kaillera_Keys), 2);
-        if (MainMovie.Status == MOVIE_PLAYING)
-            MoviePlayingStuff();
-        else
-            Update_Controllers_Net(num_player);
-        if (MainMovie.Status == MOVIE_RECORDING)	//Modif
-            MovieRecordingStuff();
-        FrameCount++;
-        Lag_Frame = 1;
-        Update_Frame_Fast_Hook();
-        Update_RAM_Cheats();
-        UpdateLagCount();
-    }
-
-    if (Frame_Number)
-    {
-        if (Sound_Enable)
-        {
-            if (WP == Get_Current_Seg()) WP = (WP - 1) & (Sound_Segs - 1);
-            Write_Sound_Buffer(NULL);
-            WP = (WP + 1) & (Sound_Segs - 1);
-        }
-
-        Scan_Player_Net(player);
-        if (Kaillera_Error != -1) Kaillera_Error = Kaillera_Modify_Play_Values((void *)(Kaillera_Keys), 2);
-        //Kaillera_Error = Kaillera_Modify_Play_Values((void *) (Kaillera_Keys), 2);
-        if (MainMovie.Status == MOVIE_PLAYING)
-            MoviePlayingStuff();
-        else
-            Update_Controllers_Net(num_player);
-        if (MainMovie.Status == MOVIE_RECORDING)	//Modif
-            MovieRecordingStuff();
-        FrameCount++;
-        Lag_Frame = 1;
-        Update_Frame_Hook();
-        Update_RAM_Cheats();
-        UpdateLagCount();
-
-        Flip(hWnd);
-    }
-
     return 1;
 }
 
@@ -1852,24 +1697,6 @@ int Show_Genesis_Screen(HWND hWnd)
 int Show_Genesis_Screen()
 {
     return Show_Genesis_Screen(HWnd);
-}
-
-int Take_Shot()
-{
-    return Save_Shot(Bits32 ? (unsigned char*)MD_Screen32 : (unsigned char*)MD_Screen, (Mode_555 & 1) | (Bits32 ? 2 : 0), IS_FULL_X_RESOLUTION, IS_FULL_Y_RESOLUTION);
-}
-
-int Take_Shot_Clipboard()
-{
-    return Save_Shot_Clipboard(Bits32 ? (unsigned char*)MD_Screen32 : (unsigned char*)MD_Screen, (Mode_555 & 1) | (Bits32 ? 2 : 0), IS_FULL_X_RESOLUTION, IS_FULL_Y_RESOLUTION);
-}
-
-int Take_Shot_AVI(HWND hWnd)
-{
-    if (AVIRecording != 0 && (AVIWaitMovie == 0 || MainMovie.Status == MOVIE_PLAYING || MainMovie.Status == MOVIE_FINISHED))
-        return Save_Shot_AVI(Bits32 ? (unsigned char*)MD_Screen32 : (unsigned char*)MD_Screen, (Mode_555 & 1) | (Bits32 ? 2 : 0), IS_FULL_X_RESOLUTION, IS_FULL_Y_RESOLUTION, hWnd);
-    else
-        return 0;
 }
 
 /*

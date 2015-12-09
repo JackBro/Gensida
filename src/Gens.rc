@@ -7,7 +7,8 @@
 //
 // Generated from the TEXTINCLUDE 2 resource.
 //
-#include "afxres.h"
+#include "afxres.h"
+
 /////////////////////////////////////////////////////////////////////////////
 #undef APSTUDIO_READONLY_SYMBOLS
 
@@ -469,15 +470,6 @@ BEGIN
     EDITTEXT        IDC_EDIT_BRAM,70,51,136,12,ES_AUTOHSCROLL
     LTEXT           "BRAM BACKUP",IDC_STATIC_BRAM,13,53,54,9
     PUSHBUTTON      "Change",ID_CHANGE_BRAM,209,51,49,14
-    EDITTEXT        IDC_EDIT_WAV,70,67,135,12,ES_AUTOHSCROLL
-    LTEXT           "WAV DUMP",IDC_STATIC_WAV,13,69,53,9
-    PUSHBUTTON      "Change",ID_CHANGE_WAV,209,67,49,14
-    EDITTEXT        IDC_EDIT_GYM,70,83,135,12,ES_AUTOHSCROLL
-    LTEXT           "GYM DUMP",IDC_STATIC_GYM,13,85,53,9
-    PUSHBUTTON      "Change",ID_CHANGE_GYM,209,83,49,14
-    EDITTEXT        IDC_EDIT_SHOT,70,99,135,12,ES_AUTOHSCROLL
-    LTEXT           "SCREEN SHOT",IDC_STATIC_SHOT,14,101,55,9
-    PUSHBUTTON      "Change",ID_CHANGE_SHOT,209,99,49,14
     EDITTEXT        IDC_EDIT_PATCH,70,115,135,12,ES_AUTOHSCROLL
     LTEXT           "PATCH",IDC_STATIC_PATCH,13,117,55,9
     PUSHBUTTON      "Change",ID_CHANGE_PATCH,209,115,49,14
@@ -859,7 +851,8 @@ END
 //
 // Generated from the TEXTINCLUDE 3 resource.
 //
-
+
+
 /////////////////////////////////////////////////////////////////////////////
 #endif    // not APSTUDIO_INVOKED
 

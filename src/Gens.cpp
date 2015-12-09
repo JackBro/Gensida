@@ -30,7 +30,6 @@
 #include "cd_sys.h"
 #include "cd_file.h"
 #include "movie.h"
-#include "scrshot.h"
 #include "ram_search.h"
 #include "luascript.h"
 
@@ -814,39 +813,36 @@ int Init_Genesis(struct Rom *MD_Rom)
     SRAM_Start = SRAM_End = SRAM_ON = SRAM_Write = 0;
     Controller_1_COM = Controller_2_COM = 0;
 
-    if (!Kaillera_Client_Running)
+    if ((MD_Rom->Ram_Infos[8] == 'R') && (MD_Rom->Ram_Infos[9] == 'A') && (MD_Rom->Ram_Infos[10] & 0x40))
     {
-        if ((MD_Rom->Ram_Infos[8] == 'R') && (MD_Rom->Ram_Infos[9] == 'A') && (MD_Rom->Ram_Infos[10] & 0x40))
-        {
-            SRAM_Start = MD_Rom->Ram_Start_Address & 0x0F80000;		// multiple de 0x080000
-            SRAM_End = MD_Rom->Ram_End_Address;
-        }
-        else
-        {
-            SRAM_Start = 0x200000;
-            SRAM_End = 0x20FFFF;
-        }
-
-        if ((SRAM_Start > SRAM_End) || ((SRAM_End - SRAM_Start) >= (64 * 1024)))
-            SRAM_End = SRAM_Start + (64 * 1024) - 1;
-
-        if (Rom_Size <= (2 * 1024 * 1024))
-        {
-            SRAM_ON = 1;
-            SRAM_Write = 1;
-        }
-
-        SRAM_Start &= 0xFFFFFFFE;
-        SRAM_End |= 0x00000001;
-
-        //		sprintf(Str_Err, "deb = %.8X end = %.8X", SRAM_Start, SRAM_End);
-        //		MessageBox(NULL, Str_Err, "", MB_OK);
-
-        if ((SRAM_End - SRAM_Start) <= 2) SRAM_Custom = 1;
-        else SRAM_Custom = 0;
-
-        Load_SRAM();
+        SRAM_Start = MD_Rom->Ram_Start_Address & 0x0F80000;		// multiple de 0x080000
+        SRAM_End = MD_Rom->Ram_End_Address;
     }
+    else
+    {
+        SRAM_Start = 0x200000;
+        SRAM_End = 0x20FFFF;
+    }
+
+    if ((SRAM_Start > SRAM_End) || ((SRAM_End - SRAM_Start) >= (64 * 1024)))
+        SRAM_End = SRAM_Start + (64 * 1024) - 1;
+
+    if (Rom_Size <= (2 * 1024 * 1024))
+    {
+        SRAM_ON = 1;
+        SRAM_Write = 1;
+    }
+
+    SRAM_Start &= 0xFFFFFFFE;
+    SRAM_End |= 0x00000001;
+
+    //		sprintf(Str_Err, "deb = %.8X end = %.8X", SRAM_Start, SRAM_End);
+    //		MessageBox(NULL, Str_Err, "", MB_OK);
+
+    if ((SRAM_End - SRAM_Start) <= 2) SRAM_Custom = 1;
+    else SRAM_Custom = 0;
+
+    Load_SRAM();
 
     switch (Country)
     {
@@ -1012,7 +1008,7 @@ void Render_MD_Screen_()
     }
     // fixes for filters
     // bottom row
-	for (unsigned long Pixel = 336 * Line + 8; Pixel < 336 * Line + 336; Pixel++)
+	for (int Pixel = 336 * Line + 8; Pixel < 336 * Line + 336; Pixel++)
     {
         if (bits == 32)
             MD_Screen32[Pixel] = 0;
@@ -1319,12 +1315,6 @@ int Do_Genesis_Frame(bool fast)
         PSG_Special_Update();
         YM2612_Special_Update();
     }
-    if (!disableSound && !disableSound2)
-    {
-        if (WAV_Dumping) Update_WAV_Dump();
-        if (AVISound != 0 && AVIRecording != 0 && (AVIWaitMovie == 0 || MainMovie.Status == MOVIE_PLAYING || MainMovie.Status == MOVIE_FINISHED)) Update_WAV_Dump_AVI();
-        if (GYM_Dumping) Update_GYM_Dump((unsigned char)0, (unsigned char)0, (unsigned char)0);
-    }
 #ifdef RKABOXHACK
     CamX = CheatRead<short>(0xB158);
     CamY = CheatRead<short>(0xB1D6);
@@ -1452,39 +1442,36 @@ int Init_32X(struct Rom *MD_Rom)
     SRAM_Start = SRAM_End = SRAM_ON = SRAM_Write = 0;
     Controller_1_COM = Controller_2_COM = 0;
 
-    if (!Kaillera_Client_Running)
+    if ((MD_Rom->Ram_Infos[8] == 'R') && (MD_Rom->Ram_Infos[9] == 'A') && (MD_Rom->Ram_Infos[10] & 0x40))
     {
-        if ((MD_Rom->Ram_Infos[8] == 'R') && (MD_Rom->Ram_Infos[9] == 'A') && (MD_Rom->Ram_Infos[10] & 0x40))
-        {
-            SRAM_Start = MD_Rom->Ram_Start_Address & 0x0F80000;		// multiple de 0x080000
-            SRAM_End = MD_Rom->Ram_End_Address;
-        }
-        else
-        {
-            SRAM_Start = 0x200000;
-            SRAM_End = 0x20FFFF;
-        }
-
-        if ((SRAM_Start > SRAM_End) || ((SRAM_End - SRAM_Start) >= (64 * 1024)))
-            SRAM_End = SRAM_Start + (64 * 1024) - 1;
-
-        if (Rom_Size <= (2 * 1024 * 1024))
-        {
-            SRAM_ON = 1;
-            SRAM_Write = 1;
-        }
-
-        SRAM_Start &= 0xFFFFFFFE;
-        SRAM_End |= 0x00000001;
-
-        //		sprintf(Str_Err, "deb = %.8X end = %.8X", SRAM_Start, SRAM_End);
-        //		MessageBox(HWnd, Str_Err, "", MB_OK);
-
-        if ((SRAM_End - SRAM_Start) <= 2) SRAM_Custom = 1;
-        else SRAM_Custom = 0;
-
-        Load_SRAM();
+        SRAM_Start = MD_Rom->Ram_Start_Address & 0x0F80000;		// multiple de 0x080000
+        SRAM_End = MD_Rom->Ram_End_Address;
     }
+    else
+    {
+        SRAM_Start = 0x200000;
+        SRAM_End = 0x20FFFF;
+    }
+
+    if ((SRAM_Start > SRAM_End) || ((SRAM_End - SRAM_Start) >= (64 * 1024)))
+        SRAM_End = SRAM_Start + (64 * 1024) - 1;
+
+    if (Rom_Size <= (2 * 1024 * 1024))
+    {
+        SRAM_ON = 1;
+        SRAM_Write = 1;
+    }
+
+    SRAM_Start &= 0xFFFFFFFE;
+    SRAM_End |= 0x00000001;
+
+    //		sprintf(Str_Err, "deb = %.8X end = %.8X", SRAM_Start, SRAM_End);
+    //		MessageBox(HWnd, Str_Err, "", MB_OK);
+
+    if ((SRAM_End - SRAM_Start) <= 2) SRAM_Custom = 1;
+    else SRAM_Custom = 0;
+
+    Load_SRAM();
 
     switch (Country)
     {
@@ -1983,12 +1970,6 @@ int Do_32X_Frame(bool fast)
         PSG_Special_Update();
         YM2612_Special_Update();
     }
-    if (!disableSound && !disableSound2)
-    {
-        if (WAV_Dumping) Update_WAV_Dump();
-        if (AVISound != 0 && AVIRecording != 0 && (AVIWaitMovie == 0 || MainMovie.Status == MOVIE_PLAYING || MainMovie.Status == MOVIE_FINISHED)) Update_WAV_Dump_AVI();
-        if (GYM_Dumping) Update_GYM_Dump((unsigned char)0, (unsigned char)0, (unsigned char)0);
-    }
 
     if (!fast)
         Update_RAM_Search();
@@ -2427,12 +2408,6 @@ int Do_SegaCD_Frame(bool fast)
         YM2612_Special_Update();
         Update_CD_Audio(buf, Seg_Length);
     }
-    if (!disableSound && !disableSound2)
-    {
-        if (WAV_Dumping) Update_WAV_Dump();
-        if (AVISound != 0 && AVIRecording != 0 && (AVIWaitMovie == 0 || MainMovie.Status == MOVIE_PLAYING || MainMovie.Status == MOVIE_FINISHED)) Update_WAV_Dump_AVI();
-        if (GYM_Dumping) Update_GYM_Dump((unsigned char)0, (unsigned char)0, (unsigned char)0);
-    }
 
     if (!fast)
         Update_RAM_Search();
@@ -2730,12 +2705,6 @@ int Do_SegaCD_Frame_Cycle_Accurate(bool fast)
         PSG_Special_Update();
         YM2612_Special_Update();
         Update_CD_Audio(buf, Seg_Length);
-    }
-    if (!disableSound && !disableSound2)
-    {
-        if (WAV_Dumping) Update_WAV_Dump();
-        if (AVISound != 0 && AVIRecording != 0 && (AVIWaitMovie == 0 || MainMovie.Status == MOVIE_PLAYING || MainMovie.Status == MOVIE_FINISHED)) Update_WAV_Dump_AVI();
-        if (GYM_Dumping) Update_GYM_Dump((unsigned char)0, (unsigned char)0, (unsigned char)0);
     }
 
     if (!fast)

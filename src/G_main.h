@@ -43,7 +43,6 @@ extern "C" {
     extern int Country_Order[3];
     extern int WinNT_Flag;
     extern int Gens_Priority;
-    extern int Kaillera_Client_Running;
     extern int Intro_Style;
     extern int SegaCD_Accurate;
     extern int DialogsOpen;
@@ -101,7 +100,6 @@ extern "C" {
 
 int Set_Render(HWND hWnd, int Full, int Num, int Force);
 int Change_Layer(int Num); //Nitsuja added this
-int Change_68K_Type(HWND hWnd, int Num, int Reset_SND);
 int Change_Sound(HWND hWnd);
 int SaveFlags();
 int IsVideoLatencyCompensationOn();
@@ -110,7 +108,6 @@ HMENU Build_Main_Menu(void);
 
 void CloseRamWindows(); // So the close rom process can close the Ram Search and watch windows (thus preventing freezeout)
 void Update_RAM_Search();
-void Update_RAM_Cheats();
 void ReopenRamWindows();
 void LoadFlags(int flags);
 void init_list_box(HWND Box, const char* Strs[], int numColumns, int *columnWidths);

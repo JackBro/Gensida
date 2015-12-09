@@ -4,11 +4,8 @@
 //
 #define ID_CHANGE_SAVE                  3
 #define ID_CHANGE_SRAM                  4
-#define ID_CHANGE_WAV                   5
-#define ID_CHANGE_SHOT                  6
 #define ID_CHANGE_PATCH                 7
 #define ID_CHANGE_IPS                   8
-#define ID_CHANGE_GYM                   9
 #define ID_CHANGE_BRAM                  10
 #define IDB_WARNING                     102
 #define ABOUTDIAL                       105
@@ -71,19 +68,13 @@
 #define IDC_STATIC_SRAM                 1023
 #define ID_OK                           1024
 #define ID_CANCEL                       1025
-#define IDC_EDIT_WAV                    1026
-#define IDC_STATIC_WAV                  1027
-#define IDC_EDIT_SHOT                   1028
-#define IDC_STATIC_SHOT                 1029
 #define IDC_ENABLE_FPS                  1030
 #define IDC_AUTOFIXCHECKSUM             1031
 #define IDC_EDIT_PATCH                  1032
 #define IDC_AUTOPAUSE                   1033
 #define IDC_STATIC_PATCH                1034
 #define IDC_X2_FPS                      1035
-#define IDC_EDIT_GYM                    1036
 #define IDC_FASTBLUR                    1037
-#define IDC_STATIC_GYM                  1038
 #define IDC_TRANS_FPS                   1039
 #define IDC_ENABLE_MESSAGE              1040
 #define IDC_X2_MESSAGE                  1041
@@ -315,7 +306,6 @@
 #define ID_FILES_CLOSEROM               40001
 #define ID_FILES_BOOTCD                 40002
 #define ID_FILES_OPENCLOSECD            40003
-#define ID_FILES_NETPLAY                40004
 #define ID_FILES_GAMEGENIE              40005
 #define ID_FILES_LOADSTATE              40006
 #define ID_FILES_SAVESTATE              40007
@@ -354,9 +344,7 @@
 #define ID_GRAPHICS_FRAMESKIP_DECREASE  40058
 #define ID_GRAPHICS_SPRITEOVER          40059
 #define ID_GRAPHICS_FORCESOFT           40060
-#define ID_GRAPHICS_SHOT                40061
 #define ID_GRAPHICS_FS_SAME_RES         40062
-#define ID_GRAPHICS_CLIPBOARD           40063
 #define ID_GRAPHICS_SIZE_1X             40065
 #define ID_GRAPHICS_SIZE_2X             40066
 #define ID_GRAPHICS_SIZE_3X             40067
@@ -420,9 +408,6 @@
 #define ID_CPU_COUNTRY_ORDER_3          40133
 #define ID_SOUND_ENABLE                 40140
 #define ID_SOUND_STEREO                 40141
-#define ID_SOUND_STARTWAVDUMP           40142
-#define ID_SOUND_STARTGYMDUMP           40143
-#define ID_SOUND_PLAYGYM                40144
 #define ID_SOUND_DACIMPROV              40145
 #define ID_SOUND_PSGIMPROV              40146
 #define ID_SOUND_YMIMPROV               40147
@@ -502,9 +487,6 @@
 #define ID_SLOW_SPEED_15                40511
 #define ID_SLOW_SPEED_31                40512
 #define ID_RESUME_RECORD_STATE          40513
-#define ID_GRAPHICS_AVI                 40514
-#define ID_GRAPHICS_SYNC_AVI_MOVIE      40515
-#define ID_GRAPHICS_AVI_SOUND           40516
 #define ID_GRAPHICS_NEVER_SKIP_FRAME    40517
 #define ID_OPTION_SRAMON                40518
 #define ID_SLOW_SPEED_PLUS              40520
@@ -653,11 +635,8 @@
 #define IDC_PCMVOL                      43304
 #define IDC_PWMVOL                      43305
 #define IDC_CDDAVOL                     43306
-#define ID_CHANGE_CLEANAVI              43310
 #define ID_CHANGE_PALLOCK               43311
-#define ID_CHANGE_AVISPLIT              43312
 #define ID_CHANGE_256RATIO              43313
-#define ID_CHANGE_AVIFITHEIGHT          43314
 #define IDC_STATIC_TEXT3                43400
 #define IDC_STATIC_TEXT4                43401
 #define IDC_STATIC_TEXT5                43402

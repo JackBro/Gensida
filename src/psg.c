@@ -76,12 +76,9 @@ FILE *psg_debug_file = NULL;
 extern unsigned int Sound_Extrapol[312][2];
 extern int Seg_L[882], Seg_R[882];
 extern int VDP_Current_Line;
-extern int GYM_Dumping;
 extern int disableSound2, Seg_Junk[882];
 static int* LeftAudioBuffer()  { return disableSound2 ? Seg_Junk : Seg_L; }
 static int* RightAudioBuffer() { return disableSound2 ? Seg_Junk : Seg_R; }
-
-int Update_GYM_Dump(char v0, char v1, char v2);
 
 int PSG_Enable;
 int PSG_Improv = 0;
@@ -93,8 +90,6 @@ unsigned short PSGVol = 256;
 
 void PSG_Write(int data)
 {
-    if (GYM_Dumping) Update_GYM_Dump((unsigned char)3, (unsigned char)data, (unsigned char)0);
-
     if (data & 0x80)
     {
         PSG.Current_Register = (data & 0x70) >> 4;

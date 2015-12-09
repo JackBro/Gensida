@@ -231,14 +231,11 @@ FILE *debug_file = NULL;
 extern unsigned int Sound_Extrapol[312][2];
 extern int Seg_L[882], Seg_R[882];
 extern int VDP_Current_Line;
-extern int GYM_Dumping;
 extern int YM2612_Enable;
 extern int DAC_Enable;
 extern int disableSound2, Seg_Junk[882];
 static int* LeftAudioBuffer()  { return disableSound2 ? Seg_Junk : Seg_L; }
 static int* RightAudioBuffer() { return disableSound2 ? Seg_Junk : Seg_R; }
-
-int Update_GYM_Dump(char v0, char v1, char v2);
 
 int YM2612_Enable;
 int YM2612_Improv;
@@ -2170,8 +2167,6 @@ int YM2612_Write(unsigned char adr, unsigned char data)
             if (YM2612.REG[0][YM2612.OPNAadr] == data) return 2;
             YM2612.REG[0][YM2612.OPNAadr] = data;
 
-            if (GYM_Dumping) Update_GYM_Dump(1, YM2612.OPNAadr, data);
-
             if (d < 0xA0)		// SLOT
             {
                 SLOT_SET(YM2612.OPNAadr, data);
@@ -2180,14 +2175,6 @@ int YM2612_Write(unsigned char adr, unsigned char data)
             {
                 CHANNEL_SET(YM2612.OPNAadr, data);
             }
-        }
-        else					// YM2612
-        {
-            YM2612.REG[0][YM2612.OPNAadr] = data;
-
-            if ((GYM_Dumping) && ((YM2612.OPNAadr == 0x22) || (YM2612.OPNAadr == 0x27) || (YM2612.OPNAadr == 0x28))) Update_GYM_Dump(1, YM2612.OPNAadr, data);
-
-            YM_SET(YM2612.OPNAadr, data);
         }
         break;
 
@@ -2202,8 +2189,6 @@ int YM2612_Write(unsigned char adr, unsigned char data)
         {
             if (YM2612.REG[1][YM2612.OPNBadr] == data) return 2;
             YM2612.REG[1][YM2612.OPNBadr] = data;
-
-            if (GYM_Dumping) Update_GYM_Dump(2, YM2612.OPNBadr, data);
 
             if (d < 0xA0)		// SLOT
             {

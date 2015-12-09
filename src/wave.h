@@ -40,18 +40,6 @@ extern "C" {
 #define ER_CANNOTWRITE 0xe104
 #endif
 
-    extern int GYM_Dumping;
-    extern HANDLE GYM_File;
-
-    int Update_GYM_Dump(int v0, int v1, unsigned char v2);
-
-    int WaveCreateFile(char *, HMMIO *, WAVEFORMATEX *, MMCKINFO *, MMCKINFO *);
-    int WaveStartDataWrite(HMMIO *, MMCKINFO *, MMIOINFO *);
-    int WaveWriteFile(HMMIO, UINT, BYTE *, MMCKINFO *, UINT *, MMIOINFO *);
-    int WaveCloseWriteFile(HMMIO *, MMCKINFO *, MMCKINFO *, MMIOINFO *, DWORD);
-
-    int WaveSaveFile(char *, UINT, DWORD, WAVEFORMATEX *, BYTE *);
-
     int WaveCopyUselessChunks(HMMIO *, MMCKINFO *, MMCKINFO *, HMMIO *, MMCKINFO *, MMCKINFO *);
     BOOL riffCopyChunk(HMMIO, HMMIO, const LPMMCKINFO);
 

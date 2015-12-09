@@ -726,8 +726,6 @@ void Free_Rom(Rom *Rom_MD)
     if (SegaCD_Started) Save_BRAM();
     Save_SRAM();
     Save_Patch_File();
-    if (WAV_Dumping) Stop_WAV_Dump();
-    if (GYM_Dumping) Stop_GYM_Dump();
     if (SegaCD_Started) Stop_CD();
     Net_Play = 0;
     Genesis_Started = 0;

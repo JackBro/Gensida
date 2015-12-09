@@ -27,7 +27,6 @@
 #include "pcm.h"
 #include "pwm.h"
 #include "lc89510.h"
-#include "scrshot.h"
 #include "ggenie.h"
 #include "io.h"
 #include "misc.h"
@@ -38,10 +37,6 @@
 #include "hexeditor.h"
 #include "luascript.h"
 #include <direct.h>
-#include "hackdefs.h"
-#ifdef SONICMAPHACK
-#include "SonicHackSuite.h"
-#endif
 #if defined(_DEBUG) && (LATEST_SAVESTATE_VERSION >= 9)
 #include <assert.h>
 #else
@@ -2247,8 +2242,6 @@ int Save_Config(char *File_Name)
     WritePrivateProfileString("General", "SRAM path", SRAM_Dir, Conf_File);
     WritePrivateProfileString("General", "BRAM path", BRAM_Dir, Conf_File);
     WritePrivateProfileString("General", "Dump path", Dump_Dir, Conf_File);
-    WritePrivateProfileString("General", "Dump GYM path", Dump_GYM_Dir, Conf_File);
-    WritePrivateProfileString("General", "Screen Shot path", ScrShot_Dir, Conf_File);
     WritePrivateProfileString("General", "Patch path", Patch_Dir, Conf_File);
     WritePrivateProfileString("General", "IPS Patch path", IPS_Dir, Conf_File);
     WritePrivateProfileString("General", "Movie path", Movie_Dir, Conf_File);
@@ -2312,12 +2305,6 @@ int Save_Config(char *File_Name)
     WritePrivateProfileString("General", "Slow Down Speed", Str_Tmp, Conf_File);
     wsprintf(Str_Tmp, "%d", DelayFactor); //Upth-Add - Make frame advance speed configurable
     WritePrivateProfileString("General", "Frame Advance Delay Factor", Str_Tmp, Conf_File);
-    wsprintf(Str_Tmp, "%d", AVISound); //Upth-Add - Make frame advance speed configurable
-    WritePrivateProfileString("General", "AVI Sound", Str_Tmp, Conf_File);
-    wsprintf(Str_Tmp, "%d", AVISplit); //Modif N. - AVI split boundary configurable
-    WritePrivateProfileString("General", "AVI Split MB", Str_Tmp, Conf_File);
-    wsprintf(Str_Tmp, "%d", AVIHeight224IfNotPAL); //Modif N.
-    WritePrivateProfileString("General", "AVI Fit Height", Str_Tmp, Conf_File);
     wsprintf(Str_Tmp, "%d", Sleep_Time); //Modif N. - CPU hogging now a real setting
     WritePrivateProfileString("General", "Allow Idle", Str_Tmp, Conf_File);
 
@@ -2371,13 +2358,9 @@ int Save_Config(char *File_Name)
     WritePrivateProfileString("Graphics", "Pink Background", Str_Tmp, Conf_File);
     wsprintf(Str_Tmp, "%d", Frame_Skip);
     WritePrivateProfileString("Graphics", "Frame skip", Str_Tmp, Conf_File);
-    wsprintf(Str_Tmp, "%d", CleanAvi);
-    WritePrivateProfileString("Graphics", "Clean Avi", Str_Tmp, Conf_File);
 
     wsprintf(Str_Tmp, "%d", Correct_256_Aspect_Ratio); //Modif N.
     WritePrivateProfileString("Graphics", "Proper Aspect Ratio", Str_Tmp, Conf_File);
-    wsprintf(Str_Tmp, "%d", ShotPNGFormat); //Modif N.
-    WritePrivateProfileString("Graphics", "Screenshot Use PNG", Str_Tmp, Conf_File);
 
     wsprintf(Str_Tmp, "%d", Sound_Enable & 1);
     WritePrivateProfileString("Sound", "State", Str_Tmp, Conf_File);
@@ -2805,8 +2788,6 @@ int Load_Config(char *File_Name, void *Game_Active)
     GetPrivateProfileString("General", "SRAM path", Rom_Dir, &SRAM_Dir[0], 1024, Conf_File);
     GetPrivateProfileString("General", "BRAM path", Rom_Dir, &BRAM_Dir[0], 1024, Conf_File);
     GetPrivateProfileString("General", "Dump path", Rom_Dir, &Dump_Dir[0], 1024, Conf_File);
-    GetPrivateProfileString("General", "Dump GYM path", Rom_Dir, &Dump_GYM_Dir[0], 1024, Conf_File);
-    GetPrivateProfileString("General", "Screen Shot path", Rom_Dir, &ScrShot_Dir[0], 1024, Conf_File);
     GetPrivateProfileString("General", "Patch path", Rom_Dir, &Patch_Dir[0], 1024, Conf_File);
     GetPrivateProfileString("General", "IPS Patch path", Rom_Dir, &IPS_Dir[0], 1024, Conf_File);
     GetPrivateProfileString("General", "Movie path", Rom_Dir, &Movie_Dir[0], 1024, Conf_File);
@@ -2863,9 +2844,6 @@ int Load_Config(char *File_Name, void *Game_Active)
     UseMovieStates = (bool)(GetPrivateProfileInt("General", "Movie Based State Names", 1, Conf_File) > 0); //Upth-Add - Load the flag from config
     SlowDownSpeed = GetPrivateProfileInt("General", "Slow Down Speed", 1, Conf_File); //Upth-Add - Load the slowdown speed from config
     DelayFactor = GetPrivateProfileInt("General", "Frame Advance Delay Factor", 5, Conf_File); //Upth-Add - Frame advance speed configurable
-    AVISound = GetPrivateProfileInt("General", "AVI Sound", 1, Conf_File); //Upth-Add - Frame advance speed configurable
-    AVISplit = GetPrivateProfileInt("General", "AVI Split MB", 1953, Conf_File); //Modif N. - AVI split boundary configurable
-    AVIHeight224IfNotPAL = GetPrivateProfileInt("General", "AVI Fit Height", 1, Conf_File); //Modif N.
 
     if (GetPrivateProfileInt("Graphics", "Force 555", 0, Conf_File)) Mode_555 = 3;
     else if (GetPrivateProfileInt("Graphics", "Force 565", 0, Conf_File)) Mode_555 = 2;
@@ -2907,10 +2885,8 @@ int Load_Config(char *File_Name, void *Game_Active)
     Blit_Soft = GetPrivateProfileInt("Graphics", "Software Blit", 0, Conf_File);
     Sprite_Over = GetPrivateProfileInt("Graphics", "Sprite limit", 1, Conf_File);
     Frame_Skip = GetPrivateProfileInt("Graphics", "Frame skip", -1, Conf_File);
-    CleanAvi = GetPrivateProfileInt("Graphics", "Clean Avi", 1, Conf_File);
 
     Correct_256_Aspect_Ratio = GetPrivateProfileInt("Graphics", "Proper Aspect Ratio", 1, Conf_File); //Modif N.
-    ShotPNGFormat = GetPrivateProfileInt("Graphics", "Screenshot Use PNG", 1, Conf_File); //Modif N.
 
     Sound_Rate = GetPrivateProfileInt("Sound", "Rate", 44100, Conf_File);
     Sound_Stereo = GetPrivateProfileInt("Sound", "Stereo", 1, Conf_File);

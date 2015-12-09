@@ -27,14 +27,12 @@
 #include "psg.h"
 #include "ym2612.h"
 #include "pwm.h"
-#include "scrshot.h"
 #include "vdp_io.h"
 #include "vdp_rend.h"
 #include "vdp_32X.h"
 #include "LC89510.h"
 #include "gfx_cd.h"
 #include "cd_aspi.h"
-#include "net.h"
 #include "pcm.h"
 #include "htmlhelp.h"
 #include "CCnet.h"
@@ -255,7 +253,6 @@ LRESULT CALLBACK RamCheatProc(HWND, UINT, WPARAM, LPARAM);
 LRESULT CALLBACK VolumeProc(HWND, UINT, WPARAM, LPARAM);
 LRESULT CALLBACK PromptSpliceFrameProc(HWND, UINT, WPARAM, LPARAM);
 LRESULT CALLBACK PromptSeekFrameProc(HWND, UINT, WPARAM, LPARAM);
-LRESULT CALLBACK PromptAVISplitProc(HWND, UINT, WPARAM, LPARAM);
 LRESULT CALLBACK LuaScriptProc(HWND, UINT, WPARAM, LPARAM);
 
 LRESULT CALLBACK EditWatchProc(HWND, UINT, WPARAM, LPARAM);
@@ -1390,309 +1387,6 @@ int Change_Country_Order(int Num)
     return(1);
 }
 
-int Check_If_Kaillera_Running(void)
-{
-    if (Kaillera_Client_Running)
-    {
-        if (Sound_Initialised) Clear_Sound_Buffer();
-        MessageBox(HWnd, "You can't do this during netplay.  You must first close the rom and kaillera client.", "info", MB_OK);
-        return 1;
-    }
-
-    return 0;
-}
-
-int WINAPI Play_Net_Game(char *game, int player, int maxplayers)
-{
-    MSG msg;
-    char name[2048];
-    HANDLE f;
-    WIN32_FIND_DATA fd;
-
-    SetCurrentDirectory(Rom_Dir);
-
-    sprintf(name, "%s.*", game);
-    memset(&fd, 0, sizeof(fd));
-    fd.dwFileAttributes = FILE_ATTRIBUTE_ARCHIVE;
-    f = FindFirstFile(name, &fd);
-
-    if (f == INVALID_HANDLE_VALUE) return 1;
-
-    if (!(fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
-    {
-        sprintf(name, "%s%s", Rom_Dir, fd.cFileName);
-        GensLoadRom(name);
-    }
-
-    if ((!Genesis_Started) && (!_32X_Started)) return 1;
-
-    Net_Play = 1;
-    SetFocus(HWnd);
-
-    if (maxplayers > 4) maxplayers = 4;
-    if (player > 4) player = 0;
-
-    Controller_1_Type &= 0xF;
-    Controller_2_Type &= 0xF;
-    if (maxplayers > 2) Controller_1_Type |= 0x10;
-    Make_IO_Table();
-
-    Kaillera_Keys[0] = Kaillera_Keys[1] = Kaillera_Keys[2] = Kaillera_Keys[3] = 0xFF;
-    Kaillera_Keys[4] = Kaillera_Keys[5] = Kaillera_Keys[6] = Kaillera_Keys[7] = 0xFF;
-    Kaillera_Keys[8] = Kaillera_Keys[9] = 0xFF;
-    Kaillera_Error = 0;
-
-    while (Net_Play)
-    {
-        if (PeekMessage(&msg, NULL, 0, 0, PM_NOREMOVE))
-        {
-            if (!GetMessage(&msg, NULL, 0, 0)) return msg.wParam;
-            if (!RamSearchHWnd || !IsDialogMessage(RamSearchHWnd, &msg))
-                if (!TranslateAccelerator(HWnd, hAccelTable, &msg))
-                {
-                    TranslateMessage(&msg);
-                    DispatchMessage(&msg);
-                }
-        }
-        else if ((Active) && (!Paused))
-        {
-            Update_Emulation_Netplay(HWnd, player, maxplayers);
-        }
-        else
-        {
-            Flip(HWnd);
-            Sleep(100);
-        }
-    }
-
-    Kaillera_End_Game();
-
-    return 0;
-}
-
-int Start_Netplay(void)
-{
-    kailleraInfos K_Infos;
-    char name[2048];
-    char *Liste_Games = NULL, *LG = NULL, *Min_Game, *Cur_Game;
-    int cursize = 8192, num = 0, dep = 0, len;
-    int backup_infos[32];
-    HANDLE f;
-    WIN32_FIND_DATA fd;
-
-    if (Kaillera_Initialised == 0)
-    {
-        MessageBox(HWnd, "You need the KAILLERACLIENT.DLL file to enable this feature", "Info", MB_OK);
-        return 0;
-    }
-
-    if (Kaillera_Client_Running) return 0;
-
-    SetCurrentDirectory(Rom_Dir);
-
-    Liste_Games = (char *)malloc(cursize);
-    Liste_Games[0] = 0;
-    Liste_Games[1] = 0;
-
-    memset(&fd, 0, sizeof(fd));
-    fd.dwFileAttributes = FILE_ATTRIBUTE_ARCHIVE;
-    f = FindFirstFile("*.bin", &fd);
-    if (f != INVALID_HANDLE_VALUE)
-    {
-        if (!(fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
-        {
-            len = strlen(fd.cFileName) - 4;
-            fd.cFileName[len++] = 0;
-            if ((dep + len) > cursize)
-            {
-                cursize += 8192;
-                Liste_Games = (char*)realloc(Liste_Games, cursize);
-            }
-            strcpy(Liste_Games + dep, fd.cFileName);
-            dep += len;
-            num++;
-        }
-
-        while (FindNextFile(f, &fd))
-        {
-            if (!(fd.dwFileAttributes&FILE_ATTRIBUTE_DIRECTORY))
-            {
-                len = strlen(fd.cFileName) - 4;
-                fd.cFileName[len++] = 0;
-                if ((dep + len) > cursize)
-                {
-                    cursize += 8192;
-                    Liste_Games = (char*)realloc(Liste_Games, cursize);
-                }
-                strcpy(Liste_Games + dep, fd.cFileName);
-                dep += len;
-                num++;
-            }
-        }
-    }
-
-    memset(&fd, 0, sizeof(fd));
-    fd.dwFileAttributes = FILE_ATTRIBUTE_ARCHIVE;
-    f = FindFirstFile("*.smd", &fd);
-    if (f != INVALID_HANDLE_VALUE)
-    {
-        if (!(fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
-        {
-            len = strlen(fd.cFileName) - 4;
-            fd.cFileName[len++] = 0;
-            if ((dep + len) > cursize)
-            {
-                cursize += 8192;
-                Liste_Games = (char*)realloc(Liste_Games, cursize);
-            }
-            strcpy(Liste_Games + dep, fd.cFileName);
-            dep += len;
-            num++;
-        }
-
-        while (FindNextFile(f, &fd))
-        {
-            if (!(fd.dwFileAttributes&FILE_ATTRIBUTE_DIRECTORY))
-            {
-                len = strlen(fd.cFileName) - 4;
-                fd.cFileName[len++] = 0;
-                if ((dep + len) > cursize)
-                {
-                    cursize += 8192;
-                    Liste_Games = (char*)realloc(Liste_Games, cursize);
-                }
-                strcpy(Liste_Games + dep, fd.cFileName);
-                dep += len;
-                num++;
-            }
-        }
-    }
-
-    memset(&fd, 0, sizeof(fd));
-    fd.dwFileAttributes = FILE_ATTRIBUTE_ARCHIVE;
-    f = FindFirstFile("*.32X", &fd);
-    if (f != INVALID_HANDLE_VALUE)
-    {
-        if (!(fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
-        {
-            len = strlen(fd.cFileName) - 4;
-            fd.cFileName[len++] = 0;
-            if ((dep + len) > cursize)
-            {
-                cursize += 8192;
-                Liste_Games = (char*)realloc(Liste_Games, cursize);
-            }
-            strcpy(Liste_Games + dep, fd.cFileName);
-            dep += len;
-            num++;
-        }
-
-        while (FindNextFile(f, &fd))
-        {
-            if (!(fd.dwFileAttributes&FILE_ATTRIBUTE_DIRECTORY))
-            {
-                len = strlen(fd.cFileName) - 4;
-                fd.cFileName[len++] = 0;
-                if ((dep + len) > cursize)
-                {
-                    cursize += 8192;
-                    Liste_Games = (char*)realloc(Liste_Games, cursize);
-                }
-                strcpy(Liste_Games + dep, fd.cFileName);
-                dep += len;
-                num++;
-            }
-        }
-    }
-
-    memset(&fd, 0, sizeof(fd));
-    fd.dwFileAttributes = FILE_ATTRIBUTE_ARCHIVE;
-    f = FindFirstFile("*.zip", &fd);
-    if (f != INVALID_HANDLE_VALUE)
-    {
-        if (!(fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
-        {
-            len = strlen(fd.cFileName) - 4;
-            fd.cFileName[len++] = 0;
-            if ((dep + len) > cursize)
-            {
-                cursize += 8192;
-                Liste_Games = (char*)realloc(Liste_Games, cursize);
-            }
-            strcpy(Liste_Games + dep, fd.cFileName);
-            dep += len;
-            num++;
-        }
-
-        while (FindNextFile(f, &fd))
-        {
-            if (!(fd.dwFileAttributes&FILE_ATTRIBUTE_DIRECTORY))
-            {
-                len = strlen(fd.cFileName) - 4;
-                fd.cFileName[len++] = 0;
-                if ((dep + len) > cursize)
-                {
-                    cursize += 8192;
-                    Liste_Games = (char*)realloc(Liste_Games, cursize);
-                }
-                strcpy(Liste_Games + dep, fd.cFileName);
-                dep += len;
-                num++;
-            }
-        }
-    }
-
-    Liste_Games[dep] = 0;
-    LG = (char*)malloc(dep);
-    dep = 0;
-
-    for (; num > 0; num--)
-    {
-        Min_Game = Cur_Game = Liste_Games;
-
-        while (*Cur_Game)
-        {
-            if (stricmp(Cur_Game, Min_Game) < 0) Min_Game = Cur_Game;
-            Cur_Game += strlen(Cur_Game) + 1;
-        }
-
-        strlwr(Min_Game);
-        strcpy(LG + dep, Min_Game);
-        dep += strlen(Min_Game) + 1;
-        Min_Game[0] = -1;
-    }
-
-    GetWindowText(HWnd, name, 2046);
-    backup_infos[0] = Controller_1_Type;
-    backup_infos[1] = Controller_2_Type;
-
-    memset(&K_Infos, 0, sizeof(K_Infos));
-
-    K_Infos.appName = "Gens 2.10";
-    K_Infos.gameList = LG;
-    K_Infos.gameCallback = Play_Net_Game;
-
-    //	K_Infos.chatReceivedCallback = NULL;
-    //	K_Infos.clientDroppedCallback = NULL;
-    //	K_Infos.moreInfosCallback = NULL;
-
-    Kaillera_Set_Infos(&K_Infos);
-
-    Kaillera_Client_Running = 1;
-    Kaillera_Select_Server_Dialog(NULL);
-    Kaillera_Client_Running = 0;
-
-    Controller_1_Type = backup_infos[0];
-    Controller_2_Type = backup_infos[1];
-    Make_IO_Table();
-    SetWindowText(HWnd, name);
-
-    free(Liste_Games);
-    free(LG);
-
-    return 1;
-}
-
 #ifdef CC_SUPPORT
 void CC_End_Callback(char mess[256])
 {
@@ -1743,8 +1437,6 @@ BOOL Init(HINSTANCE hInst, int nCmdShow)
     Sound_Stereo = 1;
     Sound_Initialised = 0;
     Sound_Is_Playing = 0;
-    WAV_Dumping = 0;
-    GYM_Dumping = 0;
 
     FS_Minimised = 0;
     Game = NULL;
@@ -1831,7 +1523,6 @@ BOOL Init(HINSTANCE hInst, int nCmdShow)
     }
 
     Init_CD_Driver();
-    Init_Network();
     Init_Tab();
     Build_Main_Menu();
 
@@ -1874,14 +1565,12 @@ void End_All(void)
     YM2612_End();
     End_Sound();
     End_CD_Driver();
-    End_Network();
 
     DragAcceptFiles(HWnd, FALSE);
 
     SystemParametersInfo(SPI_SETSCREENSAVEACTIVE, SS_Actived, NULL, 0);
     if (MainMovie.File != NULL)
         CloseMovieFile(&MainMovie);
-    Close_AVI();
 
     CleanupDecoder();
 
@@ -2257,11 +1946,6 @@ int PASCAL WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR lpCmdLine, int nC
 
             frameAdvanceKeyWasJustPressed = ((GetActiveWindow() == HWnd) || BackgroundInput) ? Check_Skip_Key_Pressed() : 0;
         }
-        else if (GYM_Playing)			// PLAY GYM
-        {
-            Play_GYM();
-            Update_Gens_Logo(HWnd);
-        }
         else if (Intro_Style == 1)		// GENS LOGO EFFECT
         {
             Update_Gens_Logo(HWnd);
@@ -2515,8 +2199,6 @@ int GensLoadRom(const char* filename)
 
     if (MainMovie.File)
         CloseMovieFile(&MainMovie);
-    if (GYM_Playing)
-        Stop_Play_GYM();
     FrameCount = 0;
     LagCount = 0;
     LagCountPersistent = 0;
@@ -2541,7 +2223,6 @@ enum GensFileType
     FILETYPE_SAVESTATE,
     FILETYPE_SRAM,
     FILETYPE_BRAM,
-    FILETYPE_GYM,
     FILETYPE_SCRIPT,
     FILETYPE_WATCH,
     FILETYPE_CONFIG,
@@ -2579,8 +2260,6 @@ GensFileType GuessFileType(const char* filename, const char* extension)
             rv = FILETYPE_WATCH;
         else if (!stricmp(extension, "cfg") || !stricmp(extension, "config"))
             rv = FILETYPE_CONFIG;
-        else if (!stricmp(extension, "gym"))
-            rv = FILETYPE_GYM;
         else if (!stricmp(extension, "lua"))
             rv = FILETYPE_SCRIPT;
         else if (!stricmp(extension, "srm") || !stricmp(extension, "sram"))
@@ -2678,8 +2357,6 @@ long PASCAL WinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 SendMessage(LuaScriptHWnds[i], WM_CLOSE, 0, 0);
             if (MainMovie.File != NULL)
                 CloseMovieFile(&MainMovie);
-            if ((Check_If_Kaillera_Running()))
-                return 0;
             if (HexEditors.size() > 0)
                 for (int i = (int)HexEditors.size() - 1; i >= 0; i--)
                     HexDestroyDialog(HexEditors[i]);
@@ -2800,42 +2477,9 @@ long PASCAL WinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 Never_Skip_Frame = !Never_Skip_Frame;
                 Build_Main_Menu();
                 return 0;
-            case ID_GRAPHICS_AVI_SOUND:
-                AVISound = !AVISound;
-                Build_Main_Menu();
-                return 0;
-            case ID_CHANGE_AVISPLIT:
-            {
-                DialogsOpen++;
-                DialogBox(ghInstance, MAKEINTRESOURCE(IDD_PROMPT), hWnd, (DLGPROC)PromptAVISplitProc);
-            }
-            return 0;
-            case ID_CHANGE_AVIFITHEIGHT:
-                AVIHeight224IfNotPAL = !AVIHeight224IfNotPAL;
-                Build_Main_Menu();
-                return 0;
             case ID_CHANGE_256RATIO:
                 Correct_256_Aspect_Ratio = !Correct_256_Aspect_Ratio;
                 InvalidateRect(hWnd, NULL, FALSE);
-                Build_Main_Menu();
-                return 0;
-            case ID_GRAPHICS_SYNC_AVI_MOVIE:
-                AVIWaitMovie = !AVIWaitMovie;
-                Build_Main_Menu();
-                return 0;
-            case ID_GRAPHICS_AVI:
-                if (AVIRecording)
-                {
-                    AVIRecording = 0;
-                    Close_AVI();
-                }
-                else
-                {
-                    if (InitAVI(hWnd))
-                        AVIRecording = 1;
-                    else
-                        AVIRecording = 0;
-                }
                 Build_Main_Menu();
                 return 0;
             case ID_SLOW_SPEED_1:
@@ -3404,8 +3048,6 @@ long PASCAL WinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                             MESSAGE_L("You need WNASPI32.DLL to run from a CD drive.", "You need WNASPI32.DLL to run from a CD drive.")
                             return 1;
                 }
-                if (Check_If_Kaillera_Running()) return 0;
-                if (GYM_Playing) Stop_Play_GYM();
                 Free_Rom(Game);			// Don't forget it !
                 SegaCD_Started = Init_SegaCD(NULL);
                 Build_Main_Menu();
@@ -3424,12 +3066,6 @@ long PASCAL WinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 LagCount = 0;
                 LagCountPersistent = 0;
                 frameSearchFrames = -1; frameSearchInitialized = false;
-                return 0;
-
-            case ID_FILES_NETPLAY:
-                MINIMIZE
-                    if (GYM_Playing) Stop_Play_GYM();
-                Start_Netplay();
                 return 0;
 
             case ID_FILES_CLOSEROM:
@@ -3451,7 +3087,6 @@ long PASCAL WinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 return 0;
 
             case ID_FILES_GAMEGENIE:
-                if (Check_If_Kaillera_Running()) return 0;
                 MINIMIZE
                     DialogsOpen++;
                 DialogBox(ghInstance, MAKEINTRESOURCE(IDD_GAMEGENIE), hWnd, (DLGPROC)GGenieProc);
@@ -3459,14 +3094,12 @@ long PASCAL WinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 return 0;
 
             case ID_FILES_LOADSTATE:
-                if (Check_If_Kaillera_Running()) return 0;
                 Str_Tmp[0] = 0;
                 Get_State_File_Name(Str_Tmp);
                 Load_State(Str_Tmp);
                 return 0;
 
             case ID_FILES_LOADSTATEAS:
-                if (Check_If_Kaillera_Running()) return 0;
                 Str_Tmp[0] = 0;
                 DialogsOpen++;
                 Change_File_L(Str_Tmp, State_Dir, "Load state", "State Files\0*.gs?\0All Files\0*.*\0\0", "", hWnd);
@@ -3481,7 +3114,6 @@ long PASCAL WinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 return 0;
 
             case ID_FILES_SAVESTATEAS:
-                if (Check_If_Kaillera_Running()) return 0;
                 DialogsOpen++;
                 Change_File_S(Str_Tmp, State_Dir, "Save state", "State Files\0*.gs?\0All Files\0*.*\0\0", "", hWnd);
                 DialogsOpen--;
@@ -3512,7 +3144,6 @@ long PASCAL WinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 return 0;
 
             case ID_GRAPHICS_COLOR_ADJUST:
-                if (Check_If_Kaillera_Running()) return 0;
                 MINIMIZE
                     DialogsOpen++;
                 DialogBox(ghInstance, MAKEINTRESOURCE(IDD_COLOR), hWnd, (DLGPROC)ColorProc);
@@ -3709,18 +3340,6 @@ long PASCAL WinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 Set_Sprite_Over(Sprite_Over ^ 1);
                 return 0;
 
-            case ID_GRAPHICS_SHOT:
-                Clear_Sound_Buffer();
-                Take_Shot();
-                Build_Main_Menu();
-                return 0;
-
-            case ID_GRAPHICS_CLIPBOARD:
-                Clear_Sound_Buffer();
-                Take_Shot_Clipboard();
-                Build_Main_Menu();
-                return 0;
-
             case ID_FILES_SAVESTATE_1:
             case ID_FILES_SAVESTATE_2:
             case ID_FILES_SAVESTATE_3:
@@ -3733,7 +3352,6 @@ long PASCAL WinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             case ID_FILES_SAVESTATE_0:
             {
                 Set_Current_State((command - ID_FILES_SAVESTATE_1 + 1) % 10, false, false);
-                //if (Check_If_Kaillera_Running()) return 0;
                 char Name[1024] = { 0 };
                 Get_State_File_Name(Name);
                 Save_State(Name);
@@ -3759,7 +3377,6 @@ long PASCAL WinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             case ID_FILES_LOADSTATE_0:
             {
                 Set_Current_State((command - ID_FILES_LOADSTATE_1 + 1) % 10, false, true);
-                //if (Check_If_Kaillera_Running()) return 0;
                 char Name[1024] = { 0 };
                 Get_State_File_Name(Name);
                 Load_State(Name);
@@ -3846,8 +3463,6 @@ long PASCAL WinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 if ((MainMovie.Status == MOVIE_RECORDING) && (!(AutoCloseMovie)) && (MainMovie.ReadOnly)) //Upth-Add - on reset, switch movie from recording
                     MainMovie.Status = MOVIE_PLAYING; //Upth-Add - To playing, if read only has been toggled on
 
-                if (Check_If_Kaillera_Running()) return 0;
-
                 if (Genesis_Started)
                     Reset_Genesis();
                 else if (_32X_Started)
@@ -3878,7 +3493,6 @@ long PASCAL WinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                     CloseMovieFile(&MainMovie);
                 MainMovie.Status = 0;
 
-                if (Check_If_Kaillera_Running()) return 0;
                 if (Game)
                 {
                     Paused = 0;
@@ -3899,7 +3513,6 @@ long PASCAL WinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                     CloseMovieFile(&MainMovie);
                 MainMovie.Status = 0;
 
-                if (Check_If_Kaillera_Running()) return 0;
                 if ((Game) && (_32X_Started))
                 {
                     Paused = 0;
@@ -3919,7 +3532,6 @@ long PASCAL WinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                     CloseMovieFile(&MainMovie);
                 MainMovie.Status = 0;
 
-                if (Check_If_Kaillera_Running()) return 0;
                 if ((Game) && (_32X_Started))
                 {
                     Paused = 0;
@@ -3939,7 +3551,6 @@ long PASCAL WinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                     CloseMovieFile(&MainMovie);
                 MainMovie.Status = 0;
 
-                if (Check_If_Kaillera_Running()) return 0;
                 if ((Game) && (SegaCD_Started))
                 {
                     Paused = 0;
@@ -3959,7 +3570,6 @@ long PASCAL WinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                     CloseMovieFile(&MainMovie);
                 MainMovie.Status = 0;
 
-                if (Check_If_Kaillera_Running()) return 0;
                 if (Game)
                 {
                     z80_Reset(&M_Z80);
@@ -4069,28 +3679,6 @@ long PASCAL WinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 Change_Sound_Hog();
                 return 0;
 
-            case ID_SOUND_STARTWAVDUMP:
-                if (WAV_Dumping) Stop_WAV_Dump();
-                else Start_WAV_Dump();
-                Build_Main_Menu();
-                return 0;
-
-            case ID_SOUND_STARTGYMDUMP:
-                if (GYM_Dumping) Stop_GYM_Dump();
-                else Start_GYM_Dump();
-                Build_Main_Menu();
-                return 0;
-
-            case ID_SOUND_PLAYGYM:
-                MINIMIZE
-                    if (!Game)
-                    {
-                        if (GYM_Playing) Stop_Play_GYM();
-                        else Start_Play_GYM();
-                    }
-                Build_Main_Menu();
-                return 0;
-
             case ID_OPTIONS_FASTBLUR:
                 Change_Fast_Blur();
                 return 0;
@@ -4101,7 +3689,6 @@ long PASCAL WinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 return 0;
 
             case ID_OPTIONS_GENERAL:
-                if (Check_If_Kaillera_Running()) return 0;
                 MINIMIZE
                     DialogsOpen++;
                 DialogBox(ghInstance, MAKEINTRESOURCE(IDD_OPTION), hWnd, (DLGPROC)OptionProc);
@@ -4109,7 +3696,6 @@ long PASCAL WinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 return 0;
 
             case ID_OPTIONS_JOYPADSETTING:
-                if (Check_If_Kaillera_Running()) return 0;
                 MINIMIZE
                     End_Input();
                 DialogsOpen++;
@@ -4119,7 +3705,6 @@ long PASCAL WinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 return 0;
 
             case ID_OPTIONS_CHANGEDIR:
-                if (Check_If_Kaillera_Running()) return 0;
                 MINIMIZE
                     DialogsOpen++;
                 DialogBox(ghInstance, MAKEINTRESOURCE(IDD_DIRECTORIES), hWnd, (DLGPROC)DirectoriesProc);
@@ -4127,7 +3712,6 @@ long PASCAL WinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 return 0;
 
             case ID_OPTIONS_CHANGEFILES:
-                if (Check_If_Kaillera_Running()) return 0;
                 MINIMIZE
                     DialogsOpen++;
                 DialogBox(ghInstance, MAKEINTRESOURCE(IDD_FILES), hWnd, (DLGPROC)FilesProc);
@@ -4212,7 +3796,6 @@ long PASCAL WinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 return 0;
 
             case ID_OPTIONS_LOADCONFIG:
-                if (Check_If_Kaillera_Running()) return 0;
                 MINIMIZE
                     DialogsOpen++;
                 Load_As_Config(hWnd, Game);
@@ -4351,10 +3934,6 @@ long PASCAL WinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                     strcat(Str_Tmp, " helpkeys.html");
                     system(Str_Tmp);
                 }
-                return 0;
-            case ID_CHANGE_CLEANAVI:
-                CleanAvi = !CleanAvi;
-                Build_Main_Menu();
                 return 0;
             case ID_CHANGE_PALLOCK:
             {
@@ -4647,8 +4226,6 @@ HMENU Build_Context_Menu(void)
             (UINT)GraphicsSize, "Window Size", "", "&Window Size");
         MENU_L(ContextMenu, i++, Flags,
             ID_CPU_RESET, "Hard Reset", "\tCtrl+Shift+R", "&Hard Reset");
-        MENU_L(ContextMenu, i++, Flags,
-            ID_GRAPHICS_AVI, AVIRecording ? "Stop AVI Dump" : "Start AVI Dump...", "", AVIRecording ? "&Stop AVI Dump" : "&Start AVI Dump...");
     }
 
     // SIZE //
@@ -4704,7 +4281,6 @@ HMENU Build_Main_Menu(void)
     HMENU Tools_Movies; //Upth-Add - Submenu of TAS_Tools
     HMENU Movies_Tracks; //Upth-Add - submenu of Tas_Tools -> Tools_Movies
     HMENU MoviesHistory;
-    HMENU Tools_AVI;    //Upth-Add - Submenu of TAS_Tools
     HMENU Lua_Script;
 
     DestroyMenu(Gens_Menu);
@@ -4751,7 +4327,6 @@ HMENU Build_Main_Menu(void)
     OptionsSRAMSize = CreatePopupMenu();
     Tools_Movies = CreatePopupMenu(); //Upth-Add - Initialize my new menus
     Movies_Tracks = CreatePopupMenu(); //Upth-Add - Initialize new menu
-    Tools_AVI = CreatePopupMenu(); //Upth-Add - Initialize my new menus
     Lua_Script = CreatePopupMenu();
 
     /////////////////////////////////////////////
@@ -4790,10 +4365,6 @@ HMENU Build_Main_Menu(void)
 
     MENU_L(Files, i++, Flags,
         ID_FILES_BOOTCD, "Boot CD", "\tCtrl+B", "&Boot CD");
-
-    if (Kaillera_Initialised)
-        MENU_L(Files, i++, Flags,
-        ID_FILES_NETPLAY, "Netplay", "", "&Netplay");
 
     InsertMenu(Files, i++, MF_SEPARATOR, NULL, NULL);
 
@@ -4960,13 +4531,6 @@ HMENU Build_Main_Menu(void)
         (UINT)GraphicsFrameSkip, "Frame Skip", "", "&Frame Skip");
     MENU_L(Graphics, i++, Flags | (Never_Skip_Frame ? MF_CHECKED : MF_UNCHECKED),
         ID_GRAPHICS_NEVER_SKIP_FRAME, "Never skip frame with auto frameskip", "", "&Never skip frame with auto frameskip");
-
-    InsertMenu(Graphics, i++, MF_MENUBARBREAK, NULL, NULL);
-
-    MENU_L(Graphics, i++, Flags | MF_UNCHECKED,
-        ID_GRAPHICS_SHOT, "Screen Shot To File", "", "&Screen Shot To File");
-    MENU_L(Graphics, i++, Flags | MF_UNCHECKED,
-        ID_GRAPHICS_CLIPBOARD, "Screen Shot To Clipboard", "", "&Screen Shot To Clipboard");
 
     //	InsertMenu(Graphics, 12, MF_SEPARATOR, NULL, NULL);
 
@@ -5260,13 +4824,6 @@ HMENU Build_Main_Menu(void)
     MENU_L(Sound, i++, Flags | (DAC_Improv ? MF_CHECKED : MF_UNCHECKED),
         ID_SOUND_DACIMPROV, "DAC High Quality", "", "DAC High &Quality");
 
-    InsertMenu(Sound, i++, MF_SEPARATOR, NULL, NULL);
-
-    MENU_L(Sound, i++, Flags,
-        ID_SOUND_STARTWAVDUMP, WAV_Dumping ? "Stop Dump" : "Start Dump", "", WAV_Dumping ? "Stop WAV Dump" : "Start WAV Dump");
-    MENU_L(Sound, i++, Flags,
-        ID_SOUND_STARTGYMDUMP, GYM_Dumping ? "Stop GYM Dump" : "Start GYM Dump", "", GYM_Dumping ? "Stop GYM Dump" : "Start GYM Dump");
-
     // RATE //
 
     InsertMenu(SoundRate, 0, Flags | (Sound_Rate == 11025 ? MF_CHECKED : MF_UNCHECKED),
@@ -5284,8 +4841,6 @@ HMENU Build_Main_Menu(void)
 
     MENU_L(TAS_Tools, i++, MF_BYPOSITION | MF_POPUP | MF_STRING,
         (UINT)Tools_Movies, "Movie", "", "&Movie");
-    MENU_L(TAS_Tools, i++, MF_BYPOSITION | MF_POPUP | MF_STRING,
-        (UINT)Tools_AVI, "AVI", "", "&AVI");
 
     InsertMenu(TAS_Tools, i++, MF_SEPARATOR, NULL, NULL);
 
@@ -5383,32 +4938,6 @@ HMENU Build_Main_Menu(void)
         ID_MOVIE_CHANGETRACK_2, "Player 2", "\tCtrl-Shift-2", "Players &2"); //Modif
     MENU_L(Movies_Tracks, i++, Flags | (MainMovie.TriplePlayerHack ? MF_ENABLED : MF_DISABLED | MF_GRAYED) | ((track & TRACK3) ? MF_CHECKED : MF_UNCHECKED),
         ID_MOVIE_CHANGETRACK_3, "Player 3", "\tCtrl-Shift-3", "Players &3"); //Modif
-
-    // AVI //
-
-    i = 0;
-
-    MENU_L(Tools_AVI, i++, Flags | MF_UNCHECKED,
-        ID_GRAPHICS_AVI, AVIRecording ? "Stop AVI Dump" : "Start AVI Dump...", "", AVIRecording ? "&Stop AVI Dump" : "&Start AVI Dump...");
-
-    InsertMenu(Tools_AVI, i++, MF_SEPARATOR, NULL, NULL);
-
-    MENU_L(Tools_AVI, i++, Flags | (AVIWaitMovie ? MF_CHECKED : MF_UNCHECKED),
-        ID_GRAPHICS_SYNC_AVI_MOVIE, "Sync AVI with movie", "", "S&ync AVI with movie");
-    MENU_L(Tools_AVI, i++, Flags | (AVISound ? MF_CHECKED : MF_UNCHECKED),
-        ID_GRAPHICS_AVI_SOUND, "Add sound to AVI", "", "&Add sound to AVI");
-    MENU_L(Tools_AVI, i++, Flags | (CleanAvi ? MF_CHECKED : MF_UNCHECKED),
-        ID_CHANGE_CLEANAVI, "Clean AVI screen", "", "&Clean AVI screen");
-    MENU_L(Tools_AVI, i++, Flags | (AVIHeight224IfNotPAL ? MF_CHECKED : MF_UNCHECKED) | (!AVIRecording ? MF_ENABLED : MF_DISABLED | MF_GRAYED),
-        ID_CHANGE_AVIFITHEIGHT, "Fit AVI to game height", "", "&Fit AVI to game height");
-
-    if (AVISplit > 0)
-        wsprintf(Str_Tmp, "Split AVI after... (%d MB)", AVISplit);
-    else
-        strcpy(Str_Tmp, "Split AVI after...");
-
-    MENU_L(Tools_AVI, i++, Flags | ((AVISplit > 0) ? MF_CHECKED : MF_UNCHECKED),
-        ID_CHANGE_AVISPLIT, Str_Tmp, "", Str_Tmp);
 
     // LUA SCRIPT //
 
@@ -5892,9 +5421,6 @@ LRESULT CALLBACK DirectoriesProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPa
         WORD_L(ID_CHANGE_SAVE, "Change", "", "Change");
         WORD_L(ID_CHANGE_SRAM, "Change", "", "Change");
         WORD_L(ID_CHANGE_BRAM, "Change", "", "Change");
-        WORD_L(ID_CHANGE_WAV, "Change", "", "Change");
-        WORD_L(ID_CHANGE_GYM, "Change", "", "Change");
-        WORD_L(ID_CHANGE_SHOT, "Change", "", "Change");
         WORD_L(ID_CHANGE_PATCH, "Change", "", "Change");
         WORD_L(ID_CHANGE_IPS, "Change", "", "Change");
         WORD_L(ID_CHANGE_MOVIE, "Change", "", "Change");
@@ -5903,9 +5429,6 @@ LRESULT CALLBACK DirectoriesProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPa
         WORD_L(IDC_STATIC_SAVE, "Save static", "", "SAVE STATE");
         WORD_L(IDC_STATIC_SRAM, "Sram static", "", "SRAM BACKUP");
         WORD_L(IDC_STATIC_BRAM, "Bram static", "", "BRAM BACKUP");
-        WORD_L(IDC_STATIC_WAV, "Wav static", "", "WAV DUMP");
-        WORD_L(IDC_STATIC_GYM, "Gym static", "", "GYM DUMP");
-        WORD_L(IDC_STATIC_SHOT, "Shot static", "", "SCREEN SHOT");
         WORD_L(IDC_STATIC_PATCH, "Patch static", "", "PAT PATCH");
         WORD_L(IDC_STATIC_IPS, "IPS static", "", "IPS PATCH");
         WORD_L(IDC_STATIC_LUA, "Lua static", "", "LUA SCRIPT");
@@ -5913,9 +5436,6 @@ LRESULT CALLBACK DirectoriesProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPa
         SetDlgItemText(hDlg, IDC_EDIT_SAVE, State_Dir);
         SetDlgItemText(hDlg, IDC_EDIT_SRAM, SRAM_Dir);
         SetDlgItemText(hDlg, IDC_EDIT_BRAM, BRAM_Dir);
-        SetDlgItemText(hDlg, IDC_EDIT_WAV, Dump_Dir);
-        SetDlgItemText(hDlg, IDC_EDIT_GYM, Dump_GYM_Dir);
-        SetDlgItemText(hDlg, IDC_EDIT_SHOT, ScrShot_Dir);
         SetDlgItemText(hDlg, IDC_EDIT_PATCH, Patch_Dir);
         SetDlgItemText(hDlg, IDC_EDIT_IPS, IPS_Dir);
         SetDlgItemText(hDlg, IDC_EDIT_MOVIE, Movie_Dir);
@@ -5944,24 +5464,6 @@ LRESULT CALLBACK DirectoriesProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPa
             GetDlgItemText(hDlg, IDC_EDIT_BRAM, Str_Tmp2, 1024);
             if (Change_Dir(Str_Tmp, Str_Tmp2, "BRAM backup directory", "BRAM backup files\0*.brm\0\0", "brm", hDlg))
                 SetDlgItemText(hDlg, IDC_EDIT_BRAM, Str_Tmp);
-            break;
-
-        case ID_CHANGE_WAV:
-            GetDlgItemText(hDlg, IDC_EDIT_WAV, Str_Tmp2, 1024);
-            if (Change_Dir(Str_Tmp, Str_Tmp2, "Sound WAV dump directory", "Sound WAV dump files\0*.wav\0\0", "wav", hDlg))
-                SetDlgItemText(hDlg, IDC_EDIT_WAV, Str_Tmp);
-            break;
-
-        case ID_CHANGE_GYM:
-            GetDlgItemText(hDlg, IDC_EDIT_GYM, Str_Tmp2, 1024);
-            if (Change_Dir(Str_Tmp, Str_Tmp2, "GYM dump directory", "GYM dump files\0*.gym\0\0", "gym", hDlg))
-                SetDlgItemText(hDlg, IDC_EDIT_GYM, Str_Tmp);
-            break;
-
-        case ID_CHANGE_SHOT:
-            GetDlgItemText(hDlg, IDC_EDIT_SHOT, Str_Tmp2, 1024);
-            if (Change_Dir(Str_Tmp, Str_Tmp2, "Screen-shot directory", "Screen-shot files\0*.bmp\0\0", "bmp", hDlg))
-                SetDlgItemText(hDlg, IDC_EDIT_SHOT, Str_Tmp);
             break;
 
         case ID_CHANGE_PATCH:
@@ -5994,9 +5496,6 @@ LRESULT CALLBACK DirectoriesProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPa
             GetDlgItemText(hDlg, IDC_EDIT_SAVE, State_Dir, 1024);
             GetDlgItemText(hDlg, IDC_EDIT_SRAM, SRAM_Dir, 1024);
             GetDlgItemText(hDlg, IDC_EDIT_BRAM, BRAM_Dir, 1024);
-            GetDlgItemText(hDlg, IDC_EDIT_WAV, Dump_Dir, 1024);
-            GetDlgItemText(hDlg, IDC_EDIT_GYM, Dump_GYM_Dir, 1024);
-            GetDlgItemText(hDlg, IDC_EDIT_SHOT, ScrShot_Dir, 1024);
             GetDlgItemText(hDlg, IDC_EDIT_PATCH, Patch_Dir, 1024);
             GetDlgItemText(hDlg, IDC_EDIT_IPS, IPS_Dir, 1024);
             GetDlgItemText(hDlg, IDC_EDIT_MOVIE, Movie_Dir, 1024);
@@ -6497,11 +5996,6 @@ void GensOpenFile(const char* filename)
                     strcat(Str_Tmp, LogicalName);
                     Put_Info(Str_Tmp);
                 }
-            break;
-        case FILETYPE_GYM:
-            if (GYM_Dumping)
-                Stop_GYM_Dump();
-            Start_Play_GYM(PhysicalName);
             break;
         }
 
@@ -7124,96 +6618,6 @@ LRESULT CALLBACK PromptSeekFrameProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM
             sprintf(Str_Tmp, "Seeking to frame %d", SeekFrame);
             Put_Info(Str_Tmp);
             MustUpdateMenu = 1;
-            DialogsOpen--;
-            EndDialog(hDlg, true);
-            return true;
-            break;
-        }
-        case ID_CANCEL:
-        case IDCANCEL:
-            if (Full_Screen)
-            {
-                while (ShowCursor(true) < 0);
-                while (ShowCursor(false) >= 0);
-            }
-
-            DialogsOpen--;
-            EndDialog(hDlg, true);
-            return true;
-            break;
-        }
-        break;
-
-    case WM_CLOSE:
-        if (Full_Screen)
-        {
-            while (ShowCursor(true) < 0);
-            while (ShowCursor(false) >= 0);
-        }
-        DialogsOpen--;
-        EndDialog(hDlg, true);
-        return true;
-        break;
-    }
-
-    return false;
-}
-LRESULT CALLBACK PromptAVISplitProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) //saves all the input from specified frame to a tempfile, so a prior section can be redone
-{
-    RECT r;
-    RECT r2;
-    int dx1, dy1, dx2, dy2;
-
-    switch (uMsg)
-    {
-    case WM_INITDIALOG:
-        if (Full_Screen)
-        {
-            while (ShowCursor(false) >= 0);
-            while (ShowCursor(true) < 0);
-        }
-
-        GetWindowRect(HWnd, &r);
-        dx1 = (r.right - r.left) / 2;
-        dy1 = (r.bottom - r.top) / 2;
-
-        GetWindowRect(hDlg, &r2);
-        dx2 = (r2.right - r2.left) / 2;
-        dy2 = (r2.bottom - r2.top) / 2;
-
-        //SetWindowPos(hDlg, NULL, max(0, r.left + (dx1 - dx2)), max(0, r.top + (dy1 - dy2)), NULL, NULL, SWP_NOSIZE | SWP_NOZORDER | SWP_SHOWWINDOW);
-        SetWindowPos(hDlg, NULL, r.left, r.top, NULL, NULL, SWP_NOSIZE | SWP_NOZORDER | SWP_SHOWWINDOW);
-        strcpy(Str_Tmp, "Enter max size in megabytes. (recommended 1977 or less)");
-        SendDlgItemMessage(hDlg, IDC_PROMPT_TEXT, WM_SETTEXT, 0, (LPARAM)Str_Tmp);
-        strcpy(Str_Tmp, "AVIs exceeding this size will be split into multiple files.");
-        SendDlgItemMessage(hDlg, IDC_PROMPT_TEXT2, WM_SETTEXT, 0, (LPARAM)Str_Tmp);
-
-        SetDlgItemInt(hDlg, IDC_PROMPT_EDIT, AVISplit, true);
-
-        return true;
-        break;
-
-    case WM_COMMAND:
-        switch (LOWORD(wParam))
-        {
-        case IDOK:
-        {
-            if (Full_Screen)
-            {
-                while (ShowCursor(true) < 0);
-                while (ShowCursor(false) >= 0);
-            }
-
-            AVISplit = GetDlgItemInt(hDlg, IDC_PROMPT_EDIT, NULL, true);
-            if (AVISplit < 0) AVISplit = 0;
-
-            char cfgFile[1024];
-            strcpy(cfgFile, Gens_Path);
-            strcat(cfgFile, "Gens.cfg");
-            wsprintf(Str_Tmp, "%d", AVISplit);
-            WritePrivateProfileString("General", "AVI Split MB", Str_Tmp, cfgFile);
-
-            Build_Main_Menu();
             DialogsOpen--;
             EndDialog(hDlg, true);
             return true;

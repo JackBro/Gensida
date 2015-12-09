@@ -22,7 +22,6 @@ bool tempflag = false; //Upth-Add - This is for the new feature which pauses at 
 bool AutoCloseMovie = false; //Upth-Add - For the new AutoClose Movie toggle
 bool Def_Read_Only = true; //Upth-Add - For the new Default Read Only toggle
 char track = 1 | 2 | 4;
-extern int AVIRecording;
 typeMovie MainMovie;
 extern "C" char preloaded_tracks[100], played_tracks_linear[105]; // Modif N. -- added
 extern "C" int Clear_Sound_Buffer(void);
@@ -147,7 +146,7 @@ void MoviePlayingStuff()
             MustUpdateMenu = 1;
             CloseMovieFile(&MainMovie);//UpthAdd - So controller settings are restored
         }
-        else if ((MainMovie.Recorded || !MainMovie.ReadOnly) && !AVIRecording) //Upth-Add - Otherwise, though
+        else if (MainMovie.Recorded || !MainMovie.ReadOnly) //Upth-Add - Otherwise, though
         {
             Clear_Sound_Buffer(); //eliminate stutter
 

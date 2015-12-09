@@ -7,7 +7,6 @@
 #include "G_main.h"
 #include "movie.h"
 #include "save.h" //Modif
-#include "hackdefs.h"
 #include "luascript.h"
 
 #define KEYDOWN(key) (Keys[key] & 0x80)
@@ -258,7 +257,6 @@ static InputButton s_inputButtons[] =
     { MOD_NONE, VK_NONE, ID_TOGGLE_SHOWLED, 0, NULL, "Show SegaCD LED", "ShowLEDKey" },
 
     { MOD_CONTROL, 'G', ID_FILES_GAMEGENIE, 0, NULL, "Game Genie Setup", "GameGenieKey" },
-    { MOD_CONTROL, 'N', ID_FILES_NETPLAY, 0, NULL, "Netplay Setup", "NetplayKey" },
 
     { MOD_NONE, '1', ID_FILES_LOADSTATE_1, 0, NULL, "Load State 1", "Load1Key" },
     { MOD_NONE, '2', ID_FILES_LOADSTATE_2, 0, NULL, "Load State 2", "Load2Key" },
@@ -353,15 +351,10 @@ static InputButton s_inputButtons[] =
     { MOD_NONE, VK_NONE, IDC_LUA_SCRIPT_HOTKEY_15, 0, NULL, "Lua Custom Hotkey 15", "LuaHotkey15" },
     { MOD_NONE, VK_NONE, IDC_LUA_SCRIPT_HOTKEY_16, 0, NULL, "Lua Custom Hotkey 16", "LuaHotkey16" },
 
-    { MOD_SHIFT, VK_BACK, ID_GRAPHICS_SHOT, 0, NULL, "Screenshot To File", "ScreenshotFileKey" },
-    { MOD_CONTROL, VK_BACK, ID_GRAPHICS_CLIPBOARD, 0, NULL, "Screenshot To Clipboard", "ScreenshotClipboardKey" },
     { MOD_NONE, VK_F1, ID_HELP_HELP, 0, NULL, "Get Help", "HelpKey" },
 
     { MOD_NONE, VK_NONE, ID_GRAPHICS_SPRITEALWAYS, 0, NULL, "Sprites On Top On/Off", "SpritesOnTopKey" },
     { MOD_NONE, VK_NONE, ID_CHANGE_PALLOCK, 0, NULL, "Lock/Unlock Palette", "LockPaletteKey" },
-
-    { MOD_CONTROL | MOD_SHIFT, 'P', ID_SOUND_PLAYGYM, 0, NULL, "Play GYM", "GYMKey" },
-    { MOD_NONE, VK_NONE, ID_SOUND_STARTWAVDUMP, 0, NULL, "Dump WAV", "WAVKey" },
 
     { MOD_NONE, VK_NONE, ID_SOUND_DACIMPROV, 0, NULL, "Improved DAC On/Off", "ImpDACKey" },
     //	{MOD_NONE,             VK_NONE,    ID_SOUND_PSGIMPROV,       0, NULL, "Improved PSG On/Off", "ImpPSGKey"},

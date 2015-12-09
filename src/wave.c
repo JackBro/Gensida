@@ -31,9 +31,6 @@ pckOut - Pointer to be set with the MMCKINFO.
 pckOutRIFF - Pointer to be set with the RIFF info.
 */
 
-HANDLE GYM_File;
-int GYM_Dumping = 0;
-
 int WaveCreateFile(
     TCHAR *pszFileName, // (IN)
     HMMIO *phmmioOut, // (OUT)
@@ -686,40 +683,4 @@ ERROR_CANNOT_WRITE:
 
 DONE_CREATE :
     return(nError);
-}
-
-int Update_GYM_Dump(int v0, int v1, unsigned char v2)
-{
-    int bResult;
-    char buf_tmp[4];
-    unsigned long l, l2;
-
-    if (!GYM_Dumping) return 0;
-    if (GYM_File == INVALID_HANDLE_VALUE) return 0;
-
-    v1 &= 0xFF;
-
-    buf_tmp[0] = v0;
-    l = 1;
-
-    switch (v0)
-    {
-    case 1:
-    case 2:
-        buf_tmp[1] = (unsigned char)v1;
-        buf_tmp[2] = v2;
-        l = 3;
-        break;
-
-    case 3:
-        buf_tmp[1] = (unsigned char)v1;
-        l = 2;
-        break;
-    }
-
-    bResult = WriteFile(GYM_File, buf_tmp, l, &l2, NULL);
-
-    if (!bResult) return 0;
-
-    return 1;
 }
