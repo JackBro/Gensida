@@ -28,9 +28,6 @@
     <Filter Include="resources\bitmap">
       <UniqueIdentifier>{9df59e79-9bc5-4a01-aa8a-b9d796cb6a5b}</UniqueIdentifier>
     </Filter>
-    <Filter Include="DisplayHacks">
-      <UniqueIdentifier>{2b729b77-c375-488a-aadf-c4bebd3eaa3b}</UniqueIdentifier>
-    </Filter>
     <Filter Include="LibLua">
       <UniqueIdentifier>{50462c4b-faf5-4918-b0db-160d56d3e4bb}</UniqueIdentifier>
     </Filter>
@@ -40,9 +37,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\7zip.cpp">
-      <Filter>C/C++ Sources</Filter>
-    </ClCompile>
-    <ClCompile Include="src\base64.c">
       <Filter>C/C++ Sources</Filter>
     </ClCompile>
     <ClCompile Include="src\cblit.cpp">
@@ -117,9 +111,6 @@
     <ClCompile Include="src\movie.cpp">
       <Filter>C/C++ Sources</Filter>
     </ClCompile>
-    <ClCompile Include="src\net.cpp">
-      <Filter>C/C++ Sources</Filter>
-    </ClCompile>
     <ClCompile Include="src\OpenArchive.cpp">
       <Filter>C/C++ Sources</Filter>
     </ClCompile>
@@ -147,9 +138,6 @@
     <ClCompile Include="src\save.cpp">
       <Filter>C/C++ Sources</Filter>
     </ClCompile>
-    <ClCompile Include="src\scrshot.cpp">
-      <Filter>C/C++ Sources</Filter>
-    </ClCompile>
     <ClCompile Include="src\SH2.c">
       <Filter>C/C++ Sources</Filter>
     </ClCompile>
@@ -169,21 +157,6 @@
       <Filter>C/C++ Sources</Filter>
     </ClCompile>
     <ClCompile Include="src\ym2612.c">
-      <Filter>C/C++ Sources</Filter>
-    </ClCompile>
-    <ClCompile Include="src\EccoBoxHack.cpp">
-      <Filter>DisplayHacks</Filter>
-    </ClCompile>
-    <ClCompile Include="src\HacksCommon.cpp">
-      <Filter>DisplayHacks</Filter>
-    </ClCompile>
-    <ClCompile Include="src\RKABoxHack.cpp">
-      <Filter>DisplayHacks</Filter>
-    </ClCompile>
-    <ClCompile Include="src\SonicHackSuite.cpp">
-      <Filter>DisplayHacks</Filter>
-    </ClCompile>
-    <ClCompile Include="src\AVIWrite.cpp">
       <Filter>C/C++ Sources</Filter>
     </ClCompile>
     <ClCompile Include="dependencies\mp3_dec\common.c">
@@ -373,21 +346,6 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\EccoBoxHack.h">
-      <Filter>DisplayHacks</Filter>
-    </ClInclude>
-    <ClInclude Include="src\hackdefs.h">
-      <Filter>DisplayHacks</Filter>
-    </ClInclude>
-    <ClInclude Include="src\HacksCommon.h">
-      <Filter>DisplayHacks</Filter>
-    </ClInclude>
-    <ClInclude Include="src\RKABoxHack.h">
-      <Filter>DisplayHacks</Filter>
-    </ClInclude>
-    <ClInclude Include="src\SonicHackSuite.h">
-      <Filter>DisplayHacks</Filter>
-    </ClInclude>
     <ClInclude Include="src\7zip.h">
       <Filter>Headers</Filter>
     </ClInclude>

@@ -147,8 +147,6 @@
     <ClCompile Include="src\7zip.cpp">
       <AdditionalIncludeDirectories>$(SolutionDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
-    <ClCompile Include="src\AVIWrite.cpp" />
-    <ClCompile Include="src\base64.c" />
     <ClCompile Include="src\cblit.cpp" />
     <ClCompile Include="src\CCnet.c">
       <PreprocessorDefinitions>%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -210,9 +208,6 @@
     </ClCompile>
     <ClCompile Include="src\m68k_debugwindow.cpp" />
     <ClCompile Include="src\movie.cpp" />
-    <ClCompile Include="src\net.cpp">
-      <PreprocessorDefinitions>%(PreprocessorDefinitions)</PreprocessorDefinitions>
-    </ClCompile>
     <ClCompile Include="src\OpenArchive.cpp" />
     <ClCompile Include="src\ParseCmdLine.cpp" />
     <ClCompile Include="src\pcm.c">
@@ -234,7 +229,6 @@
     <ClCompile Include="src\save.cpp">
       <PreprocessorDefinitions>%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
-    <ClCompile Include="src\scrshot.cpp" />
     <ClCompile Include="src\SH2.c">
       <PreprocessorDefinitions>%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
@@ -272,10 +266,6 @@
     <ClCompile Include="dependencies\mp3_dec\tabinit.c">
       <PreprocessorDefinitions>%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
-    <ClCompile Include="src\EccoBoxHack.cpp" />
-    <ClCompile Include="src\HacksCommon.cpp" />
-    <ClCompile Include="src\RKABoxHack.cpp" />
-    <ClCompile Include="src\SonicHackSuite.cpp" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="src\blit.asm">
@@ -498,11 +488,6 @@
     <ClInclude Include="dependencies\mp3_dec\mpg123.h" />
     <ClInclude Include="dependencies\mp3_dec\mpglib.h" />
     <ClInclude Include="src\resource.h" />
-    <ClInclude Include="src\EccoBoxHack.h" />
-    <ClInclude Include="src\hackdefs.h" />
-    <ClInclude Include="src\HacksCommon.h" />
-    <ClInclude Include="src\RKABoxHack.h" />
-    <ClInclude Include="src\SonicHackSuite.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="src\Gens.rc" />

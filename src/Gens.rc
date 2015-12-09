@@ -7,8 +7,7 @@
 //
 // Generated from the TEXTINCLUDE 2 resource.
 //
-#include "afxres.h"
-
+#include "afxres.h"
 /////////////////////////////////////////////////////////////////////////////
 #undef APSTUDIO_READONLY_SYMBOLS
 
@@ -110,7 +109,6 @@ BEGIN
     COMBOBOX        IDC_COMBO_PADP2D,54,177,63,46,CBS_DROPDOWNLIST | CBS_SORT | WS_VSCROLL | WS_TABSTOP
     PUSHBUTTON      "Redefine Keys",IDC_BUTTON_SETKEYSP2D,123,177,65,13
     CTEXT           "",IDC_STATIC_TEXT0,219,256,164,12,SS_CENTERIMAGE
-    PUSHBUTTON      "&Help",ID_HELP_HELP,222,276,50,14
     CONTROL         "Allow L+R/U+D",IDC_CHECK_LEFTRIGHT,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,13,221,64,11
     CONTROL         "Allow Background Input",IDC_CHECK_BGINPUT,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,13,208,88,11
     GROUPBOX        "Hotkeys",IDC_STATIC,199,7,195,265
@@ -312,7 +310,7 @@ CAPTION "About Gens"
 FONT 8, "MS Sans Serif", 0, 0, 0x1
 BEGIN
     PUSHBUTTON      "OK",IDOK,72,115,50,14
-    CTEXT           "Gens Re-Recording v11c\nr57shell mod\nSega Genesis / Megadrive,\nSega CD / Mega CD,\nSega 32X emulator\n\nWin 9X / ME / 2000 / XP",IDC_STATIC,87,3,100,58
+    CTEXT           "Gens Re-Recording v11c\nGensida (r57shell mod)\nSega Genesis / Megadrive,\nSega CD / Mega CD,\nSega 32X emulator\n\nWin 9X / ME / 2000 / XP",IDC_STATIC,87,3,100,58
     CONTROL         IDB_LOGO_SM,IDC_STATIC,"Static",SS_BITMAP | WS_BORDER,0,0,87,60
     EDITTEXT        IDC_EDIT1,1,61,188,52,ES_CENTER | ES_MULTILINE | ES_AUTOVSCROLL | ES_AUTOHSCROLL | ES_READONLY
 END
@@ -358,13 +356,6 @@ BEGIN
     PUSHBUTTON      "Change",ID_CHANGE_JABIOS,223,157,50,14
     GROUPBOX        "Configure SEGA CD bios files",IDC_CDBIOS_FILES,7,111,266,64
     GROUPBOX        "Configure misc files",IDC_MISC_FILES,7,180,266,45
-    EDITTEXT        IDC_EDIT_CGOFFLINE,63,189,151,12,ES_AUTOHSCROLL
-    LTEXT           "GC Offline",IDC_STATIC_CGOFFLINE,13,191,45,9
-    PUSHBUTTON      "Change",ID_CHANGE_CGOFFLINE,223,189,50,14
-    EDITTEXT        IDC_EDIT_MANUAL,63,208,151,12,ES_AUTOHSCROLL
-    LTEXT           "Manual",IDC_STATIC_MANUAL,13,209,46,9
-    PUSHBUTTON      "Change",ID_CHANGE_MANUAL,223,207,50,14
-    PUSHBUTTON      "&Help",ID_HELP_HELP,7,231,50,14
     EDITTEXT        IDC_EDIT_32XGBIOS,63,52,151,12,ES_AUTOHSCROLL
     LTEXT           "M68000",IDC_STATIC_32XGBIOS,13,54,45,9
     EDITTEXT        IDC_EDIT_32XMBIOS,63,70,151,12,ES_AUTOHSCROLL
@@ -422,7 +413,6 @@ BEGIN
     PUSHBUTTON      "&OK",IDC_OPTION_OK,204,334,50,14
     CONTROL         "Fast Blur",IDC_FASTBLUR,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,14,36,109,8
     CONTROL         "Show Sega-CD LED",IDC_SHOWLED,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,127,36,109,8
-    PUSHBUTTON      "&Help",ID_HELP_HELP,96,334,50,14
     CONTROL         "Disable Pause Blue Screen Effect",IDC_DISABLE_BLUE_SCREEN,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,18,215,128,10
     LTEXT           "Scale Factor:",IDC_STATIC,143,215,78,8
@@ -484,7 +474,6 @@ BEGIN
     PUSHBUTTON      "Change",ID_CHANGE_WATCH,209,163,49,14
     PUSHBUTTON      "&OK",ID_OK,209,201,50,14
     PUSHBUTTON      "&Cancel",ID_CANCEL,153,201,50,14
-    PUSHBUTTON      "&Help",ID_HELP_HELP,7,201,50,14
     EDITTEXT        IDC_EDIT_LUA,69,179,135,12,ES_AUTOHSCROLL
     LTEXT           "LUA SCRIPT",IDC_STATIC_LUA,13,181,55,9
     PUSHBUTTON      "Change",ID_CHANGE_LUA,209,179,49,14
@@ -708,6 +697,10 @@ BEGIN
     BEGIN
     END
 
+    ABOUTDIAL, DIALOG
+    BEGIN
+    END
+
     IDD_PLANEEXPLORER, DIALOG
     BEGIN
     END
@@ -723,8 +716,11 @@ END
 // Icon with lowest ID value placed first to ensure application icon
 // remains consistent on all systems.
 IDI_GENS                ICON                    "..\\resource\\Gens2.ico"
+
 IDI_SONIC               ICON                    "..\\resource\\sonic.ico"
+
 IDI_LUA                 ICON                    "..\\resource\\lua.ico"
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -732,16 +728,27 @@ IDI_LUA                 ICON                    "..\\resource\\lua.ico"
 //
 
 IDB_RECT_BLANC          BITMAP                  "..\\resource\\bitmap1.bmp"
+
 IDB_RECT_BLEU           BITMAP                  "..\\resource\\bmp00000.bmp"
+
 IDB_RECT_ROUGE          BITMAP                  "..\\resource\\bmp00002.bmp"
+
 IDB_RECT_VERT           BITMAP                  "..\\resource\\bmp00001.bmp"
+
 IDB_RECT_NOIR           BITMAP                  "..\\resource\\bmp00003.bmp"
+
 IDB_RECT_CYAN           BITMAP                  "..\\resource\\bmp00004.bmp"
+
 IDB_RECT_VIOLET         BITMAP                  "..\\resource\\bmp00005.bmp"
+
 IDB_RECT_JAUNE          BITMAP                  "..\\resource\\bmp00006.bmp"
+
 IDB_LOGO_SM             BITMAP                  "..\\resource\\gens_small.bmp"
+
 IDB_LOGO_BIG            BITMAP                  "..\\resource\\gens_big.bmp"
+
 IDB_WARNING             BITMAP                  "..\\resource\\bmp00007.bmp"
+
 
 #ifdef APSTUDIO_INVOKED
 /////////////////////////////////////////////////////////////////////////////
@@ -841,6 +848,17 @@ BEGIN
     "R",            IDC_C_WATCH_REMOVE,     VIRTKEY, NOINVERT
 END
 
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// AFX_DIALOG_LAYOUT
+//
+
+ABOUTDIAL AFX_DIALOG_LAYOUT
+BEGIN
+    0
+END
+
 #endif    // English (United States) resources
 /////////////////////////////////////////////////////////////////////////////
 
@@ -851,8 +869,7 @@ END
 //
 // Generated from the TEXTINCLUDE 3 resource.
 //
-
-
+
 /////////////////////////////////////////////////////////////////////////////
 #endif    // not APSTUDIO_INVOKED
 
