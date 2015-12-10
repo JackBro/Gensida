@@ -653,12 +653,13 @@
 #define IDC_PLANEEXPLORER_PLANE_A       54004
 #define IDC_PLANEEXPLORER_PLANE_B       54005
 #define IDC_PLANEEXPLORER_WINDOW        54006
+#define IDC_PLANEEXPLORER_SPRITES       54007
 
 // Next default values for new objects
 //
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        160
+#define _APS_NEXT_RESOURCE_VALUE        161
 #define _APS_NEXT_COMMAND_VALUE         3002
 #define _APS_NEXT_CONTROL_VALUE         50034
 #define _APS_NEXT_SYMED_VALUE           101

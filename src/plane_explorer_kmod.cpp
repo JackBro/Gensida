@@ -4,6 +4,8 @@
 #include "plane_explorer_kmod.h"
 #include "vdp_io.h"
 
+#include <set>
+
 void Update_Plane_Explorer()
 {
     if (PlaneExplorerHWnd)
@@ -16,17 +18,17 @@ void Update_Plane_Explorer()
 
 static unsigned char plane_explorer_data[128 * 8 * 128 * 8];
 static COLORREF plane_explorer_palette[256];
-static int old_plane_width = 0;
-static int old_plane_height = 0;
 static int plane_explorer_plane = 0;
 static bool show_transparence = false;
 static POINT pt = { 0 };
+
 
 static void PlaneExplorerInit_KMod(HWND hDlg)
 {
     HWND hexplorer;
     RECT rc, rc2;
 
+	plane_explorer_plane = 0;
 	CheckDlgButton(hDlg, IDC_PLANEEXPLORER_TRANS, BST_UNCHECKED);
     CheckRadioButton(hDlg, IDC_PLANEEXPLORER_PLANE_A, IDC_PLANEEXPLORER_PLANE_B, IDC_PLANEEXPLORER_PLANE_A);
     hexplorer = (HWND)GetDlgItem(hDlg, IDC_PLANEEXPLORER_MAIN);
@@ -162,43 +164,200 @@ static void PlaneExplorer_DrawTile(unsigned short name_word, unsigned int x, uns
     }
 }
 
-static void PlaneExplorer_UpdateBitmap(int plane)
+struct sprite_info
 {
-    unsigned int i, j;
+	unsigned short ypos;
+	unsigned char width;
+	unsigned char height;
+	unsigned char link;
+	bool priority;
+	unsigned char paletteLine;
+	bool vflip;
+	bool hflip;
+	unsigned short blockNumber;
+	unsigned short xpos;
+};
 
-    unsigned int plane_width = 32 + (VDP_Reg.Scr_Size & 0x3) * 32;
-    unsigned int plane_height = 32 + ((VDP_Reg.Scr_Size >> 4) & 0x3) * 32;
-    unsigned int plane_a_base = (VDP_Reg.Pat_ScrA_Adr & 0x38) << 10;
-    unsigned int plane_b_base = (VDP_Reg.Pat_ScrB_Adr & 0x7) << 13;
-	unsigned int plane_w_base = (VDP_Reg.Pat_Win_Adr & ((VDP_Reg.Set4 & 0x81) ? 0x3C : 0x3E)) << 10;
+static void PlaneExplorer_GetSpriteInfo(unsigned short *plane, unsigned char currentSpriteNo, sprite_info &sprite)
+{
+	// Read the mapping data for this sprite
+	unsigned int offset = (currentSpriteNo * 8) / 2;
+	sprite.ypos = plane[offset + 0];
+	sprite.width = (plane[offset + 1] >> 10) & 3;
+	sprite.height = (plane[offset + 1] >> 8) & 3;
+	sprite.link = plane[offset + 1] & 0x7F;
+	sprite.priority = ((plane[offset + 2] >> 15) & 1) ? true : false;
+	sprite.paletteLine = (plane[offset + 2] >> 13) & 3;
+	sprite.vflip = ((plane[offset + 2] >> 12) & 1) ? true : false;
+	sprite.hflip = ((plane[offset + 2] >> 11) & 1) ? true : false;
+	sprite.blockNumber = plane[offset + 2] & 0x7FF;
+	sprite.xpos = plane[offset + 3];
+}
 
-    unsigned short * plane_a = (unsigned short *)(&VRam[plane_a_base]);
-    unsigned short * plane_b = (unsigned short *)(&VRam[plane_b_base]);
-	unsigned short * plane_w = (unsigned short *)(&VRam[plane_w_base]);
-	unsigned short * plane_data = (plane == 0) ? plane_a : ((plane == 1) ? plane_b : plane_w);
+static void PlaneExplorer_DrawSprite(sprite_info sprite, bool h40ModeActive, bool interlaceMode2Active)
+{
+	unsigned short spritePosScreenStartX = 0x80;
+	unsigned short spritePosScreenStartY = (interlaceMode2Active) ? 0x100 : 0x80;
+	unsigned short spritePosScreenEndX = (h40ModeActive) ? 0x1BF : 0x17F;
+	unsigned short spritePosScreenEndY = (interlaceMode2Active) ? 0x2DF : 0x2BF;
 
-    if (plane_width != old_plane_width ||
-        plane_height != old_plane_height)
-    {
-        old_plane_width = plane_width;
-        old_plane_height = plane_height;
-        for (i = 0; i < 1024; i++)
-        {
-            for (j = 0; j < 1024; j++)
-            {
-                plane_explorer_data[i * 1024 + j] = (unsigned char)(((j ^ i) >> 2) & 1) + 253;
-            }
-        }
-    }
+	// Render this sprite to the buffer
+	unsigned char spriteHeightInCells = sprite.height + 1;
+	unsigned char spriteWidthInCells = sprite.width + 1;
+	unsigned char tileHeightInPixels = ((VDP_Reg.Set4 & 0x6) == 6) ? 16 : 8;
 
-    for (j = 0; j < plane_height; j++)
-    {
-        for (i = 0; i < plane_width; i++)
-        {
-			int trans_color = show_transparence ? (unsigned char)(((j ^ i) >> 1) & 1) + 254 : -1;
-            PlaneExplorer_DrawTile(plane_data[j * plane_width + i], i, j, trans_color);
-        }
-    }
+	for (unsigned char j = 0; j < spriteHeightInCells * tileHeightInPixels; j++)
+	{
+		for (unsigned char i = 0; i < spriteWidthInCells * 8; i++)
+		{
+			// If this sprite pixel lies outside the visible buffer region, skip it.
+			if (
+				((sprite.xpos + i) < spritePosScreenStartX) || ((sprite.xpos + i) >= spritePosScreenEndX) ||
+				((sprite.ypos + j) < spritePosScreenStartY) || ((sprite.ypos + j) >= spritePosScreenEndY)
+				)
+			{
+				continue;
+			}
+
+			// Calculate the target pixel row and column number within the sprite
+			unsigned int pixelRowNo = (sprite.vflip) ? ((spriteHeightInCells * tileHeightInPixels) - 1) - j : j;
+			unsigned int pixelColumnNo = (sprite.hflip) ? ((spriteWidthInCells << 3) - 1) - i : i;
+
+			// Calculate the row and column numbers for the target block within the
+			// sprite, and the target pattern data within that block.
+			unsigned int blockRowNo = pixelRowNo / tileHeightInPixels;
+			unsigned int blockColumnNo = pixelColumnNo >> 3;
+			unsigned int blockOffset = (blockColumnNo * spriteHeightInCells) + blockRowNo;
+			unsigned int patternRowNo = pixelRowNo % tileHeightInPixels;
+			unsigned int patternColumnNo = pixelColumnNo % 8;
+
+			// Calculate the VRAM address of the target pattern row data
+			const unsigned int patternDataRowByteSize = 4;
+			const unsigned int blockPatternByteSize = patternDataRowByteSize * tileHeightInPixels;
+			unsigned int patternRowDataAddress = (((sprite.blockNumber + blockOffset) * blockPatternByteSize) + (patternRowNo * patternDataRowByteSize));
+
+			// Read the pattern data byte for the target pixel in the target block
+			const unsigned int pixelsPerPatternByte = 2;
+			unsigned int patternByteNo = patternColumnNo / pixelsPerPatternByte;
+			bool patternDataUpperHalf = (patternColumnNo % pixelsPerPatternByte) == 0;
+			UINT8 patternData = VRam[((patternRowDataAddress + patternByteNo) % 0x10000) ^ 1];
+
+			// Return the target palette row and index numbers
+			unsigned int paletteIndex = (patternData >> (patternDataUpperHalf ? 4 : 0)) & 0xF;
+
+			int x = (sprite.xpos + i) - spritePosScreenStartX;
+			int y = (sprite.ypos + j) - spritePosScreenStartY;
+			plane_explorer_data[y * 1024 + x] = paletteIndex | (sprite.paletteLine << 4);
+
+			int trans_color = show_transparence ? (unsigned char)(((y ^ x) >> 1) & 1) + 253 : -1;
+			if ((trans_color != -1) && (paletteIndex == 0))
+			{
+				plane_explorer_data[y * 1024 + x] = trans_color;
+			}
+		}
+	}
+}
+
+//----------------------------------------------------------------------------------------
+static void CalculateEffectiveCellScrollSize(unsigned int& effectiveScrollWidth, unsigned int& effectiveScrollHeight, bool& h40ModeActive, bool& interlaceMode2Active)
+{
+	unsigned int hszState = VDP_Reg.Scr_Size & 3;
+	unsigned int vszState = (VDP_Reg.Scr_Size >> 4) & 3;
+
+	unsigned int screenSizeModeH = hszState;
+	unsigned int screenSizeModeV = ((vszState & 0x1) & ((~hszState & 0x02) >> 1)) | ((vszState & 0x02) & ((~hszState & 0x01) << 1));
+	effectiveScrollWidth = (screenSizeModeH + 1) * 32;
+	effectiveScrollHeight = (screenSizeModeV + 1) * 32;
+	if (screenSizeModeH == 2)
+	{
+		effectiveScrollWidth = 32;
+		effectiveScrollHeight = 1;
+	}
+	else if (screenSizeModeV == 2)
+	{
+		effectiveScrollWidth = 32;
+		effectiveScrollHeight = 32;
+	}
+
+	h40ModeActive = (VDP_Reg.Set4 & 1) ? true: false;
+	interlaceMode2Active = ((VDP_Reg.Set4 & 6) == 6) ? true : false;
+}
+
+static void PlaneExplorer_UpdateBitmap()
+{
+	bool h40ModeActive, interlaceMode2Active;
+	unsigned int plane_width, plane_height;
+	CalculateEffectiveCellScrollSize(plane_width, plane_height, h40ModeActive, interlaceMode2Active);
+
+	unsigned int base = 0;
+	switch (plane_explorer_plane)
+	{
+	case 0: // A
+		base = (VDP_Reg.Pat_ScrA_Adr & 0x38) << 10;
+		break;
+	case 1: // B
+		base = (VDP_Reg.Pat_ScrB_Adr & 0x7) << 13;
+		break;
+	case 2: // W
+		base = (VDP_Reg.Pat_Win_Adr & (h40ModeActive ? 0x3C : 0x3E)) << 10;
+		plane_width = h40ModeActive ? 64 : 32;
+		plane_height = 32;
+		break;
+	case 3: // S
+		base = (VDP_Reg.Spr_Att_Adr & (h40ModeActive ? 0x7E : 0x7F)) << 9;
+		plane_width = 64;
+		plane_height = interlaceMode2Active ? 128 : 64;
+		break;
+	}
+
+	for (int j = 0; j < 1024; j++)
+	{
+		for (int i = 0; i < 1024; i++)
+		{
+			plane_explorer_data[j * 1024 + i] = (unsigned char)(((j ^ i) >> 2) & 1) + 253;
+		}
+	}
+
+	unsigned short * plane = (unsigned short *)(&VRam[base % 0x10000]);
+
+	switch (plane_explorer_plane)
+	{
+	case 0: // A
+	case 1: // B
+	case 2: // W
+	{
+		for (unsigned int j = 0; j < plane_height; j++)
+		{
+			for (unsigned int i = 0; i < plane_width; i++)
+			{
+				int trans_color = show_transparence ? (unsigned char)(((j ^ i) >> 1) & 1) + 254 : -1;
+				PlaneExplorer_DrawTile(plane[j * plane_width + i], i, j, trans_color);
+			}
+		}
+	} break;
+	case 3: // S (sprite rendering code from Exodus)
+	{
+		//Render each sprite to the sprite plane
+		unsigned int maxSpriteCount = (h40ModeActive) ? 80 : 64;
+
+		std::set<unsigned int> processedSprites;
+
+		unsigned char currentSpriteNo = 0;
+		do
+		{
+			sprite_info sprite;
+			PlaneExplorer_GetSpriteInfo(plane, currentSpriteNo, sprite);
+
+			PlaneExplorer_DrawSprite(sprite, h40ModeActive, interlaceMode2Active);
+
+			//Advance to the next sprite in the list
+			processedSprites.insert(currentSpriteNo);
+		}
+		while ((currentSpriteNo > 0) && (currentSpriteNo < maxSpriteCount) && (processedSprites.find(currentSpriteNo) == processedSprites.end()));
+	} break;
+	}
+
+    
 }
 
 static void PlaneExplorerPaint_KMod(HWND hwnd, LPDRAWITEMSTRUCT lpdi)
@@ -230,7 +389,7 @@ static void PlaneExplorerPaint_KMod(HWND hwnd, LPDRAWITEMSTRUCT lpdi)
     };
 
     PlaneExplorer_UpdatePalette();
-	PlaneExplorer_UpdateBitmap(plane_explorer_plane);
+	PlaneExplorer_UpdateBitmap();
 
     memcpy(bmi.palette, plane_explorer_palette, sizeof(bmi.palette));
 
@@ -253,21 +412,43 @@ static void PlaneExplorerPaint_KMod(HWND hwnd, LPDRAWITEMSTRUCT lpdi)
 	DrawFocusRect(lpdi->hDC, &r);
 }
 
-void PlaneExplorer_GetTipText(int x, int y, char * buffer)
+void PlaneExplorer_GetTipText(unsigned int x, unsigned int y, char * buffer)
 {
-    int plane_size_x = 32 + (VDP_Reg.Scr_Size & 0x3) * 32;
-    int plane_size_y = 32 + ((VDP_Reg.Scr_Size >> 4) & 0x3) * 32;
+	bool h40ModeActive, interlaceMode2Active;
+	unsigned int plane_width, plane_height;
+	CalculateEffectiveCellScrollSize(plane_width, plane_height, h40ModeActive, interlaceMode2Active);
 
-    unsigned int plane_a_base = (VDP_Reg.Pat_ScrA_Adr & 0x38) << 10;
-    unsigned int plane_b_base = (VDP_Reg.Pat_ScrB_Adr & 0x7) << 13;
-	unsigned int plane_w_base = (VDP_Reg.Pat_Win_Adr & ((VDP_Reg.Set4 & 0x81) ? 0x3C : 0x3E)) << 10;
-	unsigned int base = (plane_explorer_plane == 0) ? plane_a_base : ((plane_explorer_plane == 1) ? plane_b_base : plane_w_base);
-	char plane_char = (plane_explorer_plane == 0) ? 'A' : ((plane_explorer_plane == 1) ? 'B' : 'W');
-    unsigned int tile_addr = base + ((y >> 3) * plane_size_x + (x >> 3)) * 2;
+	unsigned int base = 0;
+	char plane_char = 'A';
+	switch (plane_explorer_plane)
+	{
+	case 0:
+		base = (VDP_Reg.Pat_ScrA_Adr & 0x38) << 10;
+		plane_char = 'A';
+		break;
+	case 1:
+		base = (VDP_Reg.Pat_ScrB_Adr & 0x7) << 13;
+		plane_char = 'B';
+		break;
+	case 2:
+		base = (VDP_Reg.Pat_Win_Adr & (h40ModeActive ? 0x3C : 0x3E)) << 10;
+		plane_char = 'W';
+		plane_width = h40ModeActive ? 64 : 32;
+		plane_height = 32;
+		break;
+	case 3:
+		base = (VDP_Reg.Spr_Att_Adr & (h40ModeActive ? 0x7E : 0x7F)) << 9;
+		plane_char = 'S';
+		plane_width = 64;
+		plane_height = interlaceMode2Active ? 128 : 64;
+		break;
+	}
+
+    unsigned int tile_addr = base + ((y >> 3) * plane_width + (x >> 3)) * 2;
     union PATTERN_NAME name;
 
-    if (x >= (plane_size_x * 8) ||
-        y >= (plane_size_y * 8))
+    if (x >= (plane_width * 8) ||
+        y >= (plane_height * 8))
     {
         buffer[0] = 0;
         return;
@@ -316,6 +497,10 @@ BOOL CALLBACK PlaneExplorerDialogProc(HWND hwnd, UINT Message, WPARAM wParam, LP
             break;
 		case IDC_PLANEEXPLORER_WINDOW:
 			plane_explorer_plane = 2;
+			InvalidateRect(hwnd, NULL, FALSE);
+			break;
+		case IDC_PLANEEXPLORER_SPRITES:
+			plane_explorer_plane = 3;
 			InvalidateRect(hwnd, NULL, FALSE);
 			break;
         case IDC_PLANEEXPLORER_TRANS:
