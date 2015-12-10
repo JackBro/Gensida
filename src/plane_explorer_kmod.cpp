@@ -243,17 +243,16 @@ static void PlaneExplorer_DrawSprite(sprite_info sprite, bool h40ModeActive, boo
 			UINT8 patternData = VRam[((patternRowDataAddress + patternByteNo) % 0x10000) ^ 1];
 
 			// Return the target palette row and index numbers
-			unsigned int paletteIndex = (patternData >> (patternDataUpperHalf ? 4 : 0)) & 0xF;
+			unsigned char paletteIndex = (patternData >> (patternDataUpperHalf ? 4 : 0)) & 0xF;
+
+			if (paletteIndex == 0)
+			{
+				continue;
+			}
 
 			int x = (sprite.xpos + i) - spritePosScreenStartX;
 			int y = (sprite.ypos + j) - spritePosScreenStartY;
 			plane_explorer_data[y * 1024 + x] = paletteIndex | (sprite.paletteLine << 4);
-
-			int trans_color = show_transparence ? (unsigned char)(((y ^ x) >> 1) & 1) + 253 : -1;
-			if ((trans_color != -1) && (paletteIndex == 0))
-			{
-				plane_explorer_data[y * 1024 + x] = trans_color;
-			}
 		}
 	}
 }
@@ -318,7 +317,7 @@ static void PlaneExplorer_UpdateBitmap()
 		}
 	}
 
-	unsigned short * plane = (unsigned short *)(&VRam[base % 0x10000]);
+	unsigned short *plane = (unsigned short *)(&VRam[base % 0x10000]);
 
 	switch (plane_explorer_plane)
 	{
@@ -340,24 +339,27 @@ static void PlaneExplorer_UpdateBitmap()
 		//Render each sprite to the sprite plane
 		unsigned int maxSpriteCount = (h40ModeActive) ? 80 : 64;
 
-		std::set<unsigned int> processedSprites;
-
+		std::set<unsigned char> processedSprites;
 		unsigned char currentSpriteNo = 0;
 		do
 		{
 			sprite_info sprite;
 			PlaneExplorer_GetSpriteInfo(plane, currentSpriteNo, sprite);
 
-			PlaneExplorer_DrawSprite(sprite, h40ModeActive, interlaceMode2Active);
-
 			//Advance to the next sprite in the list
 			processedSprites.insert(currentSpriteNo);
+			currentSpriteNo = sprite.link;
 		}
 		while ((currentSpriteNo > 0) && (currentSpriteNo < maxSpriteCount) && (processedSprites.find(currentSpriteNo) == processedSprites.end()));
+
+		for (std::set<unsigned char>::const_reverse_iterator i = processedSprites.rbegin(); i != processedSprites.rend(); i++)
+		{
+			sprite_info sprite;
+			PlaneExplorer_GetSpriteInfo(plane, *i, sprite);
+			PlaneExplorer_DrawSprite(sprite, h40ModeActive, interlaceMode2Active);
+		}
 	} break;
 	}
-
-    
 }
 
 static void PlaneExplorerPaint_KMod(HWND hwnd, LPDRAWITEMSTRUCT lpdi)
