@@ -29,9 +29,8 @@ static void PlaneExplorerInit_KMod(HWND hDlg)
     HWND hexplorer;
     RECT rc, rc2;
 
-	plane_explorer_plane = 0;
-	CheckDlgButton(hDlg, IDC_PLANEEXPLORER_TRANS, BST_UNCHECKED);
-    CheckRadioButton(hDlg, IDC_PLANEEXPLORER_PLANE_A, IDC_PLANEEXPLORER_PLANE_B, IDC_PLANEEXPLORER_PLANE_A);
+	CheckDlgButton(hDlg, IDC_PLANEEXPLORER_TRANS, show_transparence ? BST_CHECKED : BST_UNCHECKED);
+    CheckRadioButton(hDlg, IDC_PLANEEXPLORER_PLANE_A, IDC_PLANEEXPLORER_SPRITES, IDC_PLANEEXPLORER_PLANE_A + plane_explorer_plane);
     hexplorer = (HWND)GetDlgItem(hDlg, IDC_PLANEEXPLORER_MAIN);
 	GetWindowRect(hexplorer, &rc);
     GetWindowRect(hDlg, &rc2);
@@ -615,21 +614,12 @@ BOOL CALLBACK PlaneExplorerDialogProc(HWND hwnd, UINT Message, WPARAM wParam, LP
         switch (LOWORD(wParam))
         {
         case IDC_PLANEEXPLORER_PLANE_A:
-            plane_explorer_plane = 0;
-            InvalidateRect(hwnd, NULL, FALSE);
-            break;
-        case IDC_PLANEEXPLORER_PLANE_B:
-            plane_explorer_plane = 1;
-            InvalidateRect(hwnd, NULL, FALSE);
-            break;
+		case IDC_PLANEEXPLORER_PLANE_B:
 		case IDC_PLANEEXPLORER_WINDOW:
-			plane_explorer_plane = 2;
-			InvalidateRect(hwnd, NULL, FALSE);
-			break;
 		case IDC_PLANEEXPLORER_SPRITES:
-			plane_explorer_plane = 3;
-			InvalidateRect(hwnd, NULL, FALSE);
-			break;
+            plane_explorer_plane = LOWORD(wParam) - IDC_PLANEEXPLORER_PLANE_A;
+            InvalidateRect(hwnd, NULL, FALSE);
+            break;
         case IDC_PLANEEXPLORER_TRANS:
 			show_transparence = (IsDlgButtonChecked(hwnd, IDC_PLANEEXPLORER_TRANS) == BST_CHECKED);
             InvalidateRect(hwnd, NULL, FALSE);
