@@ -20,7 +20,8 @@ static unsigned char plane_explorer_data[128 * 8 * 128 * 8];
 static COLORREF plane_explorer_palette[256];
 static int plane_explorer_plane = 0;
 static bool show_transparence = false;
-static POINT pt = { 0 };
+static POINT tile_pt = { 0 };
+static RECT sprite_rect = { 0 };
 
 
 static void PlaneExplorerInit_KMod(HWND hDlg)
@@ -178,10 +179,15 @@ struct sprite_info
 	unsigned short xpos;
 };
 
+inline static unsigned short PlaneExplorer_GetSpriteOffset(unsigned char currentSpriteNo)
+{
+	return (currentSpriteNo * 8) / 2;
+}
+
 static void PlaneExplorer_GetSpriteInfo(unsigned short *plane, unsigned char currentSpriteNo, sprite_info &sprite)
 {
 	// Read the mapping data for this sprite
-	unsigned int offset = (currentSpriteNo * 8) / 2;
+	unsigned short offset = PlaneExplorer_GetSpriteOffset(currentSpriteNo);
 	sprite.ypos = plane[offset + 0];
 	sprite.width = (plane[offset + 1] >> 10) & 3;
 	sprite.height = (plane[offset + 1] >> 8) & 3;
@@ -194,7 +200,47 @@ static void PlaneExplorer_GetSpriteInfo(unsigned short *plane, unsigned char cur
 	sprite.xpos = plane[offset + 3];
 }
 
-static void PlaneExplorer_DrawSprite(sprite_info sprite, bool h40ModeActive, bool interlaceMode2Active)
+//----------------------------------------------------------------------------------------
+static void CalculateEffectiveCellScrollSize(unsigned char& effectiveScrollWidth, unsigned char& effectiveScrollHeight,
+	unsigned char &tileWidthInPixels, unsigned char &tileHeightInPixels, bool& h40ModeActive, bool& interlaceMode2Active)
+{
+	unsigned int hszState = VDP_Reg.Scr_Size & 3;
+	unsigned int vszState = (VDP_Reg.Scr_Size >> 4) & 3;
+
+	unsigned int screenSizeModeH = hszState;
+	unsigned int screenSizeModeV = ((vszState & 0x1) & ((~hszState & 0x02) >> 1)) | ((vszState & 0x02) & ((~hszState & 0x01) << 1));
+	effectiveScrollWidth = (screenSizeModeH + 1) * 32;
+	effectiveScrollHeight = (screenSizeModeV + 1) * 32;
+	if (screenSizeModeH == 2)
+	{
+		effectiveScrollWidth = 32;
+		effectiveScrollHeight = 1;
+	}
+	else if (screenSizeModeV == 2)
+	{
+		effectiveScrollWidth = 32;
+		effectiveScrollHeight = 32;
+	}
+
+	tileWidthInPixels = 8;
+	tileHeightInPixels = ((VDP_Reg.Set4 & 0x6) == 6) ? 16 : 8;
+	h40ModeActive = (VDP_Reg.Set4 & 1) ? true : false;
+	interlaceMode2Active = ((VDP_Reg.Set4 & 6) == 6) ? true : false;
+
+	switch (plane_explorer_plane)
+	{
+	case 2: // W
+		effectiveScrollWidth = h40ModeActive ? 64 : 32;
+		effectiveScrollHeight = 32;
+		break;
+	case 3: // S
+		effectiveScrollWidth = 64;
+		effectiveScrollHeight = interlaceMode2Active ? 128 : 64;
+		break;
+	}
+}
+
+static void PlaneExplorer_DrawSprite(sprite_info sprite, unsigned char tileWidthInPixels, unsigned char tileHeightInPixels, bool h40ModeActive, bool interlaceMode2Active)
 {
 	unsigned short spritePosScreenStartX = 0x80;
 	unsigned short spritePosScreenStartY = (interlaceMode2Active) ? 0x100 : 0x80;
@@ -204,11 +250,10 @@ static void PlaneExplorer_DrawSprite(sprite_info sprite, bool h40ModeActive, boo
 	// Render this sprite to the buffer
 	unsigned char spriteHeightInCells = sprite.height + 1;
 	unsigned char spriteWidthInCells = sprite.width + 1;
-	unsigned char tileHeightInPixels = ((VDP_Reg.Set4 & 0x6) == 6) ? 16 : 8;
 
 	for (unsigned char j = 0; j < spriteHeightInCells * tileHeightInPixels; j++)
 	{
-		for (unsigned char i = 0; i < spriteWidthInCells * 8; i++)
+		for (unsigned char i = 0; i < spriteWidthInCells * tileWidthInPixels; i++)
 		{
 			// If this sprite pixel lies outside the visible buffer region, skip it.
 			if (
@@ -221,15 +266,15 @@ static void PlaneExplorer_DrawSprite(sprite_info sprite, bool h40ModeActive, boo
 
 			// Calculate the target pixel row and column number within the sprite
 			unsigned int pixelRowNo = (sprite.vflip) ? ((spriteHeightInCells * tileHeightInPixels) - 1) - j : j;
-			unsigned int pixelColumnNo = (sprite.hflip) ? ((spriteWidthInCells << 3) - 1) - i : i;
+			unsigned int pixelColumnNo = (sprite.hflip) ? ((spriteWidthInCells * tileWidthInPixels) - 1) - i : i;
 
 			// Calculate the row and column numbers for the target block within the
 			// sprite, and the target pattern data within that block.
 			unsigned int blockRowNo = pixelRowNo / tileHeightInPixels;
-			unsigned int blockColumnNo = pixelColumnNo >> 3;
+			unsigned int blockColumnNo = pixelColumnNo / tileWidthInPixels;
 			unsigned int blockOffset = (blockColumnNo * spriteHeightInCells) + blockRowNo;
 			unsigned int patternRowNo = pixelRowNo % tileHeightInPixels;
-			unsigned int patternColumnNo = pixelColumnNo % 8;
+			unsigned int patternColumnNo = pixelColumnNo % tileWidthInPixels;
 
 			// Calculate the VRAM address of the target pattern row data
 			const unsigned int patternDataRowByteSize = 4;
@@ -257,36 +302,11 @@ static void PlaneExplorer_DrawSprite(sprite_info sprite, bool h40ModeActive, boo
 	}
 }
 
-//----------------------------------------------------------------------------------------
-static void CalculateEffectiveCellScrollSize(unsigned int& effectiveScrollWidth, unsigned int& effectiveScrollHeight, bool& h40ModeActive, bool& interlaceMode2Active)
-{
-	unsigned int hszState = VDP_Reg.Scr_Size & 3;
-	unsigned int vszState = (VDP_Reg.Scr_Size >> 4) & 3;
-
-	unsigned int screenSizeModeH = hszState;
-	unsigned int screenSizeModeV = ((vszState & 0x1) & ((~hszState & 0x02) >> 1)) | ((vszState & 0x02) & ((~hszState & 0x01) << 1));
-	effectiveScrollWidth = (screenSizeModeH + 1) * 32;
-	effectiveScrollHeight = (screenSizeModeV + 1) * 32;
-	if (screenSizeModeH == 2)
-	{
-		effectiveScrollWidth = 32;
-		effectiveScrollHeight = 1;
-	}
-	else if (screenSizeModeV == 2)
-	{
-		effectiveScrollWidth = 32;
-		effectiveScrollHeight = 32;
-	}
-
-	h40ModeActive = (VDP_Reg.Set4 & 1) ? true: false;
-	interlaceMode2Active = ((VDP_Reg.Set4 & 6) == 6) ? true : false;
-}
-
 static void PlaneExplorer_UpdateBitmap()
 {
 	bool h40ModeActive, interlaceMode2Active;
-	unsigned int plane_width, plane_height;
-	CalculateEffectiveCellScrollSize(plane_width, plane_height, h40ModeActive, interlaceMode2Active);
+	unsigned char plane_width, plane_height, tile_width, tile_height;
+	CalculateEffectiveCellScrollSize(plane_width, plane_height, tile_width, tile_height, h40ModeActive, interlaceMode2Active);
 
 	unsigned int base = 0;
 	switch (plane_explorer_plane)
@@ -299,13 +319,9 @@ static void PlaneExplorer_UpdateBitmap()
 		break;
 	case 2: // W
 		base = (VDP_Reg.Pat_Win_Adr & (h40ModeActive ? 0x3C : 0x3E)) << 10;
-		plane_width = h40ModeActive ? 64 : 32;
-		plane_height = 32;
 		break;
 	case 3: // S
 		base = (VDP_Reg.Spr_Att_Adr & (h40ModeActive ? 0x7E : 0x7F)) << 9;
-		plane_width = 64;
-		plane_height = interlaceMode2Active ? 128 : 64;
 		break;
 	}
 
@@ -337,7 +353,7 @@ static void PlaneExplorer_UpdateBitmap()
 	case 3: // S (sprite rendering code from Exodus)
 	{
 		//Render each sprite to the sprite plane
-		unsigned int maxSpriteCount = (h40ModeActive) ? 80 : 64;
+		unsigned char maxSpriteCount = (h40ModeActive) ? 80 : 64;
 
 		std::set<unsigned char> processedSprites;
 		unsigned char currentSpriteNo = 0;
@@ -356,69 +372,83 @@ static void PlaneExplorer_UpdateBitmap()
 		{
 			sprite_info sprite;
 			PlaneExplorer_GetSpriteInfo(plane, *i, sprite);
-			PlaneExplorer_DrawSprite(sprite, h40ModeActive, interlaceMode2Active);
+			PlaneExplorer_DrawSprite(sprite, tile_width, tile_height, h40ModeActive, interlaceMode2Active);
 		}
 	} break;
 	}
 }
 
+
 static void PlaneExplorerPaint_KMod(HWND hwnd, LPDRAWITEMSTRUCT lpdi)
 {
-    struct BMI_LOCAL
-    {
-        BITMAPINFOHEADER hdr;
-        COLORREF         palette[256];
-    };
+	struct BMI_LOCAL
+	{
+		BITMAPINFOHEADER hdr;
+		COLORREF         palette[256];
+	};
 
-    struct BMI_LOCAL bmi =
-    {
-        {
-            sizeof(BITMAPINFOHEADER),
-            128 * 8,
-            -128 * 8,
-            1,
-            8,
-            BI_RGB,
-            0,
-            250,
-            250,
-            256,
-            256,
-        },
-        {
-            0x00FF0055,
-        }
-    };
+	struct BMI_LOCAL bmi =
+	{
+		{
+			sizeof(BITMAPINFOHEADER),
+			128 * 8,
+		-128 * 8,
+		1,
+		8,
+		BI_RGB,
+		0,
+		250,
+		250,
+		256,
+		256,
+		},
+		{
+			0x00FF0055,
+		}
+	};
 
-    PlaneExplorer_UpdatePalette();
+	PlaneExplorer_UpdatePalette();
 	PlaneExplorer_UpdateBitmap();
 
-    memcpy(bmi.palette, plane_explorer_palette, sizeof(bmi.palette));
+	memcpy(bmi.palette, plane_explorer_palette, sizeof(bmi.palette));
 
-    SetDIBitsToDevice(
-        lpdi->hDC,
-        lpdi->rcItem.left, lpdi->rcItem.top,
-        lpdi->rcItem.right - lpdi->rcItem.left,
-        lpdi->rcItem.bottom - lpdi->rcItem.top,
-        lpdi->rcItem.left, lpdi->rcItem.top,
-        lpdi->rcItem.top, lpdi->rcItem.bottom - lpdi->rcItem.top,
-        plane_explorer_data,
-        (const BITMAPINFO *)&bmi,
-        DIB_RGB_COLORS);
+	SetDIBitsToDevice(
+		lpdi->hDC,
+		lpdi->rcItem.left, lpdi->rcItem.top,
+		lpdi->rcItem.right - lpdi->rcItem.left,
+		lpdi->rcItem.bottom - lpdi->rcItem.top,
+		lpdi->rcItem.left, lpdi->rcItem.top,
+		lpdi->rcItem.top, lpdi->rcItem.bottom - lpdi->rcItem.top,
+		plane_explorer_data,
+		(const BITMAPINFO *)&bmi,
+		DIB_RGB_COLORS);
+
+	bool h40ModeActive, interlaceMode2Active;
+	unsigned char plane_width, plane_height, tile_width, tile_height;
+	CalculateEffectiveCellScrollSize(plane_width, plane_height, tile_width, tile_height, h40ModeActive, interlaceMode2Active);
 
 	RECT r;
-	r.left = (pt.x & ~7);
-	r.top = (pt.y & ~7);
-	r.right = r.left + 8;
-	r.bottom = r.top + 8;
+
+	if (plane_explorer_plane != 3)
+	{
+		r.left = (tile_pt.x & ~(tile_width - 1));
+		r.top = (tile_pt.y & ~(tile_height - 1));
+		r.right = r.left + tile_width;
+		r.bottom = r.top + tile_height;
+	}
+	else
+	{
+		r = sprite_rect;
+	}
+
 	DrawFocusRect(lpdi->hDC, &r);
 }
 
-void PlaneExplorer_GetTipText(unsigned int x, unsigned int y, char * buffer)
+void PlaneExplorer_GetTipText(unsigned short x, unsigned short y, char * buffer)
 {
 	bool h40ModeActive, interlaceMode2Active;
-	unsigned int plane_width, plane_height;
-	CalculateEffectiveCellScrollSize(plane_width, plane_height, h40ModeActive, interlaceMode2Active);
+	unsigned char plane_width, plane_height, tile_width, tile_height;
+	CalculateEffectiveCellScrollSize(plane_width, plane_height, tile_width, tile_height, h40ModeActive, interlaceMode2Active);
 
 	unsigned int base = 0;
 	char plane_char = 'A';
@@ -435,42 +465,137 @@ void PlaneExplorer_GetTipText(unsigned int x, unsigned int y, char * buffer)
 	case 2:
 		base = (VDP_Reg.Pat_Win_Adr & (h40ModeActive ? 0x3C : 0x3E)) << 10;
 		plane_char = 'W';
-		plane_width = h40ModeActive ? 64 : 32;
-		plane_height = 32;
 		break;
 	case 3:
 		base = (VDP_Reg.Spr_Att_Adr & (h40ModeActive ? 0x7E : 0x7F)) << 9;
 		plane_char = 'S';
-		plane_width = 64;
-		plane_height = interlaceMode2Active ? 128 : 64;
 		break;
 	}
 
-    unsigned int tile_addr = base + ((y >> 3) * plane_width + (x >> 3)) * 2;
-    union PATTERN_NAME name;
-
-    if (x >= (plane_width * 8) ||
-        y >= (plane_height * 8))
+    if (x >= (plane_width * tile_width) ||
+        y >= (plane_height * tile_height))
     {
         buffer[0] = 0;
         return;
     }
 
-    name.word = *(unsigned short *)(&VRam[tile_addr]);
+	switch (plane_explorer_plane)
+	{
+	case 0:
+	case 1:
+	case 2:
+	{
+		union PATTERN_NAME name;
+		unsigned int tile_addr;
 
-	sprintf(buffer, "POS: %dx%d; PLANE: %c (0x%04X);\nADDRESS: 0x%04X; VALUE: 0x%04X;\nINDEX: 0x%04X(%d); PAL: %d;\nHF: %s; VF: %s; PRIORITY: %d",
-        x >> 3,
-        y >> 3,
-        plane_char,
-        base,
-        tile_addr,
-        name.word,
-        name.tile_index, name.tile_index,
-        name.pal_index,
-        name.h_flip ? "YES" : "NO",
-        name.v_flip ? "YES" : "NO",
-        name.priority
-        );
+		tile_addr = base + ((y / tile_height) * plane_width + (x / tile_width)) * 2;
+		name.word = *(unsigned short *)(&VRam[tile_addr]);
+
+		sprintf(buffer,
+			"X/Y: %dx%d;\n\n"
+			"PLANE: %c (0x%04X);\n\n"
+			"ADDRESS: 0x%04X;\n\n"
+			"VALUE: 0x%04X;\n\n"
+			"INDEX: 0x%04X(%d);\n\n"
+			"PALETTE: %d;\n\n"
+			"HFLIP: %s; VFLIP: %s;\n\n"
+			"PRIORITY: %s",
+
+			x & ~(tile_width - 1), y & ~(tile_height - 1),
+			plane_char,	base,
+			tile_addr,
+			name.word,
+			name.tile_index, name.tile_index,
+			name.pal_index,
+			name.h_flip ? "YES" : "NO",
+			name.v_flip ? "YES" : "NO",
+			name.priority ? "YES" : "NO"
+			);
+	} break;
+	case 3:
+	{
+		unsigned short *plane = (unsigned short *)(&VRam[base % 0x10000]);
+		
+		//Render each sprite to the sprite plane
+		unsigned char maxSpriteCount = (h40ModeActive) ? 80 : 64;
+		unsigned short spritePosScreenStartX = 0x80;
+		unsigned short spritePosScreenStartY = (interlaceMode2Active) ? 0x100 : 0x80;
+		unsigned short spritePosScreenEndX = (h40ModeActive) ? 0x1BF : 0x17F;
+		unsigned short spritePosScreenEndY = (interlaceMode2Active) ? 0x2DF : 0x2BF;
+
+		std::set<unsigned char> processedSprites;
+		unsigned char currentSpriteNo = 0;
+		do
+		{
+			sprite_info sprite;
+			PlaneExplorer_GetSpriteInfo(plane, currentSpriteNo, sprite);
+
+			unsigned short sprite_offset = PlaneExplorer_GetSpriteOffset(currentSpriteNo);
+			unsigned char spriteHeightInCells = sprite.height + 1;
+			unsigned char spriteWidthInCells = sprite.width + 1;
+
+			int min_x = sprite.xpos - spritePosScreenStartX;
+			int min_y = sprite.ypos - spritePosScreenStartY;
+			int max_x = (sprite.xpos + spriteWidthInCells * tile_width) - spritePosScreenStartX;
+			int max_y = (sprite.ypos + spriteHeightInCells * tile_height) - spritePosScreenStartY;
+
+			if (
+				(min_x < 0) && (max_x >= plane_width * tile_width) &&
+				(min_y < 0) && (max_y >= plane_height * tile_height)
+				)
+			{
+				processedSprites.insert(currentSpriteNo);
+				currentSpriteNo = sprite.link;
+				continue;
+			}
+
+			if (
+				(x >= min_x) && (x < max_x) &&
+				(y >= min_y) && (y < max_y)
+				)
+			{
+				sprintf(buffer,
+					"INDEX: %d;\n\n"
+					"SCREEN X/Y: %dx%d;\n\n"
+					"PLANE: %c (0x%04X);\n\n"
+					"ADDRESS: 0x%04X;\n\n"
+
+					"SPRITE X/Y: %dx%d;\n\n"
+					"SIZE W/H: %dx%d;\n\n"
+					"TILE ID: 0x%04X(%d)\n\n"
+					"LINK: %d;\n\n"
+					"PALETTE: %d;\n\n"
+					"HFLIP: %s; VFLIP: %s;\n\n"
+					"PRIORITY: %s",
+
+					currentSpriteNo,
+					x, y,
+					plane_char,	base,
+					base + sprite_offset,
+
+					sprite.xpos, sprite.ypos,
+					(sprite.width + 1) * tile_width, (sprite.height + 1) * tile_height,
+					sprite.blockNumber, sprite.blockNumber,
+					sprite.link,
+					sprite.paletteLine,
+					sprite.hflip ? "YES" : "NO",
+					sprite.vflip ? "YES" : "NO",
+					sprite.priority ? "YES" : "NO"
+					);
+
+				sprite_rect.left = (sprite.xpos - spritePosScreenStartX);
+				sprite_rect.top = (sprite.ypos - spritePosScreenStartY);
+				sprite_rect.right = sprite_rect.left + (sprite.width + 1) * tile_width;
+				sprite_rect.bottom = sprite_rect.top + (sprite.height + 1) * tile_height;
+				break;
+			}
+
+			//Advance to the next sprite in the list
+			processedSprites.insert(currentSpriteNo);
+			currentSpriteNo = sprite.link;
+		} while ((currentSpriteNo > 0) && (currentSpriteNo < maxSpriteCount) && (processedSprites.find(currentSpriteNo) == processedSprites.end()));
+	} break;
+	}
 }
 
 BOOL CALLBACK PlaneExplorerDialogProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
@@ -483,8 +608,8 @@ BOOL CALLBACK PlaneExplorerDialogProc(HWND hwnd, UINT Message, WPARAM wParam, LP
         break;
 
     case WM_DRAWITEM:
-        PlaneExplorerPaint_KMod(hwnd, (LPDRAWITEMSTRUCT)lParam);
-        break;
+		PlaneExplorerPaint_KMod(hwnd, (LPDRAWITEMSTRUCT)lParam);
+		break;
 
     case WM_COMMAND:
         switch (LOWORD(wParam))
@@ -538,7 +663,7 @@ BOOL CALLBACK PlaneExplorerDialogProc(HWND hwnd, UINT Message, WPARAM wParam, LP
         HWND hexplorer = GetDlgItem(hwnd, IDC_PLANEEXPLORER_MAIN);
         int x = (short)(lParam);
         int y = (short)(lParam >> 16);
-        char buffer[180] = "";
+        char buffer[256] = "";
         RECT rc1;
         POINT _pt;
         TRACKMOUSEEVENT tme = { sizeof(tme) };
@@ -552,17 +677,29 @@ BOOL CALLBACK PlaneExplorerDialogProc(HWND hwnd, UINT Message, WPARAM wParam, LP
         GetClientRect(hexplorer, &rc1);
         if (PtInRect(&rc1, _pt))
         {
-            PlaneExplorer_GetTipText(_pt.x, _pt.y, &buffer[0]);
-			pt = _pt;
+            PlaneExplorer_GetTipText((unsigned short)(_pt.x), (unsigned short)(_pt.y), &buffer[0]);
+			tile_pt = _pt;
+
+			bool h40ModeActive, interlaceMode2Active;
+			unsigned char plane_width, plane_height, tile_width, tile_height;
+			CalculateEffectiveCellScrollSize(plane_width, plane_height, tile_width, tile_height, h40ModeActive, interlaceMode2Active);
 
 			RECT r;
-			r.left = (_pt.x & ~7);
-			r.top = (_pt.y & ~7);
-			r.right = r.left + 8;
-			r.bottom = r.top + 8;
-
 			PAINTSTRUCT ps;
 			HDC dc = BeginPaint(hexplorer, &ps);
+
+			if (plane_explorer_plane != 3)
+			{
+				r.left = (_pt.x & ~(tile_width - 1));
+				r.top = (_pt.y & ~(tile_height - 1));
+				r.right = r.left + tile_width;
+				r.bottom = r.top + tile_height;
+			}
+			else
+			{
+				r = sprite_rect;
+			}
+
 			DrawFocusRect(dc, &r);
 			EndPaint(hexplorer, &ps);
 			InvalidateRect(hwnd, NULL, FALSE);

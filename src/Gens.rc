@@ -7,8 +7,7 @@
 //
 // Generated from the TEXTINCLUDE 2 resource.
 //
-#include "afxres.h"
-
+#include "afxres.h"
 /////////////////////////////////////////////////////////////////////////////
 #undef APSTUDIO_READONLY_SYMBOLS
 
@@ -596,14 +595,15 @@ STYLE DS_SETFONT | DS_FIXEDSYS | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
 CAPTION "Plane Explorer"
 FONT 8, "MS Shell Dlg", 400, 0, 0xCC
 BEGIN
-    LTEXT           "",IDC_PLANEEXPLORER_TILEINFO,9,10,137,31
-    CONTROL         "",IDC_PLANEEXPLORER_MAIN,"Static",SS_OWNERDRAW,166,10,256,256
-    CONTROL         "Transparency",IDC_PLANEEXPLORER_TRANS,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,9,84,60,10
-    CONTROL         "Plane A",IDC_PLANEEXPLORER_PLANE_A,"Button",BS_AUTORADIOBUTTON | BS_VCENTER | WS_GROUP,9,49,40,10
-    CONTROL         "Plane B",IDC_PLANEEXPLORER_PLANE_B,"Button",BS_AUTORADIOBUTTON | BS_VCENTER,59,49,40,10
-    CONTROL         "Window",IDC_PLANEEXPLORER_WINDOW,"Button",BS_AUTORADIOBUTTON | BS_VCENTER,9,67,40,10
-    CONTROL         "Sprites",IDC_PLANEEXPLORER_SPRITES,"Button",BS_AUTORADIOBUTTON | BS_VCENTER,59,67,38,10
+    LTEXT           "",IDC_PLANEEXPLORER_TILEINFO,9,10,86,170
+    CONTROL         "",IDC_PLANEEXPLORER_MAIN,"Static",SS_OWNERDRAW,109,10,256,256
+    CONTROL         "Transparency",IDC_PLANEEXPLORER_TRANS,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,9,229,60,10
+    CONTROL         "Plane A",IDC_PLANEEXPLORER_PLANE_A,"Button",BS_AUTORADIOBUTTON | BS_VCENTER | WS_GROUP,9,194,40,10
+    CONTROL         "Plane B",IDC_PLANEEXPLORER_PLANE_B,"Button",BS_AUTORADIOBUTTON | BS_VCENTER,59,194,40,10
+    CONTROL         "Window",IDC_PLANEEXPLORER_WINDOW,"Button",BS_AUTORADIOBUTTON | BS_VCENTER,9,212,40,10
+    CONTROL         "Sprites",IDC_PLANEEXPLORER_SPRITES,"Button",BS_AUTORADIOBUTTON | BS_VCENTER,59,212,38,10
 END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -802,8 +802,7 @@ END
 //
 // Generated from the TEXTINCLUDE 3 resource.
 //
-
-
+
 /////////////////////////////////////////////////////////////////////////////
 #endif    // not APSTUDIO_INVOKED
 
