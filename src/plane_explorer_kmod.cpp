@@ -180,13 +180,13 @@ struct sprite_info
 
 inline static unsigned short PlaneExplorer_GetSpriteOffset(unsigned char currentSpriteNo)
 {
-	return (currentSpriteNo * 8) / 2;
+	return (currentSpriteNo * 8);
 }
 
 static void PlaneExplorer_GetSpriteInfo(unsigned short *plane, unsigned char currentSpriteNo, sprite_info &sprite)
 {
 	// Read the mapping data for this sprite
-	unsigned short offset = PlaneExplorer_GetSpriteOffset(currentSpriteNo);
+	unsigned short offset = PlaneExplorer_GetSpriteOffset(currentSpriteNo) / 2;
 	sprite.ypos = plane[offset + 0];
 	sprite.width = (plane[offset + 1] >> 10) & 3;
 	sprite.height = (plane[offset + 1] >> 8) & 3;
