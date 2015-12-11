@@ -22,7 +22,6 @@
     <ProjectGuid>{BCD798AC-DD36-450E-BFE9-269C182290CC}</ProjectGuid>
     <RootNamespace>gensida</RootNamespace>
     <ProjectName>gensida</ProjectName>
-    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)'=='Debug64'" Label="Configuration">
@@ -70,7 +69,7 @@
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
-      <AdditionalIncludeDirectories>$(IDA_SDK)\include;7z\CPP;dependencies;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(IDA_SDK)\include;dependencies;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>__NT__;__IDP__;_WINDOWS;USE_STANDARD_FILE_FUNCTIONS;USE_DANGEROUS_FUNCTIONS;_CRT_SECURE_NO_DEPRECATE;WIN32;_WIN32;EXTRACT_ONLY;_NO_CRYPTO;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)'=='Debug64'">_DEBUG;__EA64__;PTR64;__X64__;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)'=='Debug'">_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -472,10 +471,6 @@
     <ResourceCompile Include="src\Gens.rc" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="7z\7zip.vcxproj">
-      <Project>{5646c572-a578-49f8-9da9-3e00a8cbfe3f}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
     <ProjectReference Include="Starscream\Main68k\MainStar.vcxproj">
       <Project>{fe42a093-548b-4b78-916d-820b54827bac}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
