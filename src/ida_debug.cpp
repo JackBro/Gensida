@@ -287,8 +287,6 @@ static void finish_execution()
 		qthread_kill(gens_thread);
 		gens_thread = NULL;
 	}
-
-	apply_codemap();
 }
 
 // Initialize debugger
@@ -298,6 +296,7 @@ static bool idaapi init_debugger(const char *hostname,
 	int port_num,
 	const char *password)
 {
+	prepare_codemap();
 	set_processor_type(ph.psnames[2], SETPROC_COMPAT); // "68020"
 	return true;
 }
@@ -308,6 +307,7 @@ static bool idaapi init_debugger(const char *hostname,
 static bool idaapi term_debugger(void)
 {
 	finish_execution();
+	apply_codemap();
 	set_processor_type(ph.psnames[0], SETPROC_COMPAT); // "68020"
 	return true;
 }
@@ -386,7 +386,6 @@ static int idaapi start_process(const char *path,
 	allow0_breaks = allow1_breaks = 0;
 	g_events.clear();
 
-	prepare_codemap();
 	gens_thread = qthread_create(gens_process, NULL);
 
 	return 1;
@@ -445,8 +444,12 @@ static gdecode_t idaapi get_debug_event(debug_event_t *event, int timeout_ms)
 		// are there any pending events?
 		if (g_events.retrieve(event))
 		{
-			if (event->eid != PROCESS_START && event->eid != STEP && event->eid != PROCESS_SUSPEND && event->eid != PROCESS_EXIT)
-				pause_execution();
+			switch (event->eid)
+			{
+			case PROCESS_SUSPEND:
+				apply_codemap();
+				break;
+			}
 			return g_events.empty() ? GDE_ONE_EVENT : GDE_MANY_EVENTS;
 		}
 		if (g_events.empty())
@@ -462,7 +465,6 @@ static int idaapi continue_after_event(const debug_event_t *event)
 {
 	switch (event->eid)
 	{
-	case BREAKPOINT:
 	case STEP:
 	case PROCESS_SUSPEND:
 		continue_execution();
@@ -470,6 +472,7 @@ static int idaapi continue_after_event(const debug_event_t *event)
 	case PROCESS_EXIT:
 		continue_execution();
 		finish_execution();
+		apply_codemap();
 		break;
 	}
 
