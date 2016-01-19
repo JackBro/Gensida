@@ -2148,7 +2148,7 @@ registerPointerMap m68kPointerMap[] = {
     RPM_ENTRY("d5", main68k_context.dreg[5])
     RPM_ENTRY("d6", main68k_context.dreg[6])
     RPM_ENTRY("d7", main68k_context.dreg[7])
-    RPM_ENTRY("pc", main68k_context.pc)
+    RPM_ENTRY("pc", M68kDW.last_pc)
     RPM_ENTRY("sr", main68k_context.sr)
     {}
 };
@@ -2178,7 +2178,7 @@ struct cpuToRegisterMap
 {
     const char* cpuName;
     registerPointerMap* rpmap;
-}
+};
 cpuToRegisterMaps[] =
 {
     { "m68k.", m68kPointerMap },
