@@ -2178,7 +2178,7 @@ struct cpuToRegisterMap
 {
     const char* cpuName;
     registerPointerMap* rpmap;
-};
+}
 cpuToRegisterMaps[] =
 {
     { "m68k.", m68kPointerMap },
