@@ -26,6 +26,7 @@
 #include "luascript.h"
 #include <list>
 #include <vector>
+#include "ida_debug.h"
 
 HDC VDPRamMemDC;
 HBITMAP VDPRamMemBMP;
@@ -35,6 +36,20 @@ COLORREF *MemBMPBits;
 int VDPRamPal, VDPRamTile;
 bool ShowVRAM;
 #define VDP_RAM_VCOUNT 20
+
+struct TabInfo
+{
+	TabInfo(const std::string& atabName, int adialogID, DLGPROC adialogProc)
+		:tabName(atabName), dialogID(adialogID), dialogProc(adialogProc), hwndDialog(NULL)
+	{}
+
+	std::string tabName;
+	int dialogID;
+	DLGPROC dialogProc;
+	HWND hwndDialog;
+};
+HWND activeTabWindow;
+std::vector<TabInfo> tabItems;
 
 void Update_VDP_RAM()
 {
@@ -100,11 +115,11 @@ void Update_VDP_RAM()
             "--------\n"
             "MODE: %s\n"
             "SCREEN SIZE: %dx%d (%dx%d)\n"
-            , tableA_begin, tableA_end - 1
-            , tableB_begin, tableB_end - 1
-            , tableW_begin, tableW_end - 1
-            , tableS_begin, tableS_end - 1
-            , scroll_begin, scroll_end - 1
+            , tableA_begin, (tableA_end - 1) & 0xFFFF
+            , tableB_begin, (tableB_end - 1) & 0xFFFF
+            , tableW_begin, (tableW_end - 1) & 0xFFFF
+            , tableS_begin, (tableS_end - 1) & 0xFFFF
+            , scroll_begin, (scroll_end - 1) & 0xFFFF
             , (screenMode == 2) ? "Interlaced" : (screenMode == 6) ? "Double interlaced" : "Normal"
             , screenW, screenH, screenW * 8, screenH * 8);
         SetWindowText(GetDlgItem(VDPRamHWnd, IDC_VDP_ADDRESSES), buff);
@@ -131,6 +146,257 @@ BOOL SetClipboardText(LPCTSTR pszText)
 
 extern int Show_Genesis_Screen(HWND hWnd);
 
+//----------------------------------------------------------------------------------------
+//Window procedure helper functions
+//----------------------------------------------------------------------------------------
+void WndProcDialogImplementSaveFieldWhenLostFocus(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
+{
+	switch (msg)
+	{
+		//Make sure no textbox is selected on startup, and remove focus from textboxes when
+		//the user clicks an unused area of the window.
+	case WM_LBUTTONDOWN:
+	case WM_SHOWWINDOW:
+		SendMessage(hwnd, WM_COMMAND, MAKEWPARAM(0, EN_SETFOCUS), NULL);
+		SetFocus(NULL);
+		break;
+	}
+}
+
+//----------------------------------------------------------------------------------------
+//Mode registers dialog event handlers
+//----------------------------------------------------------------------------------------
+INT_PTR msgModeRegistersWM_INITDIALOG(HWND hwnd, WPARAM wparam, LPARAM lparam)
+{
+	// Create a timer to refresh the register contents
+	SetTimer(hwnd, 1, 50, NULL);
+
+	return TRUE;
+}
+
+//----------------------------------------------------------------------------------------
+INT_PTR msgModeRegistersWM_DESTROY(HWND hwnd, WPARAM wparam, LPARAM lparam)
+{
+	KillTimer(hwnd, 1);
+
+	return FALSE;
+}
+
+//----------------------------------------------------------------------------------------
+INT_PTR msgModeRegistersWM_TIMER(HWND hwnd, WPARAM wparam, LPARAM lparam)
+{
+	//Mode registers
+	CheckDlgButton(hwnd, IDC_VDP_REGISTERS_VSI, (VDP_Reg.Set1 & mask(7)) ? BST_CHECKED : BST_UNCHECKED);
+	CheckDlgButton(hwnd, IDC_VDP_REGISTERS_HSI, (VDP_Reg.Set1 & mask(6)) ? BST_CHECKED : BST_UNCHECKED);
+	CheckDlgButton(hwnd, IDC_VDP_REGISTERS_LCB, (VDP_Reg.Set1 & mask(5)) ? BST_CHECKED : BST_UNCHECKED);
+	CheckDlgButton(hwnd, IDC_VDP_REGISTERS_IE1, (VDP_Reg.Set1 & mask(4)) ? BST_CHECKED : BST_UNCHECKED);
+	CheckDlgButton(hwnd, IDC_VDP_REGISTERS_SS, (VDP_Reg.Set1 & mask(3)) ? BST_CHECKED : BST_UNCHECKED);
+	CheckDlgButton(hwnd, IDC_VDP_REGISTERS_PS, (VDP_Reg.Set1 & mask(2)) ? BST_CHECKED : BST_UNCHECKED);
+	CheckDlgButton(hwnd, IDC_VDP_REGISTERS_M2, (VDP_Reg.Set1 & mask(1)) ? BST_CHECKED : BST_UNCHECKED);
+	CheckDlgButton(hwnd, IDC_VDP_REGISTERS_ES, (VDP_Reg.Set1 & mask(0)) ? BST_CHECKED : BST_UNCHECKED);
+	CheckDlgButton(hwnd, IDC_VDP_REGISTERS_EVRAM, (VDP_Reg.Set2 & mask(7)) ? BST_CHECKED : BST_UNCHECKED);
+	CheckDlgButton(hwnd, IDC_VDP_REGISTERS_DISP, (VDP_Reg.Set2 & mask(6)) ? BST_CHECKED : BST_UNCHECKED);
+	CheckDlgButton(hwnd, IDC_VDP_REGISTERS_IE0, (VDP_Reg.Set2 & mask(5)) ? BST_CHECKED : BST_UNCHECKED);
+	CheckDlgButton(hwnd, IDC_VDP_REGISTERS_M1, (VDP_Reg.Set2 & mask(4)) ? BST_CHECKED : BST_UNCHECKED);
+	CheckDlgButton(hwnd, IDC_VDP_REGISTERS_M3, (VDP_Reg.Set2 & mask(3)) ? BST_CHECKED : BST_UNCHECKED);
+	CheckDlgButton(hwnd, IDC_VDP_REGISTERS_M5, (VDP_Reg.Set2 & mask(2)) ? BST_CHECKED : BST_UNCHECKED);
+	CheckDlgButton(hwnd, IDC_VDP_REGISTERS_SZ, (VDP_Reg.Set2 & mask(1)) ? BST_CHECKED : BST_UNCHECKED);
+	CheckDlgButton(hwnd, IDC_VDP_REGISTERS_MAG, (VDP_Reg.Set2 & mask(0)) ? BST_CHECKED : BST_UNCHECKED);
+	CheckDlgButton(hwnd, IDC_VDP_REGISTERS_0B7, (VDP_Reg.Set3 & mask(7)) ? BST_CHECKED : BST_UNCHECKED);
+	CheckDlgButton(hwnd, IDC_VDP_REGISTERS_0B6, (VDP_Reg.Set3 & mask(6)) ? BST_CHECKED : BST_UNCHECKED);
+	CheckDlgButton(hwnd, IDC_VDP_REGISTERS_0B5, (VDP_Reg.Set3 & mask(5)) ? BST_CHECKED : BST_UNCHECKED);
+	CheckDlgButton(hwnd, IDC_VDP_REGISTERS_0B4, (VDP_Reg.Set3 & mask(4)) ? BST_CHECKED : BST_UNCHECKED);
+	CheckDlgButton(hwnd, IDC_VDP_REGISTERS_IE2, (VDP_Reg.Set3 & mask(3)) ? BST_CHECKED : BST_UNCHECKED);
+	CheckDlgButton(hwnd, IDC_VDP_REGISTERS_VSCR, (VDP_Reg.Set3 & mask(2)) ? BST_CHECKED : BST_UNCHECKED);
+	CheckDlgButton(hwnd, IDC_VDP_REGISTERS_HSCR, (VDP_Reg.Set3 & mask(1)) ? BST_CHECKED : BST_UNCHECKED);
+	CheckDlgButton(hwnd, IDC_VDP_REGISTERS_LSCR, (VDP_Reg.Set3 & mask(0)) ? BST_CHECKED : BST_UNCHECKED);
+	CheckDlgButton(hwnd, IDC_VDP_REGISTERS_RS0, (VDP_Reg.Set4 & mask(7)) ? BST_CHECKED : BST_UNCHECKED);
+	CheckDlgButton(hwnd, IDC_VDP_REGISTERS_U1, (VDP_Reg.Set4 & mask(6)) ? BST_CHECKED : BST_UNCHECKED);
+	CheckDlgButton(hwnd, IDC_VDP_REGISTERS_U2, (VDP_Reg.Set4 & mask(5)) ? BST_CHECKED : BST_UNCHECKED);
+	CheckDlgButton(hwnd, IDC_VDP_REGISTERS_U3, (VDP_Reg.Set4 & mask(4)) ? BST_CHECKED : BST_UNCHECKED);
+	CheckDlgButton(hwnd, IDC_VDP_REGISTERS_STE, (VDP_Reg.Set4 & mask(3)) ? BST_CHECKED : BST_UNCHECKED);
+	CheckDlgButton(hwnd, IDC_VDP_REGISTERS_LSM1, (VDP_Reg.Set4 & mask(2)) ? BST_CHECKED : BST_UNCHECKED);
+	CheckDlgButton(hwnd, IDC_VDP_REGISTERS_LSM0, (VDP_Reg.Set4 & mask(1)) ? BST_CHECKED : BST_UNCHECKED);
+	CheckDlgButton(hwnd, IDC_VDP_REGISTERS_RS1, (VDP_Reg.Set4 & mask(0)) ? BST_CHECKED : BST_UNCHECKED);
+
+	return TRUE;
+}
+
+//----------------------------------------------------------------------------------------
+INT_PTR msgModeRegistersWM_COMMAND(HWND hwnd, WPARAM wparam, LPARAM lparam)
+{
+	if (HIWORD(wparam) == BN_CLICKED)
+	{
+		unsigned int controlID = LOWORD(wparam);
+		int chk = (IsDlgButtonChecked(hwnd, controlID) == BST_CHECKED) ? 1 : 0;
+		switch (controlID)
+		{
+		case IDC_VDP_REGISTERS_VSI:
+			VDP_Reg.Set1 |= (chk << 7);
+			break;
+		case IDC_VDP_REGISTERS_HSI:
+			VDP_Reg.Set1 |= (chk << 6);
+			break;
+		case IDC_VDP_REGISTERS_LCB:
+			VDP_Reg.Set1 |= (chk << 5);
+			break;
+		case IDC_VDP_REGISTERS_IE1:
+			VDP_Reg.Set1 |= (chk << 4);
+			break;
+		case IDC_VDP_REGISTERS_SS:
+			VDP_Reg.Set1 |= (chk << 3);
+			break;
+		case IDC_VDP_REGISTERS_PS:
+			VDP_Reg.Set1 |= (chk << 2);
+			break;
+		case IDC_VDP_REGISTERS_M2:
+			VDP_Reg.Set1 |= (chk << 1);
+			break;
+		case IDC_VDP_REGISTERS_ES:
+			VDP_Reg.Set1 |= (chk << 0);
+			break;
+		case IDC_VDP_REGISTERS_EVRAM:
+			VDP_Reg.Set2 |= (chk << 7);
+			break;
+		case IDC_VDP_REGISTERS_DISP:
+			VDP_Reg.Set2 |= (chk << 6);
+			break;
+		case IDC_VDP_REGISTERS_IE0:
+			VDP_Reg.Set2 |= (chk << 5);
+			break;
+		case IDC_VDP_REGISTERS_M1:
+			VDP_Reg.Set2 |= (chk << 4);
+			break;
+		case IDC_VDP_REGISTERS_M3:
+			VDP_Reg.Set2 |= (chk << 3);
+			break;
+		case IDC_VDP_REGISTERS_M5:
+			VDP_Reg.Set2 |= (chk << 2);
+			break;
+		case IDC_VDP_REGISTERS_SZ:
+			VDP_Reg.Set2 |= (chk << 1);
+			break;
+		case IDC_VDP_REGISTERS_MAG:
+			VDP_Reg.Set2 |= (chk << 0);
+			break;
+		case IDC_VDP_REGISTERS_0B7:
+			VDP_Reg.Set3 |= (chk << 7);
+			break;
+		case IDC_VDP_REGISTERS_0B6:
+			VDP_Reg.Set3 |= (chk << 6);
+			break;
+		case IDC_VDP_REGISTERS_0B5:
+			VDP_Reg.Set3 |= (chk << 5);
+			break;
+		case IDC_VDP_REGISTERS_0B4:
+			VDP_Reg.Set3 |= (chk << 4);
+			break;
+		case IDC_VDP_REGISTERS_IE2:
+			VDP_Reg.Set3 |= (chk << 3);
+			break;
+		case IDC_VDP_REGISTERS_VSCR:
+			VDP_Reg.Set3 |= (chk << 2);
+			break;
+		case IDC_VDP_REGISTERS_HSCR:
+			VDP_Reg.Set3 |= (chk << 1);
+			break;
+		case IDC_VDP_REGISTERS_LSCR:
+			VDP_Reg.Set3 |= (chk << 0);
+			break;
+		case IDC_VDP_REGISTERS_RS0:
+			VDP_Reg.Set4 |= (chk << 7);
+			break;
+		case IDC_VDP_REGISTERS_U1:
+			VDP_Reg.Set4 |= (chk << 6);
+			break;
+		case IDC_VDP_REGISTERS_U2:
+			VDP_Reg.Set4 |= (chk << 5);
+			break;
+		case IDC_VDP_REGISTERS_U3:
+			VDP_Reg.Set4 |= (chk << 4);
+			break;
+		case IDC_VDP_REGISTERS_STE:
+			VDP_Reg.Set4 |= (chk << 3);
+			break;
+		case IDC_VDP_REGISTERS_LSM1:
+			VDP_Reg.Set4 |= (chk << 2);
+			break;
+		case IDC_VDP_REGISTERS_LSM0:
+			VDP_Reg.Set4 |= (chk << 1);
+			break;
+		case IDC_VDP_REGISTERS_RS1:
+			VDP_Reg.Set4 |= (chk << 0);
+			break;
+		}
+	}
+
+	return TRUE;
+}
+
+//----------------------------------------------------------------------------------------
+INT_PTR WndProcModeRegisters(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
+{
+	WndProcDialogImplementSaveFieldWhenLostFocus(hwnd, msg, wparam, lparam);
+	switch (msg)
+	{
+	case WM_INITDIALOG:
+		return msgModeRegistersWM_INITDIALOG(hwnd, wparam, lparam);
+	case WM_DESTROY:
+		return msgModeRegistersWM_DESTROY(hwnd, wparam, lparam);
+	case WM_TIMER:
+		return msgModeRegistersWM_TIMER(hwnd, wparam, lparam);
+	case WM_COMMAND:
+		return msgModeRegistersWM_COMMAND(hwnd, wparam, lparam);
+	}
+	return FALSE;
+}
+
+//----------------------------------------------------------------------------------------
+//Mode registers dialog window procedure
+//----------------------------------------------------------------------------------------
+INT_PTR CALLBACK WndProcModeRegistersStatic(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
+{
+	//Obtain the object pointer
+	int state = (int)GetWindowLongPtr(hwnd, GWLP_USERDATA);
+
+	//Process the message
+	switch (msg)
+	{
+	case WM_INITDIALOG:
+		//Set the object pointer
+		state = (int)lparam;
+		SetWindowLongPtr(hwnd, GWLP_USERDATA, (int)(state));
+
+		//Pass this message on to the member window procedure function
+		if (state != 0)
+		{
+			return WndProcModeRegisters(hwnd, msg, wparam, lparam);
+		}
+		break;
+	case WM_DESTROY:
+		if (state != 0)
+		{
+			//Pass this message on to the member window procedure function
+			INT_PTR result = WndProcModeRegisters(hwnd, msg, wparam, lparam);
+
+			//Discard the object pointer
+			SetWindowLongPtr(hwnd, GWLP_USERDATA, (int)0);
+
+			//Return the result from processing the message
+			return result;
+		}
+		break;
+	}
+
+	//Pass this message on to the member window procedure function
+	INT_PTR result = FALSE;
+	if (state != 0)
+	{
+		result = WndProcModeRegisters(hwnd, msg, wparam, lparam);
+	}
+	return result;
+}
+
 LRESULT CALLBACK VDPRamProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
     RECT r;
@@ -141,7 +407,7 @@ LRESULT CALLBACK VDPRamProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
     switch (uMsg)
     {
     case WM_INITDIALOG: {
-        HDC hdc = GetDC(hDlg);
+		HDC hdc = GetDC(hDlg);
         VDPRamMemDC = CreateCompatibleDC(hdc);
         MemBMPi.bmiHeader.biSize = sizeof(MemBMPi.bmiHeader);
         MemBMPi.bmiHeader.biWidth = 8 * 16;
@@ -199,8 +465,137 @@ LRESULT CALLBACK VDPRamProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
         SetWindowPos(hDlg, NULL, r.left, r.top, NULL, NULL, SWP_NOSIZE | SWP_NOZORDER | SWP_SHOWWINDOW);
         SetWindowPos(GetDlgItem(hDlg, IDC_SCROLLBAR1), NULL, 5 + 16 * 16, 5 + 16 * 4 + 5, 16, 16 * VDP_RAM_VCOUNT, SWP_NOZORDER | SWP_SHOWWINDOW);
         SetScrollRange(GetDlgItem(hDlg, IDC_SCROLLBAR1), SB_CTL, 0, sizeof(VRam) / 0x200 - VDP_RAM_VCOUNT, TRUE);
+
+		// Exodus VDP Regs window init
+
+		//Add our set of tab items to the list of tabs
+		tabItems.push_back(TabInfo("Mode Registers", IDD_VDP_REGISTERS_MODEREGISTERS, WndProcModeRegistersStatic));
+		//tabItems.push_back(TabInfo("Other Registers", IDD_VDP_REGISTERS_OTHERREGISTERS, WndProcOtherRegistersStatic));
+
+		//Insert our tabs into the tab control
+		for (unsigned int i = 0; i < (unsigned int)tabItems.size(); ++i)
+		{
+			TCITEM tabItem;
+			tabItem.mask = TCIF_TEXT;
+			tabItem.pszText = (LPSTR)tabItems[i].tabName.c_str();
+			SendMessage(GetDlgItem(hDlg, IDC_VDP_REGISTERS_TABCONTROL), TCM_INSERTITEM, i, (LPARAM)&tabItem);
+		}
+
+		//Create each window associated with each tab, and calculate the required size of the
+		//client area of the tab control to fit the largest tab window.
+		int requiredTabClientWidth = 0;
+		int requiredTabClientHeight = 0;
+		for (unsigned int i = 0; i < (unsigned int)tabItems.size(); ++i)
+		{
+			//Create the dialog window for this tab
+			DLGPROC dialogWindowProc = tabItems[i].dialogProc;
+			LPCSTR dialogTemplateName = MAKEINTRESOURCE(tabItems[i].dialogID);
+			tabItems[i].hwndDialog = CreateDialogParam(GetHInstance(), dialogTemplateName, GetDlgItem(hDlg, IDC_VDP_REGISTERS_TABCONTROL), dialogWindowProc, (LPARAM)1);
+
+			//Calculate the required size of the window for this tab in pixel units
+			RECT rect;
+			GetClientRect(tabItems[i].hwndDialog, &rect);
+			int tabWidth = rect.right;
+			int tabHeight = rect.bottom;
+
+			//Increase the required size of the client area for the tab control to accommodate
+			//the contents of this tab, if required.
+			requiredTabClientWidth = (tabWidth > requiredTabClientWidth) ? tabWidth : requiredTabClientWidth;
+			requiredTabClientHeight = (tabHeight > requiredTabClientHeight) ? tabHeight : requiredTabClientHeight;
+		}
+
+		//Save the original size of the tab control
+		RECT tabControlOriginalRect;
+		GetClientRect(GetDlgItem(hDlg, IDC_VDP_REGISTERS_TABCONTROL), &tabControlOriginalRect);
+		int tabControlOriginalSizeX = tabControlOriginalRect.right - tabControlOriginalRect.left;
+		int tabControlOriginalSizeY = tabControlOriginalRect.bottom - tabControlOriginalRect.top;
+
+		//Calculate the exact required pixel size of the tab control to fully display the
+		//content in each tab
+		RECT tabControlRect;
+		tabControlRect.left = 0;
+		tabControlRect.top = 0;
+		tabControlRect.right = requiredTabClientWidth;
+		tabControlRect.bottom = requiredTabClientHeight;
+		SendMessage(GetDlgItem(hDlg, IDC_VDP_REGISTERS_TABCONTROL), TCM_ADJUSTRECT, (WPARAM)TRUE, (LPARAM)&tabControlRect);
+		int tabControlRequiredSizeX = tabControlRect.right - tabControlRect.left;
+		int tabControlRequiredSizeY = tabControlRect.bottom - tabControlRect.top;
+
+		//Resize the tab control
+		SetWindowPos(GetDlgItem(hDlg, IDC_VDP_REGISTERS_TABCONTROL), NULL, 0, 0, tabControlRequiredSizeX, tabControlRequiredSizeY, SWP_NOACTIVATE | SWP_NOOWNERZORDER | SWP_NOZORDER | SWP_NOMOVE);
+
+		//Calculate the required pixel size and position of each tab window
+		RECT currentTabControlRect;
+		GetWindowRect(GetDlgItem(hDlg, IDC_VDP_REGISTERS_TABCONTROL), &currentTabControlRect);
+		SendMessage(GetDlgItem(hDlg, IDC_VDP_REGISTERS_TABCONTROL), TCM_ADJUSTRECT, (WPARAM)FALSE, (LPARAM)&currentTabControlRect);
+		POINT tabContentPoint;
+		tabContentPoint.x = currentTabControlRect.left;
+		tabContentPoint.y = currentTabControlRect.top;
+		ScreenToClient(GetDlgItem(hDlg, IDC_VDP_REGISTERS_TABCONTROL), &tabContentPoint);
+		int tabRequiredPosX = tabContentPoint.x;
+		int tabRequiredPosY = tabContentPoint.y;
+		int tabRequiredSizeX = currentTabControlRect.right - currentTabControlRect.left;
+		int tabRequiredSizeY = currentTabControlRect.bottom - currentTabControlRect.top;
+
+		//Position and size each tab window
+		for (unsigned int i = 0; i < (unsigned int)tabItems.size(); ++i)
+		{
+			SetWindowPos(tabItems[i].hwndDialog, NULL, tabRequiredPosX, tabRequiredPosY, tabRequiredSizeX, tabRequiredSizeY, SWP_NOACTIVATE | SWP_NOOWNERZORDER | SWP_NOZORDER);
+		}
+
+		//Calculate the current size of the owning window
+		RECT mainDialogRect;
+		GetWindowRect(hDlg, &mainDialogRect);
+		int currentMainDialogWidth = mainDialogRect.right - mainDialogRect.left;
+		int currentMainDialogHeight = mainDialogRect.bottom - mainDialogRect.top;
+
+		//Resize the owning window to the required size
+		int newMainDialogWidth = currentMainDialogWidth + (tabControlRequiredSizeX - tabControlOriginalSizeX);
+		int newMainDialogHeight = currentMainDialogHeight + (tabControlRequiredSizeY - tabControlOriginalSizeY);
+		SetWindowPos(hDlg, NULL, 0, 0, newMainDialogWidth, newMainDialogHeight, SWP_NOACTIVATE | SWP_NOOWNERZORDER | SWP_NOZORDER | SWP_NOMOVE);
+
+		//Explicitly select and show the first tab
+		activeTabWindow = tabItems[0].hwndDialog;
+		ShowWindow(activeTabWindow, SW_SHOWNA);
+
+		// Exodus VDP Regs window init
         return true;
     }	break;
+
+	case WM_NOTIFY:
+	{
+		NMHDR* nmhdr = (NMHDR*)lParam;
+		if (nmhdr->idFrom == IDC_VDP_REGISTERS_TABCONTROL)
+		{
+			if ((nmhdr->code == TCN_SELCHANGE))
+			{
+				//Begin a session for processing this batch of window visibility changes.
+				//Processing all the changes in a single operation in this manner gives the
+				//best performance and appearance.
+				HDWP deferWindowPosSession = BeginDeferWindowPos(2);
+
+				//If another tab window is currently visible, hide it now.
+				if (activeTabWindow != NULL)
+				{
+					DeferWindowPos(deferWindowPosSession, activeTabWindow, NULL, 0, 0, 0, 0, SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_NOACTIVATE | SWP_NOSIZE | SWP_NOMOVE | SWP_HIDEWINDOW);
+					activeTabWindow = NULL;
+				}
+
+				//Show the window for the new selected tab on the tab control
+				int currentlySelectedTab = (int)SendMessage(nmhdr->hwndFrom, TCM_GETCURSEL, 0, 0);
+				if ((currentlySelectedTab < 0) || (currentlySelectedTab >= (int)tabItems.size()))
+				{
+					currentlySelectedTab = 0;
+				}
+				activeTabWindow = tabItems[currentlySelectedTab].hwndDialog;
+				DeferWindowPos(deferWindowPosSession, activeTabWindow, NULL, 0, 0, 0, 0, SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_NOACTIVATE | SWP_NOSIZE | SWP_NOMOVE | SWP_SHOWWINDOW);
+
+				//Process all the window size and position changes involved in this update
+				EndDeferWindowPos(deferWindowPosSession);
+			}
+		}
+		return TRUE;
+	}
 
     case WM_COMMAND:
     {
@@ -531,7 +926,13 @@ LRESULT CALLBACK VDPRamProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
     }	break;
 
     case WM_CLOSE:
-        if (Full_Screen)
+		if (activeTabWindow != NULL)
+		{
+			DestroyWindow(activeTabWindow);
+			activeTabWindow = NULL;
+		}
+		
+		if (Full_Screen)
         {
             while (ShowCursor(true) < 0);
             while (ShowCursor(false) >= 0);
