@@ -51,6 +51,29 @@ struct TabInfo
 HWND activeTabWindow;
 std::vector<TabInfo> tabItems;
 
+void Redraw_VDP_View()
+{
+	RECT r;
+
+	r.left = 5;
+	r.top = 5 + 4 * 16 + 5;
+	r.right = r.left + 8 * 16 * 2;
+	r.bottom = r.top + VDP_RAM_VCOUNT * 8 * 2;
+	InvalidateRect(VDPRamHWnd, &r, FALSE);
+
+	r.left = 5;
+	r.top = 5;
+	r.right = r.left + 16 * 16;
+	r.bottom = r.top + 4 * 16;
+	InvalidateRect(VDPRamHWnd, &r, FALSE);
+
+	r.left = 5 + 16 * 16 + 16 + 8;
+	r.top = 295;
+	r.right = r.left + 64;
+	r.bottom = r.top + 64;
+	InvalidateRect(VDPRamHWnd, &r, FALSE);
+}
+
 void Update_VDP_RAM()
 {
     unsigned short scroll_begin, scroll_end, tableA_begin, tableA_end, tableB_begin, tableB_end;
@@ -58,7 +81,7 @@ void Update_VDP_RAM()
 
     if (VDPRamHWnd)
     {
-        InvalidateRect(VDPRamHWnd, NULL, FALSE);
+		InvalidateRect(VDPRamHWnd, NULL, FALSE);
 
         scroll_begin = (VDP_Reg.H_Scr_Adr & 0x3F) << 10;
         if ((VDP_Reg.Set3 & 0x3) == 0x3)
