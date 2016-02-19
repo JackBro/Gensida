@@ -131,7 +131,7 @@ register_info_t registers[] =
 	{ "SR", NULL, RC_GENERAL, dt_word, SRReg, 0xFFFF },
 
 	{ "DMA_LEN", REGISTER_READONLY, RC_GENERAL, dt_word, NULL, 0 },
-	{ "DMA_SRC", REGISTER_ADDRESS | REGISTER_READONLY, RC_GENERAL, dt_3byte, NULL, 0 },
+	{ "DMA_SRC", REGISTER_ADDRESS | REGISTER_READONLY, RC_GENERAL, dt_dword, NULL, 0 },
 	{ "VDP_DST", REGISTER_ADDRESS | REGISTER_READONLY, RC_GENERAL, dt_dword, NULL, 0 },
 
 	// Register Breakpoints
