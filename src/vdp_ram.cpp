@@ -164,26 +164,7 @@ void WndProcDialogImplementSaveFieldWhenLostFocus(HWND hwnd, UINT msg, WPARAM wp
 }
 
 //----------------------------------------------------------------------------------------
-//Mode registers dialog event handlers
-//----------------------------------------------------------------------------------------
-INT_PTR msgModeRegistersWM_INITDIALOG(HWND hwnd, WPARAM wparam, LPARAM lparam)
-{
-	// Create a timer to refresh the register contents
-	SetTimer(hwnd, 1, 50, NULL);
-
-	return TRUE;
-}
-
-//----------------------------------------------------------------------------------------
-INT_PTR msgModeRegistersWM_DESTROY(HWND hwnd, WPARAM wparam, LPARAM lparam)
-{
-	KillTimer(hwnd, 1);
-
-	return FALSE;
-}
-
-//----------------------------------------------------------------------------------------
-INT_PTR msgModeRegistersWM_TIMER(HWND hwnd, WPARAM wparam, LPARAM lparam)
+INT_PTR msgModeRegistersWM_PAINT(HWND hwnd, WPARAM wparam, LPARAM lparam)
 {
 	//Mode registers
 	CheckDlgButton(hwnd, IDC_VDP_REGISTERS_VSI, (VDP_Reg.Set1 & mask(7)) ? BST_CHECKED : BST_UNCHECKED);
@@ -339,12 +320,6 @@ INT_PTR WndProcModeRegisters(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 	WndProcDialogImplementSaveFieldWhenLostFocus(hwnd, msg, wparam, lparam);
 	switch (msg)
 	{
-	case WM_INITDIALOG:
-		return msgModeRegistersWM_INITDIALOG(hwnd, wparam, lparam);
-	case WM_DESTROY:
-		return msgModeRegistersWM_DESTROY(hwnd, wparam, lparam);
-	case WM_TIMER:
-		return msgModeRegistersWM_TIMER(hwnd, wparam, lparam);
 	case WM_COMMAND:
 		return msgModeRegistersWM_COMMAND(hwnd, wparam, lparam);
 	}
@@ -889,6 +864,8 @@ LRESULT CALLBACK VDPRamProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			DrawFocusRect(ps.hdc, &r);
 
         EndPaint(hDlg, &ps);
+
+		msgModeRegistersWM_PAINT(activeTabWindow, wParam, lParam);
         return true;
     }	break;
 
