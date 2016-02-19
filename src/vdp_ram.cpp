@@ -81,7 +81,7 @@ void Update_VDP_RAM()
 
     if (VDPRamHWnd)
     {
-		InvalidateRect(VDPRamHWnd, NULL, FALSE);
+		Redraw_VDP_View();
 
         scroll_begin = (VDP_Reg.H_Scr_Adr & 0x3F) << 10;
         if ((VDP_Reg.Set3 & 0x3) == 0x3)
@@ -226,6 +226,7 @@ INT_PTR msgModeRegistersWM_PAINT(HWND hwnd, WPARAM wparam, LPARAM lparam)
 	return TRUE;
 }
 
+#define SET_BIT(number, n, x) (number ^= ((-(x) ^ number) & (1 << n)))
 //----------------------------------------------------------------------------------------
 INT_PTR msgModeRegistersWM_COMMAND(HWND hwnd, WPARAM wparam, LPARAM lparam)
 {
@@ -236,106 +237,107 @@ INT_PTR msgModeRegistersWM_COMMAND(HWND hwnd, WPARAM wparam, LPARAM lparam)
 		switch (controlID)
 		{
 		case IDC_VDP_REGISTERS_VSI:
-			VDP_Reg.Set1 |= (chk << 7);
+			SET_BIT(VDP_Reg.Set1, 7, chk);
 			break;
 		case IDC_VDP_REGISTERS_HSI:
-			VDP_Reg.Set1 |= (chk << 6);
+			SET_BIT(VDP_Reg.Set1, 6, chk);
 			break;
 		case IDC_VDP_REGISTERS_LCB:
-			VDP_Reg.Set1 |= (chk << 5);
+			SET_BIT(VDP_Reg.Set1, 5, chk);
 			break;
 		case IDC_VDP_REGISTERS_IE1:
-			VDP_Reg.Set1 |= (chk << 4);
+			SET_BIT(VDP_Reg.Set1, 4, chk);
 			break;
 		case IDC_VDP_REGISTERS_SS:
-			VDP_Reg.Set1 |= (chk << 3);
+			SET_BIT(VDP_Reg.Set1, 3, chk);
 			break;
 		case IDC_VDP_REGISTERS_PS:
-			VDP_Reg.Set1 |= (chk << 2);
+			SET_BIT(VDP_Reg.Set1, 2, chk);
 			break;
 		case IDC_VDP_REGISTERS_M2:
-			VDP_Reg.Set1 |= (chk << 1);
+			SET_BIT(VDP_Reg.Set1, 1, chk);
 			break;
 		case IDC_VDP_REGISTERS_ES:
-			VDP_Reg.Set1 |= (chk << 0);
+			SET_BIT(VDP_Reg.Set1, 0, chk);
 			break;
 		case IDC_VDP_REGISTERS_EVRAM:
-			VDP_Reg.Set2 |= (chk << 7);
+			SET_BIT(VDP_Reg.Set2, 7, chk);
 			break;
 		case IDC_VDP_REGISTERS_DISP:
-			VDP_Reg.Set2 |= (chk << 6);
+			SET_BIT(VDP_Reg.Set2, 6, chk);
 			break;
 		case IDC_VDP_REGISTERS_IE0:
-			VDP_Reg.Set2 |= (chk << 5);
+			SET_BIT(VDP_Reg.Set2, 5, chk);
 			break;
 		case IDC_VDP_REGISTERS_M1:
-			VDP_Reg.Set2 |= (chk << 4);
+			SET_BIT(VDP_Reg.Set2, 4, chk);
 			break;
 		case IDC_VDP_REGISTERS_M3:
-			VDP_Reg.Set2 |= (chk << 3);
+			SET_BIT(VDP_Reg.Set2, 3, chk);
 			break;
 		case IDC_VDP_REGISTERS_M5:
-			VDP_Reg.Set2 |= (chk << 2);
+			SET_BIT(VDP_Reg.Set2, 2, chk);
 			break;
 		case IDC_VDP_REGISTERS_SZ:
-			VDP_Reg.Set2 |= (chk << 1);
+			SET_BIT(VDP_Reg.Set2, 1, chk);
 			break;
 		case IDC_VDP_REGISTERS_MAG:
-			VDP_Reg.Set2 |= (chk << 0);
+			SET_BIT(VDP_Reg.Set2, 0, chk);
 			break;
 		case IDC_VDP_REGISTERS_0B7:
-			VDP_Reg.Set3 |= (chk << 7);
+			SET_BIT(VDP_Reg.Set3, 7, chk);
 			break;
 		case IDC_VDP_REGISTERS_0B6:
-			VDP_Reg.Set3 |= (chk << 6);
+			SET_BIT(VDP_Reg.Set3, 6, chk);
 			break;
 		case IDC_VDP_REGISTERS_0B5:
-			VDP_Reg.Set3 |= (chk << 5);
+			SET_BIT(VDP_Reg.Set3, 5, chk);
 			break;
 		case IDC_VDP_REGISTERS_0B4:
-			VDP_Reg.Set3 |= (chk << 4);
+			SET_BIT(VDP_Reg.Set3, 4, chk);
 			break;
 		case IDC_VDP_REGISTERS_IE2:
-			VDP_Reg.Set3 |= (chk << 3);
+			SET_BIT(VDP_Reg.Set3, 3, chk);
 			break;
 		case IDC_VDP_REGISTERS_VSCR:
-			VDP_Reg.Set3 |= (chk << 2);
+			SET_BIT(VDP_Reg.Set3, 2, chk);
 			break;
 		case IDC_VDP_REGISTERS_HSCR:
-			VDP_Reg.Set3 |= (chk << 1);
+			SET_BIT(VDP_Reg.Set3, 1, chk);
 			break;
 		case IDC_VDP_REGISTERS_LSCR:
-			VDP_Reg.Set3 |= (chk << 0);
+			SET_BIT(VDP_Reg.Set3, 0, chk);
 			break;
 		case IDC_VDP_REGISTERS_RS0:
-			VDP_Reg.Set4 |= (chk << 7);
+			SET_BIT(VDP_Reg.Set4, 7, chk);
 			break;
 		case IDC_VDP_REGISTERS_U1:
-			VDP_Reg.Set4 |= (chk << 6);
+			SET_BIT(VDP_Reg.Set4, 6, chk);
 			break;
 		case IDC_VDP_REGISTERS_U2:
-			VDP_Reg.Set4 |= (chk << 5);
+			SET_BIT(VDP_Reg.Set4, 5, chk);
 			break;
 		case IDC_VDP_REGISTERS_U3:
-			VDP_Reg.Set4 |= (chk << 4);
+			SET_BIT(VDP_Reg.Set4, 4, chk);
 			break;
 		case IDC_VDP_REGISTERS_STE:
-			VDP_Reg.Set4 |= (chk << 3);
+			SET_BIT(VDP_Reg.Set4, 3, chk);
 			break;
 		case IDC_VDP_REGISTERS_LSM1:
-			VDP_Reg.Set4 |= (chk << 2);
+			SET_BIT(VDP_Reg.Set4, 2, chk);
 			break;
 		case IDC_VDP_REGISTERS_LSM0:
-			VDP_Reg.Set4 |= (chk << 1);
+			SET_BIT(VDP_Reg.Set4, 1, chk);
 			break;
 		case IDC_VDP_REGISTERS_RS1:
-			VDP_Reg.Set4 |= (chk << 0);
+			SET_BIT(VDP_Reg.Set4, 0, chk);
 			break;
 		}
 	}
 
 	return TRUE;
 }
+#undef SET_BIT
 
 //----------------------------------------------------------------------------------------
 INT_PTR WndProcModeRegisters(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
@@ -393,6 +395,101 @@ INT_PTR CALLBACK WndProcModeRegistersStatic(HWND hwnd, UINT msg, WPARAM wparam, 
 		result = WndProcModeRegisters(hwnd, msg, wparam, lparam);
 	}
 	return result;
+}
+
+INT_PTR msgModeRegistersWM_INITDIALOG(HWND hDlg, WPARAM wparam, LPARAM lparam)
+{
+	//Add our set of tab items to the list of tabs
+	tabItems.push_back(TabInfo("Mode Registers", IDD_VDP_REGISTERS_MODEREGISTERS, WndProcModeRegistersStatic));
+	//tabItems.push_back(TabInfo("Other Registers", IDD_VDP_REGISTERS_OTHERREGISTERS, WndProcOtherRegistersStatic));
+
+	//Insert our tabs into the tab control
+	for (unsigned int i = 0; i < (unsigned int)tabItems.size(); ++i)
+	{
+		TCITEM tabItem;
+		tabItem.mask = TCIF_TEXT;
+		tabItem.pszText = (LPSTR)tabItems[i].tabName.c_str();
+		SendMessage(GetDlgItem(hDlg, IDC_VDP_REGISTERS_TABCONTROL), TCM_INSERTITEM, i, (LPARAM)&tabItem);
+	}
+
+	//Create each window associated with each tab, and calculate the required size of the
+	//client area of the tab control to fit the largest tab window.
+	int requiredTabClientWidth = 0;
+	int requiredTabClientHeight = 0;
+	for (unsigned int i = 0; i < (unsigned int)tabItems.size(); ++i)
+	{
+		//Create the dialog window for this tab
+		DLGPROC dialogWindowProc = tabItems[i].dialogProc;
+		LPCSTR dialogTemplateName = MAKEINTRESOURCE(tabItems[i].dialogID);
+		tabItems[i].hwndDialog = CreateDialogParam(GetHInstance(), dialogTemplateName, GetDlgItem(hDlg, IDC_VDP_REGISTERS_TABCONTROL), dialogWindowProc, (LPARAM)1);
+
+		//Calculate the required size of the window for this tab in pixel units
+		RECT rect;
+		GetClientRect(tabItems[i].hwndDialog, &rect);
+		int tabWidth = rect.right;
+		int tabHeight = rect.bottom;
+
+		//Increase the required size of the client area for the tab control to accommodate
+		//the contents of this tab, if required.
+		requiredTabClientWidth = (tabWidth > requiredTabClientWidth) ? tabWidth : requiredTabClientWidth;
+		requiredTabClientHeight = (tabHeight > requiredTabClientHeight) ? tabHeight : requiredTabClientHeight;
+	}
+
+	//Save the original size of the tab control
+	RECT tabControlOriginalRect;
+	GetClientRect(GetDlgItem(hDlg, IDC_VDP_REGISTERS_TABCONTROL), &tabControlOriginalRect);
+	int tabControlOriginalSizeX = tabControlOriginalRect.right - tabControlOriginalRect.left;
+	int tabControlOriginalSizeY = tabControlOriginalRect.bottom - tabControlOriginalRect.top;
+
+	//Calculate the exact required pixel size of the tab control to fully display the
+	//content in each tab
+	RECT tabControlRect;
+	tabControlRect.left = 0;
+	tabControlRect.top = 0;
+	tabControlRect.right = requiredTabClientWidth;
+	tabControlRect.bottom = requiredTabClientHeight;
+	SendMessage(GetDlgItem(hDlg, IDC_VDP_REGISTERS_TABCONTROL), TCM_ADJUSTRECT, (WPARAM)TRUE, (LPARAM)&tabControlRect);
+	int tabControlRequiredSizeX = tabControlRect.right - tabControlRect.left;
+	int tabControlRequiredSizeY = tabControlRect.bottom - tabControlRect.top;
+
+	//Resize the tab control
+	SetWindowPos(GetDlgItem(hDlg, IDC_VDP_REGISTERS_TABCONTROL), NULL, 0, 0, tabControlRequiredSizeX, tabControlRequiredSizeY, SWP_NOACTIVATE | SWP_NOOWNERZORDER | SWP_NOZORDER | SWP_NOMOVE);
+
+	//Calculate the required pixel size and position of each tab window
+	RECT currentTabControlRect;
+	GetWindowRect(GetDlgItem(hDlg, IDC_VDP_REGISTERS_TABCONTROL), &currentTabControlRect);
+	SendMessage(GetDlgItem(hDlg, IDC_VDP_REGISTERS_TABCONTROL), TCM_ADJUSTRECT, (WPARAM)FALSE, (LPARAM)&currentTabControlRect);
+	POINT tabContentPoint;
+	tabContentPoint.x = currentTabControlRect.left;
+	tabContentPoint.y = currentTabControlRect.top;
+	ScreenToClient(GetDlgItem(hDlg, IDC_VDP_REGISTERS_TABCONTROL), &tabContentPoint);
+	int tabRequiredPosX = tabContentPoint.x;
+	int tabRequiredPosY = tabContentPoint.y;
+	int tabRequiredSizeX = currentTabControlRect.right - currentTabControlRect.left;
+	int tabRequiredSizeY = currentTabControlRect.bottom - currentTabControlRect.top;
+
+	//Position and size each tab window
+	for (unsigned int i = 0; i < (unsigned int)tabItems.size(); ++i)
+	{
+		SetWindowPos(tabItems[i].hwndDialog, NULL, tabRequiredPosX, tabRequiredPosY, tabRequiredSizeX, tabRequiredSizeY, SWP_NOACTIVATE | SWP_NOOWNERZORDER | SWP_NOZORDER);
+	}
+
+	//Calculate the current size of the owning window
+	RECT mainDialogRect;
+	GetWindowRect(hDlg, &mainDialogRect);
+	int currentMainDialogWidth = mainDialogRect.right - mainDialogRect.left;
+	int currentMainDialogHeight = mainDialogRect.bottom - mainDialogRect.top;
+
+	//Resize the owning window to the required size
+	int newMainDialogWidth = currentMainDialogWidth + (tabControlRequiredSizeX - tabControlOriginalSizeX);
+	int newMainDialogHeight = currentMainDialogHeight + (tabControlRequiredSizeY - tabControlOriginalSizeY);
+	SetWindowPos(hDlg, NULL, 0, 0, newMainDialogWidth, newMainDialogHeight, SWP_NOACTIVATE | SWP_NOOWNERZORDER | SWP_NOZORDER | SWP_NOMOVE);
+
+	//Explicitly select and show the first tab
+	activeTabWindow = tabItems[0].hwndDialog;
+	ShowWindow(activeTabWindow, SW_SHOWNA);
+
+	return TRUE;
 }
 
 LRESULT CALLBACK VDPRamProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -465,98 +562,7 @@ LRESULT CALLBACK VDPRamProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
         SetScrollRange(GetDlgItem(hDlg, IDC_SCROLLBAR1), SB_CTL, 0, sizeof(VRam) / 0x200 - VDP_RAM_VCOUNT, TRUE);
 
 		// Exodus VDP Regs window init
-
-		//Add our set of tab items to the list of tabs
-		tabItems.push_back(TabInfo("Mode Registers", IDD_VDP_REGISTERS_MODEREGISTERS, WndProcModeRegistersStatic));
-		//tabItems.push_back(TabInfo("Other Registers", IDD_VDP_REGISTERS_OTHERREGISTERS, WndProcOtherRegistersStatic));
-
-		//Insert our tabs into the tab control
-		for (unsigned int i = 0; i < (unsigned int)tabItems.size(); ++i)
-		{
-			TCITEM tabItem;
-			tabItem.mask = TCIF_TEXT;
-			tabItem.pszText = (LPSTR)tabItems[i].tabName.c_str();
-			SendMessage(GetDlgItem(hDlg, IDC_VDP_REGISTERS_TABCONTROL), TCM_INSERTITEM, i, (LPARAM)&tabItem);
-		}
-
-		//Create each window associated with each tab, and calculate the required size of the
-		//client area of the tab control to fit the largest tab window.
-		int requiredTabClientWidth = 0;
-		int requiredTabClientHeight = 0;
-		for (unsigned int i = 0; i < (unsigned int)tabItems.size(); ++i)
-		{
-			//Create the dialog window for this tab
-			DLGPROC dialogWindowProc = tabItems[i].dialogProc;
-			LPCSTR dialogTemplateName = MAKEINTRESOURCE(tabItems[i].dialogID);
-			tabItems[i].hwndDialog = CreateDialogParam(GetHInstance(), dialogTemplateName, GetDlgItem(hDlg, IDC_VDP_REGISTERS_TABCONTROL), dialogWindowProc, (LPARAM)1);
-
-			//Calculate the required size of the window for this tab in pixel units
-			RECT rect;
-			GetClientRect(tabItems[i].hwndDialog, &rect);
-			int tabWidth = rect.right;
-			int tabHeight = rect.bottom;
-
-			//Increase the required size of the client area for the tab control to accommodate
-			//the contents of this tab, if required.
-			requiredTabClientWidth = (tabWidth > requiredTabClientWidth) ? tabWidth : requiredTabClientWidth;
-			requiredTabClientHeight = (tabHeight > requiredTabClientHeight) ? tabHeight : requiredTabClientHeight;
-		}
-
-		//Save the original size of the tab control
-		RECT tabControlOriginalRect;
-		GetClientRect(GetDlgItem(hDlg, IDC_VDP_REGISTERS_TABCONTROL), &tabControlOriginalRect);
-		int tabControlOriginalSizeX = tabControlOriginalRect.right - tabControlOriginalRect.left;
-		int tabControlOriginalSizeY = tabControlOriginalRect.bottom - tabControlOriginalRect.top;
-
-		//Calculate the exact required pixel size of the tab control to fully display the
-		//content in each tab
-		RECT tabControlRect;
-		tabControlRect.left = 0;
-		tabControlRect.top = 0;
-		tabControlRect.right = requiredTabClientWidth;
-		tabControlRect.bottom = requiredTabClientHeight;
-		SendMessage(GetDlgItem(hDlg, IDC_VDP_REGISTERS_TABCONTROL), TCM_ADJUSTRECT, (WPARAM)TRUE, (LPARAM)&tabControlRect);
-		int tabControlRequiredSizeX = tabControlRect.right - tabControlRect.left;
-		int tabControlRequiredSizeY = tabControlRect.bottom - tabControlRect.top;
-
-		//Resize the tab control
-		SetWindowPos(GetDlgItem(hDlg, IDC_VDP_REGISTERS_TABCONTROL), NULL, 0, 0, tabControlRequiredSizeX, tabControlRequiredSizeY, SWP_NOACTIVATE | SWP_NOOWNERZORDER | SWP_NOZORDER | SWP_NOMOVE);
-
-		//Calculate the required pixel size and position of each tab window
-		RECT currentTabControlRect;
-		GetWindowRect(GetDlgItem(hDlg, IDC_VDP_REGISTERS_TABCONTROL), &currentTabControlRect);
-		SendMessage(GetDlgItem(hDlg, IDC_VDP_REGISTERS_TABCONTROL), TCM_ADJUSTRECT, (WPARAM)FALSE, (LPARAM)&currentTabControlRect);
-		POINT tabContentPoint;
-		tabContentPoint.x = currentTabControlRect.left;
-		tabContentPoint.y = currentTabControlRect.top;
-		ScreenToClient(GetDlgItem(hDlg, IDC_VDP_REGISTERS_TABCONTROL), &tabContentPoint);
-		int tabRequiredPosX = tabContentPoint.x;
-		int tabRequiredPosY = tabContentPoint.y;
-		int tabRequiredSizeX = currentTabControlRect.right - currentTabControlRect.left;
-		int tabRequiredSizeY = currentTabControlRect.bottom - currentTabControlRect.top;
-
-		//Position and size each tab window
-		for (unsigned int i = 0; i < (unsigned int)tabItems.size(); ++i)
-		{
-			SetWindowPos(tabItems[i].hwndDialog, NULL, tabRequiredPosX, tabRequiredPosY, tabRequiredSizeX, tabRequiredSizeY, SWP_NOACTIVATE | SWP_NOOWNERZORDER | SWP_NOZORDER);
-		}
-
-		//Calculate the current size of the owning window
-		RECT mainDialogRect;
-		GetWindowRect(hDlg, &mainDialogRect);
-		int currentMainDialogWidth = mainDialogRect.right - mainDialogRect.left;
-		int currentMainDialogHeight = mainDialogRect.bottom - mainDialogRect.top;
-
-		//Resize the owning window to the required size
-		int newMainDialogWidth = currentMainDialogWidth + (tabControlRequiredSizeX - tabControlOriginalSizeX);
-		int newMainDialogHeight = currentMainDialogHeight + (tabControlRequiredSizeY - tabControlOriginalSizeY);
-		SetWindowPos(hDlg, NULL, 0, 0, newMainDialogWidth, newMainDialogHeight, SWP_NOACTIVATE | SWP_NOOWNERZORDER | SWP_NOZORDER | SWP_NOMOVE);
-
-		//Explicitly select and show the first tab
-		activeTabWindow = tabItems[0].hwndDialog;
-		ShowWindow(activeTabWindow, SW_SHOWNA);
-
-		// Exodus VDP Regs window init
+		msgModeRegistersWM_INITDIALOG(hDlg, wParam, lParam);
         return true;
     }	break;
 
@@ -773,13 +779,13 @@ LRESULT CALLBACK VDPRamProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		case IDC_SHOW_VRAM:
 		{
 			ShowVRAM = true;
-			InvalidateRect(hDlg, NULL, FALSE);
+			Redraw_VDP_View();
 		}
 		break;
 		case IDC_SHOW_M68K_RAM:
 		{
 			ShowVRAM = false;
-			InvalidateRect(hDlg, NULL, FALSE);
+			Redraw_VDP_View();
 		}
 		break;
         }
