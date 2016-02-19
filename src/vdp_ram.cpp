@@ -27,6 +27,7 @@
 #include <list>
 #include <vector>
 #include "ida_debug.h"
+#include <sstream>
 
 HDC VDPRamMemDC;
 HBITMAP VDPRamMemBMP;
@@ -48,6 +49,9 @@ struct TabInfo
 	DLGPROC dialogProc;
 	HWND hwndDialog;
 };
+
+std::string previousText;
+unsigned int currentControlFocus;
 HWND activeTabWindow;
 std::vector<TabInfo> tabItems;
 
@@ -226,7 +230,8 @@ INT_PTR msgModeRegistersWM_PAINT(HWND hwnd, WPARAM wparam, LPARAM lparam)
 	return TRUE;
 }
 
-#define SET_BIT(number, n, x) (number ^= ((-(x) ^ number) & (1 << n)))
+#define SET_BIT(number, n, x) (number ^= ((~x ^ number) & (1 << n)))
+#define SET_BITS(number, n, c, x) (number = (number & ~mask(n, c)) | (x << c))
 //----------------------------------------------------------------------------------------
 INT_PTR msgModeRegistersWM_COMMAND(HWND hwnd, WPARAM wparam, LPARAM lparam)
 {
@@ -337,6 +342,193 @@ INT_PTR msgModeRegistersWM_COMMAND(HWND hwnd, WPARAM wparam, LPARAM lparam)
 
 	return TRUE;
 }
+
+//----------------------------------------------------------------------------------------
+std::string GetDlgItemString(HWND hwnd, int controlID)
+{
+	std::string result;
+
+	const unsigned int maxTextLength = 1024;
+	char currentTextTemp[maxTextLength];
+	if (GetDlgItemText(hwnd, controlID, currentTextTemp, maxTextLength) == 0)
+	{
+		currentTextTemp[0] = '\0';
+	}
+	result = currentTextTemp;
+
+	return result;
+}
+
+//----------------------------------------------------------------------------------------
+unsigned int GetDlgItemHex(HWND hwnd, int controlID)
+{
+	unsigned int value = 0;
+
+	const unsigned int maxTextLength = 1024;
+	char currentTextTemp[maxTextLength];
+	if (GetDlgItemText(hwnd, controlID, currentTextTemp, maxTextLength) == 0)
+	{
+		currentTextTemp[0] = '\0';
+	}
+	std::stringstream buffer;
+	buffer << std::hex << currentTextTemp;
+	buffer >> value;
+
+	return value;
+}
+
+//----------------------------------------------------------------------------------------
+INT_PTR msgOtherRegistersWM_COMMAND(HWND hwnd, WPARAM wparam, LPARAM lparam)
+{
+	if (HIWORD(wparam) == BN_CLICKED)
+	{
+		unsigned int controlID = LOWORD(wparam);
+		int chk = (IsDlgButtonChecked(hwnd, controlID) == BST_CHECKED) ? 1 : 0;
+		switch (controlID)
+		{
+		case IDC_VDP_REGISTERS_077:
+			SET_BIT(VDP_Reg.BG_Color, 7, chk);
+			break;
+		case IDC_VDP_REGISTERS_076:
+			SET_BIT(VDP_Reg.BG_Color, 6, chk);
+			break;
+		case IDC_VDP_REGISTERS_DMD1:
+			SET_BIT(VDP_Reg.DMA_Src_Adr_H, 7, chk);
+			break;
+		case IDC_VDP_REGISTERS_DMD0:
+			SET_BIT(VDP_Reg.DMA_Src_Adr_H, 6, chk);
+			break;
+		case IDC_VDP_REGISTERS_WINDOWRIGHT:
+			SET_BIT(VDP_Reg.Win_H_Pos, 7, chk);
+			break;
+		case IDC_VDP_REGISTERS_WINDOWDOWN:
+			SET_BIT(VDP_Reg.Win_V_Pos, 7, chk);
+			break;
+		}
+	}
+	else if ((HIWORD(wparam) == EN_SETFOCUS))
+	{
+		previousText = GetDlgItemString(hwnd, LOWORD(wparam));
+		currentControlFocus = LOWORD(wparam);
+	}
+	else if ((HIWORD(wparam) == EN_KILLFOCUS))
+	{
+		std::string newText = GetDlgItemString(hwnd, LOWORD(wparam));
+		if (newText != previousText)
+		{
+			switch (LOWORD(wparam))
+			{
+			case IDC_VDP_REGISTERS_BACKGROUNDPALETTEROW:
+				SET_BITS(VDP_Reg.BG_Color, 4, 2, GetDlgItemHex(hwnd, LOWORD(wparam)));
+				break;
+			case IDC_VDP_REGISTERS_BACKGROUNDPALETTECOLUMN:
+				SET_BITS(VDP_Reg.BG_Color, 0, 4, GetDlgItemHex(hwnd, LOWORD(wparam)));
+				break;
+			case IDC_VDP_REGISTERS_BACKGROUNDSCROLLX:
+				VDP_Reg.Reg8 = GetDlgItemHex(hwnd, LOWORD(wparam));
+				break;
+			case IDC_VDP_REGISTERS_BACKGROUNDSCROLLY:
+				VDP_Reg.Reg9 = GetDlgItemHex(hwnd, LOWORD(wparam));
+				break;
+			case IDC_VDP_REGISTERS_HINTLINECOUNTER:
+				VDP_Reg.H_Int = GetDlgItemHex(hwnd, LOWORD(wparam));
+				break;
+			case IDC_VDP_REGISTERS_AUTOINCREMENT:
+				VDP_Reg.Auto_Inc = GetDlgItemHex(hwnd, LOWORD(wparam));
+				break;
+			case IDC_VDP_REGISTERS_SCROLLABASE:
+				VDP_Reg.Pat_ScrA_Adr = GetDlgItemHex(hwnd, LOWORD(wparam));
+				break;
+			case IDC_VDP_REGISTERS_SCROLLABASE_E:
+				model.RegSetNameTableBaseScrollA(GetDlgItemHex(hwnd, LOWORD(wparam)));
+				break;
+			case IDC_VDP_REGISTERS_WINDOWBASE:
+				model.SetRegisterData(0x03, GetDlgItemHex(hwnd, LOWORD(wparam)));
+				break;
+			case IDC_VDP_REGISTERS_WINDOWBASE_E:
+				model.RegSetNameTableBaseWindow(GetDlgItemHex(hwnd, LOWORD(wparam)));
+				break;
+			case IDC_VDP_REGISTERS_SCROLLBBASE:
+				model.SetRegisterData(0x04, GetDlgItemHex(hwnd, LOWORD(wparam)));
+				break;
+			case IDC_VDP_REGISTERS_SCROLLBBASE_E:
+				model.RegSetNameTableBaseScrollB(GetDlgItemHex(hwnd, LOWORD(wparam)));
+				break;
+			case IDC_VDP_REGISTERS_SPRITEBASE:
+				model.SetRegisterData(0x05, GetDlgItemHex(hwnd, LOWORD(wparam)));
+				break;
+			case IDC_VDP_REGISTERS_SPRITEBASE_E:
+				model.RegSetNameTableBaseSprite(GetDlgItemHex(hwnd, LOWORD(wparam)));
+				break;
+			case IDC_VDP_REGISTERS_SPRITEPATTERNBASE:
+				model.SetRegisterData(0x06, GetDlgItemHex(hwnd, LOWORD(wparam)));
+				break;
+			case IDC_VDP_REGISTERS_SPRITEPATTERNBASE_E:
+				model.RegSetPatternBaseSprite(GetDlgItemHex(hwnd, LOWORD(wparam)));
+				break;
+			case IDC_VDP_REGISTERS_HSCROLLBASE:
+				model.SetRegisterData(0x0D, GetDlgItemHex(hwnd, LOWORD(wparam)));
+				break;
+			case IDC_VDP_REGISTERS_HSCROLLBASE_E:
+				model.RegSetHScrollDataBase(GetDlgItemHex(hwnd, LOWORD(wparam)));
+				break;
+			case IDC_VDP_REGISTERS_DMALENGTH:
+				model.RegSetDMALengthCounter(GetDlgItemHex(hwnd, LOWORD(wparam)));
+				break;
+			case IDC_VDP_REGISTERS_DMASOURCE:
+				model.RegSetDMASourceAddress(GetDlgItemHex(hwnd, LOWORD(wparam)) << 1);
+				break;
+			case IDC_VDP_REGISTERS_DMASOURCE_E:
+				model.RegSetDMASourceAddress(GetDlgItemHex(hwnd, LOWORD(wparam)));
+				break;
+			case IDC_VDP_REGISTERS_0E57:
+				model.RegSet0E57(GetDlgItemHex(hwnd, LOWORD(wparam)));
+				break;
+			case IDC_VDP_REGISTERS_SCROLLAPATTERNBASE:
+				model.SetRegisterData(0x0E, (model.GetRegisterData(0x0E) & 0xF0) | GetDlgItemHex(hwnd, LOWORD(wparam)));
+				break;
+			case IDC_VDP_REGISTERS_SCROLLAPATTERNBASE_E:
+				model.RegSetPatternBaseScrollA(GetDlgItemHex(hwnd, LOWORD(wparam)));
+				break;
+			case IDC_VDP_REGISTERS_0E13:
+				model.RegSet0E13(GetDlgItemHex(hwnd, LOWORD(wparam)));
+				break;
+			case IDC_VDP_REGISTERS_SCROLLBPATTERNBASE:
+				model.SetRegisterData(0x0E, (model.GetRegisterData(0x0E) & 0x0F) | GetDlgItemHex(hwnd, LOWORD(wparam)));
+				break;
+			case IDC_VDP_REGISTERS_SCROLLBPATTERNBASE_E:
+				model.RegSetPatternBaseScrollB(GetDlgItemHex(hwnd, LOWORD(wparam)));
+				break;
+			case IDC_VDP_REGISTERS_1067:
+				model.RegSet1067(GetDlgItemHex(hwnd, LOWORD(wparam)));
+				break;
+			case IDC_VDP_REGISTERS_VSZ:
+				model.RegSetVSZ(GetDlgItemHex(hwnd, LOWORD(wparam)));
+				break;
+			case IDC_VDP_REGISTERS_1023:
+				model.RegSet1023(GetDlgItemHex(hwnd, LOWORD(wparam)));
+				break;
+			case IDC_VDP_REGISTERS_HSZ:
+				model.RegSetHSZ(GetDlgItemHex(hwnd, LOWORD(wparam)));
+				break;
+			case IDC_VDP_REGISTERS_1156:
+				model.RegSet1156(GetDlgItemHex(hwnd, LOWORD(wparam)));
+				break;
+			case IDC_VDP_REGISTERS_WINDOWBASEX:
+				model.RegSetWindowBasePointX(GetDlgItemHex(hwnd, LOWORD(wparam)));
+				break;
+			case IDC_VDP_REGISTERS_1256:
+				model.RegSet1256(GetDlgItemHex(hwnd, LOWORD(wparam)));
+				break;
+			case IDC_VDP_REGISTERS_WINDOWBASEY:
+				model.RegSetWindowBasePointY(GetDlgItemHex(hwnd, LOWORD(wparam)));
+				break;
+			}
+		}
+	}
+
+	return TRUE;
+}
 #undef SET_BIT
 
 //----------------------------------------------------------------------------------------
@@ -347,6 +539,18 @@ INT_PTR WndProcModeRegisters(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 	{
 	case WM_COMMAND:
 		return msgModeRegistersWM_COMMAND(hwnd, wparam, lparam);
+	}
+	return FALSE;
+}
+
+//----------------------------------------------------------------------------------------
+INT_PTR WndProcOtherRegisters(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
+{
+	WndProcDialogImplementSaveFieldWhenLostFocus(hwnd, msg, wparam, lparam);
+	switch (msg)
+	{
+	case WM_COMMAND:
+		return msgOtherRegistersWM_COMMAND(hwnd, wparam, lparam);
 	}
 	return FALSE;
 }
@@ -365,7 +569,7 @@ INT_PTR CALLBACK WndProcModeRegistersStatic(HWND hwnd, UINT msg, WPARAM wparam, 
 	case WM_INITDIALOG:
 		//Set the object pointer
 		state = (int)lparam;
-		SetWindowLongPtr(hwnd, GWLP_USERDATA, (int)(state));
+		SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)(state));
 
 		//Pass this message on to the member window procedure function
 		if (state != 0)
@@ -380,7 +584,7 @@ INT_PTR CALLBACK WndProcModeRegistersStatic(HWND hwnd, UINT msg, WPARAM wparam, 
 			INT_PTR result = WndProcModeRegisters(hwnd, msg, wparam, lparam);
 
 			//Discard the object pointer
-			SetWindowLongPtr(hwnd, GWLP_USERDATA, (int)0);
+			SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)0);
 
 			//Return the result from processing the message
 			return result;
@@ -397,11 +601,57 @@ INT_PTR CALLBACK WndProcModeRegistersStatic(HWND hwnd, UINT msg, WPARAM wparam, 
 	return result;
 }
 
+//----------------------------------------------------------------------------------------
+//Other registers dialog window procedure
+//----------------------------------------------------------------------------------------
+INT_PTR CALLBACK WndProcOtherRegistersStatic(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
+{
+	//Obtain the object pointer
+	int state = (int)GetWindowLongPtr(hwnd, GWLP_USERDATA);
+
+	//Process the message
+	switch (msg)
+	{
+	case WM_INITDIALOG:
+		//Set the object pointer
+		state = (int)lparam;
+		SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)(state));
+
+		//Pass this message on to the member window procedure function
+		if (state != 0)
+		{
+			return WndProcOtherRegisters(hwnd, msg, wparam, lparam);
+		}
+		break;
+	case WM_DESTROY:
+		if (state != 0)
+		{
+			//Pass this message on to the member window procedure function
+			INT_PTR result = WndProcOtherRegisters(hwnd, msg, wparam, lparam);
+
+			//Discard the object pointer
+			SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)0);
+
+			//Return the result from processing the message
+			return result;
+		}
+		break;
+	}
+
+	//Pass this message on to the member window procedure function
+	INT_PTR result = FALSE;
+	if (state != 0)
+	{
+		result = WndProcOtherRegisters(hwnd, msg, wparam, lparam);
+	}
+	return result;
+}
+
 INT_PTR msgModeRegistersWM_INITDIALOG(HWND hDlg, WPARAM wparam, LPARAM lparam)
 {
 	//Add our set of tab items to the list of tabs
 	tabItems.push_back(TabInfo("Mode Registers", IDD_VDP_REGISTERS_MODEREGISTERS, WndProcModeRegistersStatic));
-	//tabItems.push_back(TabInfo("Other Registers", IDD_VDP_REGISTERS_OTHERREGISTERS, WndProcOtherRegistersStatic));
+	tabItems.push_back(TabInfo("Other Registers", IDD_VDP_REGISTERS_OTHERREGISTERS, WndProcOtherRegistersStatic));
 
 	//Insert our tabs into the tab control
 	for (unsigned int i = 0; i < (unsigned int)tabItems.size(); ++i)
