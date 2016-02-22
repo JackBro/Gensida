@@ -526,11 +526,6 @@ static int idaapi set_step_mode(thid_t tid, resume_mode_t resmod) // Run one ins
 	return 1;
 }
 
-inline UINT32 mask(UINT8 bit_idx, UINT8 bits_cnt)
-{
-	return (((1 << bits_cnt) - 1) << bit_idx);
-}
-
 // Read thread registers
 //	tid	- thread id
 //	clsmask- bitmask of register classes to read

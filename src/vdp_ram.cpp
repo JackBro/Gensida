@@ -413,7 +413,7 @@ INT_PTR msgOtherRegistersWM_COMMAND(HWND hwnd, WPARAM wparam, LPARAM lparam)
 	}
 	else if ((HIWORD(wparam) == EN_KILLFOCUS))
 	{
-		std::string newText = GetDlgItemString(hwnd, LOWORD(wparam));
+		/*std::string newText = GetDlgItemString(hwnd, LOWORD(wparam));
 		if (newText != previousText)
 		{
 			switch (LOWORD(wparam))
@@ -524,7 +524,7 @@ INT_PTR msgOtherRegistersWM_COMMAND(HWND hwnd, WPARAM wparam, LPARAM lparam)
 				model.RegSetWindowBasePointY(GetDlgItemHex(hwnd, LOWORD(wparam)));
 				break;
 			}
-		}
+		}*/
 	}
 
 	return TRUE;

@@ -5818,6 +5818,11 @@ LRESULT CALLBACK PlayMovieProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
         strcat(Str_Tmp, ".gmv");
         SendDlgItemMessage(hDlg, IDC_EDIT_MOVIE_NAME, WM_SETTEXT, 0, (LPARAM)Str_Tmp);
 
+		strncpy(Str_Tmp, Movie_Dir, 512);
+		strncat(Str_Tmp, Rom_Name, 507);
+		strcat(Str_Tmp, ".gst");
+		SendDlgItemMessage(hDlg, IDC_EDIT_MOVIE_STATE, WM_SETTEXT, 0, (LPARAM)Str_Tmp);
+
         DragAcceptFiles(hDlg, TRUE);
 
         return true;
