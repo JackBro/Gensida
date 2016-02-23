@@ -56,51 +56,6 @@ unsigned int currentControlFocus;
 HWND activeTabWindow;
 std::vector<TabInfo> tabItems;
 
-void Redraw_VDP_View()
-{
-	if (!VDPRamHWnd) return;
-
-	RECT r;
-
-	r.left = 5;
-	r.top = 5 + 4 * 16 + 5;
-	r.right = r.left + 8 * 16 * 2;
-	r.bottom = r.top + VDP_RAM_VCOUNT * 8 * 2;
-	InvalidateRect(VDPRamHWnd, &r, FALSE);
-
-	r.left = 5;
-	r.top = 5;
-	r.right = r.left + 16 * 16;
-	r.bottom = r.top + 4 * 16;
-	InvalidateRect(VDPRamHWnd, &r, FALSE);
-
-	r.left = 5 + 16 * 16 + 16 + 8;
-	r.top = 295;
-	r.right = r.left + 64;
-	r.bottom = r.top + 64;
-	InvalidateRect(VDPRamHWnd, &r, FALSE);
-}
-
-BOOL SetClipboardText(LPCTSTR pszText)
-{
-    BOOL ok = FALSE;
-    if (OpenClipboard(VDPRamHWnd))
-    {
-        EmptyClipboard();
-        HGLOBAL hMem = GlobalAlloc(GMEM_SHARE | GMEM_MOVEABLE,
-            (lstrlen(pszText) + 1)*sizeof(pszText[0]));
-        LPTSTR ptxt = (LPTSTR)GlobalLock(hMem);
-        lstrcpy(ptxt, pszText);
-        GlobalUnlock(hMem);
-        ok = (BOOL)SetClipboardData(CF_TEXT, hMem);
-
-        CloseClipboard();
-    }
-    return ok;
-}
-
-extern int Show_Genesis_Screen(HWND hWnd);
-
 //----------------------------------------------------------------------------------------
 //Window procedure helper functions
 //----------------------------------------------------------------------------------------
@@ -958,6 +913,33 @@ INT_PTR msgModeRegistersWM_INITDIALOG(HWND hDlg, WPARAM wparam, LPARAM lparam)
 	ShowWindow(activeTabWindow, SW_SHOWNA);
 
 	return TRUE;
+}
+
+extern int Show_Genesis_Screen(HWND hWnd);
+
+void Redraw_VDP_View()
+{
+	if (!VDPRamHWnd) return;
+
+	RECT r;
+
+	r.left = 5;
+	r.top = 5 + 4 * 16 + 5;
+	r.right = r.left + 8 * 16 * 2;
+	r.bottom = r.top + VDP_RAM_VCOUNT * 8 * 2;
+	InvalidateRect(VDPRamHWnd, &r, FALSE);
+
+	r.left = 5;
+	r.top = 5;
+	r.right = r.left + 16 * 16;
+	r.bottom = r.top + 4 * 16;
+	InvalidateRect(VDPRamHWnd, &r, FALSE);
+
+	r.left = 5 + 16 * 16 + 16 + 8;
+	r.top = 295;
+	r.right = r.left + 64;
+	r.bottom = r.top + 64;
+	InvalidateRect(VDPRamHWnd, &r, FALSE);
 }
 
 LRESULT CALLBACK VDPRamProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
