@@ -1,6 +1,6 @@
 #ifndef VDP_RAM_H
 #define VDP_RAM_H
 
-void Update_VDP_RAM();
+void Redraw_VDP_View();
 
 #endif

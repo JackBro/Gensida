@@ -8,30 +8,30 @@ extern "C" {
 		union
 		{
 			struct {
-				unsigned int Set1;
-				unsigned int Set2;
-				unsigned int Pat_ScrA_Adr;
-				unsigned int Pat_Win_Adr;
-				unsigned int Pat_ScrB_Adr;
-				unsigned int Spr_Att_Adr;
-				unsigned int Reg6;
-				unsigned int BG_Color;
-				unsigned int Reg8;
-				unsigned int Reg9;
-				unsigned int H_Int;
-				unsigned int Set3;
-				unsigned int Set4;
-				unsigned int H_Scr_Adr;
-				unsigned int Reg14;
-				unsigned int Auto_Inc;
-				unsigned int Scr_Size;
-				unsigned int Win_H_Pos;
-				unsigned int Win_V_Pos;
-				unsigned int DMA_Length_L;
-				unsigned int DMA_Length_H;
-				unsigned int DMA_Src_Adr_L;
-				unsigned int DMA_Src_Adr_M;
-				unsigned int DMA_Src_Adr_H;
+				unsigned int Set1; // 0
+				unsigned int Set2; // 1
+				unsigned int Pat_ScrA_Adr; // 2
+				unsigned int Pat_Win_Adr; // 3
+				unsigned int Pat_ScrB_Adr; // 4
+				unsigned int Spr_Att_Adr; // 5
+				unsigned int Reg6; // 6
+				unsigned int BG_Color; // 7
+				unsigned int Reg8; // 8
+				unsigned int Reg9; // 9
+				unsigned int H_Int; // 10
+				unsigned int Set3; // 11
+				unsigned int Set4; // 12
+				unsigned int H_Scr_Adr; // 13
+				unsigned int Reg14; // 14
+				unsigned int Auto_Inc; // 15
+				unsigned int Scr_Size; // 16
+				unsigned int Win_H_Pos; // 17
+				unsigned int Win_V_Pos; // 18
+				unsigned int DMA_Length_L; // 19
+				unsigned int DMA_Length_H; // 20
+				unsigned int DMA_Src_Adr_L; // 21
+				unsigned int DMA_Src_Adr_M; // 22
+				unsigned int DMA_Src_Adr_H; // 23
 			};
 			unsigned int regs[24];
 		};

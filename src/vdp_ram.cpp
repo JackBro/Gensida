@@ -28,6 +28,7 @@
 #include <vector>
 #include "ida_debug.h"
 #include <sstream>
+#include <iomanip>
 
 HDC VDPRamMemDC;
 HBITMAP VDPRamMemBMP;
@@ -57,6 +58,8 @@ std::vector<TabInfo> tabItems;
 
 void Redraw_VDP_View()
 {
+	if (!VDPRamHWnd) return;
+
 	RECT r;
 
 	r.left = 5;
@@ -76,81 +79,6 @@ void Redraw_VDP_View()
 	r.right = r.left + 64;
 	r.bottom = r.top + 64;
 	InvalidateRect(VDPRamHWnd, &r, FALSE);
-}
-
-void Update_VDP_RAM()
-{
-    unsigned short scroll_begin, scroll_end, tableA_begin, tableA_end, tableB_begin, tableB_end;
-    unsigned short tableW_begin, tableW_end, tableS_begin, tableS_end, screenMode, screenW, screenH;
-
-    if (VDPRamHWnd)
-    {
-		Redraw_VDP_View();
-
-        scroll_begin = (VDP_Reg.H_Scr_Adr & 0x3F) << 10;
-        if ((VDP_Reg.Set3 & 0x3) == 0x3)
-            scroll_end = scroll_begin + 0x400;
-        else if (VDP_Reg.Set3 & 0x3)
-            scroll_end = scroll_begin + 0x3F4;
-        else
-            scroll_end = scroll_begin + 4;
-
-        tableA_begin = (VDP_Reg.Pat_ScrA_Adr & 0x38) << 10;
-        tableB_begin = (VDP_Reg.Pat_ScrB_Adr & 0x7) << 13;
-        if (VDP_Reg.Set4 & 0x81)
-        {
-            tableW_begin = (VDP_Reg.Pat_Win_Adr & 0x3C) << 10;
-            tableW_end = (tableW_begin + 0x1000) & 0xFFFF;
-            tableS_begin = (VDP_Reg.Spr_Att_Adr & 0x7E) << 9;
-        }
-        else
-        {
-            tableW_begin = (VDP_Reg.Pat_Win_Adr & 0x3E) << 10;
-            tableW_end = tableW_begin + 0x800;
-            tableS_begin = (VDP_Reg.Spr_Att_Adr & 0x7F) << 9;
-        }
-        tableS_end = tableS_begin + 640;
-        unsigned char scrollsize = ((VDP_Reg.Scr_Size & 0x30) >> 2) | (VDP_Reg.Scr_Size & 0x3);
-        switch (scrollsize & 0xF) {
-        case 1:
-        case 4:
-            tableA_end = tableA_begin + 0x1000;
-            tableB_end = tableB_begin + 0x1000;
-            break;
-        case 3:
-        case 5:
-        case 12:
-            tableA_end = tableA_begin + 0x2000;
-            tableB_end = tableB_begin + 0x2000;
-            break;
-        default:
-            tableA_end = tableA_begin + 0x800;
-            tableB_end = tableB_begin + 0x800;
-            break;
-        }
-
-        screenMode = VDP_Reg.Set4 & 0x6;
-        screenW = 0x20 + (VDP_Reg.Scr_Size & 0x3) * 32;
-        screenH = 0x20 + ((VDP_Reg.Scr_Size >> 4) & 0x3) * 32;
-
-        static char buff[2000];
-        sprintf(buff, "PLANEA: [%04X-%04X]\n"
-            "PLANEB: [%04X-%04X]\n"
-            "WINDOW: [%04X-%04X]\n"
-            "SPRITES TABLE: [%04X-%04X]\n"
-            "HSCROLL TABLE: [%04X-%04X]\n"
-            "--------\n"
-            "MODE: %s\n"
-            "SCREEN SIZE: %dx%d (%dx%d)\n"
-            , tableA_begin, (tableA_end - 1) & 0xFFFF
-            , tableB_begin, (tableB_end - 1) & 0xFFFF
-            , tableW_begin, (tableW_end - 1) & 0xFFFF
-            , tableS_begin, (tableS_end - 1) & 0xFFFF
-            , scroll_begin, (scroll_end - 1) & 0xFFFF
-            , (screenMode == 2) ? "Interlaced" : (screenMode == 6) ? "Double interlaced" : "Normal"
-            , screenW, screenH, screenW * 8, screenH * 8);
-        SetWindowText(GetDlgItem(VDPRamHWnd, IDC_VDP_ADDRESSES), buff);
-    }
 }
 
 BOOL SetClipboardText(LPCTSTR pszText)
@@ -187,6 +115,77 @@ void WndProcDialogImplementSaveFieldWhenLostFocus(HWND hwnd, UINT msg, WPARAM wp
 		SendMessage(hwnd, WM_COMMAND, MAKEWPARAM(0, EN_SETFOCUS), NULL);
 		SetFocus(NULL);
 		break;
+	}
+}
+
+//----------------------------------------------------------------------------------------
+std::string GetDlgItemString(HWND hwnd, int controlID)
+{
+	std::string result;
+
+	const unsigned int maxTextLength = 1024;
+	char currentTextTemp[maxTextLength];
+	if (GetDlgItemText(hwnd, controlID, currentTextTemp, maxTextLength) == 0)
+	{
+		currentTextTemp[0] = '\0';
+	}
+	result = currentTextTemp;
+
+	return result;
+}
+
+//----------------------------------------------------------------------------------------
+unsigned int GetDlgItemHex(HWND hwnd, int controlID)
+{
+	unsigned int value = 0;
+
+	const unsigned int maxTextLength = 1024;
+	char currentTextTemp[maxTextLength];
+	if (GetDlgItemText(hwnd, controlID, currentTextTemp, maxTextLength) == 0)
+	{
+		currentTextTemp[0] = '\0';
+	}
+	std::stringstream buffer;
+	buffer << std::hex << currentTextTemp;
+	buffer >> value;
+
+	return value;
+}
+
+//----------------------------------------------------------------------------------------
+void UpdateDlgItemHex(HWND hwnd, int controlID, unsigned int width, unsigned int data)
+{
+	const unsigned int maxTextLength = 1024;
+	char currentTextTemp[maxTextLength];
+	if (GetDlgItemText(hwnd, controlID, currentTextTemp, maxTextLength) == 0)
+	{
+		currentTextTemp[0] = '\0';
+	}
+	std::string currentText = currentTextTemp;
+	std::stringstream text;
+	text << std::setw(width) << std::setfill('0') << std::hex << std::uppercase;
+	text << data;
+	if (text.str() != currentText)
+	{
+		SetDlgItemText(hwnd, controlID, text.str().c_str());
+	}
+}
+
+//----------------------------------------------------------------------------------------
+void UpdateDlgItemBin(HWND hwnd, int controlID, unsigned int data)
+{
+	const unsigned int maxTextLength = 1024;
+	char currentTextTemp[maxTextLength];
+	if (GetDlgItemText(hwnd, controlID, currentTextTemp, maxTextLength) == 0)
+	{
+		currentTextTemp[0] = '\0';
+	}
+	std::string currentText = currentTextTemp;
+	std::stringstream text;
+	text << data;
+	if (text.str() != currentText)
+	{
+		SetDlgItemText(hwnd, controlID, text.str().c_str());
 	}
 }
 
@@ -230,8 +229,224 @@ INT_PTR msgModeRegistersWM_PAINT(HWND hwnd, WPARAM wparam, LPARAM lparam)
 	return TRUE;
 }
 
-#define SET_BIT(number, n, x) (number ^= ((~x ^ number) & (1 << n)))
-#define SET_BITS(number, n, c, x) (number = (number & ~mask(n, c)) | (x << c))
+#define GET_BITS(number, n, c) ((number & mask(n, c)) >> n)
+//----------------------------------------------------------------------------------------
+INT_PTR msgOtherRegistersWM_PAINT(HWND hwnd, WPARAM wparam, LPARAM lparam)
+{
+	unsigned int value = 0;
+	bool mode4Enabled = !(VDP_Reg.Set2 & mask(2));
+	int extendedVRAMModeEnabled = (VDP_Reg.Set2 & mask(7));
+	int h40ModeActive = (VDP_Reg.Set4 & mask(0));
+
+	//Other registers
+	CheckDlgButton(hwnd, IDC_VDP_REGISTERS_077, (VDP_Reg.BG_Color & mask(7)) ? BST_CHECKED : BST_UNCHECKED);
+	CheckDlgButton(hwnd, IDC_VDP_REGISTERS_076, (VDP_Reg.BG_Color & mask(6)) ? BST_CHECKED : BST_UNCHECKED);
+	if (currentControlFocus != IDC_VDP_REGISTERS_BACKGROUNDPALETTEROW)
+	{
+		value = GET_BITS(VDP_Reg.BG_Color, 4, 2);
+		UpdateDlgItemHex(hwnd, IDC_VDP_REGISTERS_BACKGROUNDPALETTEROW, 1, value);
+	}
+	if (currentControlFocus != IDC_VDP_REGISTERS_BACKGROUNDPALETTECOLUMN)
+	{
+		value = GET_BITS(VDP_Reg.BG_Color, 0, 4);
+		UpdateDlgItemHex(hwnd, IDC_VDP_REGISTERS_BACKGROUNDPALETTECOLUMN, 1, value);
+	}
+	if (currentControlFocus != IDC_VDP_REGISTERS_BACKGROUNDSCROLLX)
+		UpdateDlgItemHex(hwnd, IDC_VDP_REGISTERS_BACKGROUNDSCROLLX, 2, VDP_Reg.Reg8);
+	if (currentControlFocus != IDC_VDP_REGISTERS_BACKGROUNDSCROLLY)
+		UpdateDlgItemHex(hwnd, IDC_VDP_REGISTERS_BACKGROUNDSCROLLY, 2, VDP_Reg.Reg9);
+	if (currentControlFocus != IDC_VDP_REGISTERS_HINTLINECOUNTER)
+		UpdateDlgItemHex(hwnd, IDC_VDP_REGISTERS_HINTLINECOUNTER, 2, VDP_Reg.H_Int);
+	if (currentControlFocus != IDC_VDP_REGISTERS_AUTOINCREMENT)
+		UpdateDlgItemHex(hwnd, IDC_VDP_REGISTERS_AUTOINCREMENT, 2, VDP_Reg.Auto_Inc);
+	if (currentControlFocus != IDC_VDP_REGISTERS_SCROLLABASE)
+		UpdateDlgItemHex(hwnd, IDC_VDP_REGISTERS_SCROLLABASE, 2, VDP_Reg.Pat_ScrA_Adr);
+	if (currentControlFocus != IDC_VDP_REGISTERS_SCROLLABASE_E)
+	{
+		value = GET_BITS(VDP_Reg.Pat_ScrA_Adr, 3, (extendedVRAMModeEnabled) ? 4 : 3) << 13;
+		if (mode4Enabled)
+		{
+			value = GET_BITS(VDP_Reg.Pat_ScrA_Adr, 1, 3) << 11;
+		}
+
+		UpdateDlgItemHex(hwnd, IDC_VDP_REGISTERS_SCROLLABASE_E, 5, value);
+	}
+	if (currentControlFocus != IDC_VDP_REGISTERS_WINDOWBASE)
+		UpdateDlgItemHex(hwnd, IDC_VDP_REGISTERS_WINDOWBASE, 2, VDP_Reg.Pat_Win_Adr);
+	if (currentControlFocus != IDC_VDP_REGISTERS_WINDOWBASE_E)
+	{
+		value = GET_BITS(VDP_Reg.Pat_Win_Adr, 1, (extendedVRAMModeEnabled) ? 6 : 5) << 11;
+		if (h40ModeActive)
+		{
+			value = GET_BITS(VDP_Reg.Pat_Win_Adr, 2, (extendedVRAMModeEnabled) ? 5 : 4) << 12;
+		}
+		UpdateDlgItemHex(hwnd, IDC_VDP_REGISTERS_WINDOWBASE_E, 5, value);
+	}
+	if (currentControlFocus != IDC_VDP_REGISTERS_SCROLLBBASE)
+		UpdateDlgItemHex(hwnd, IDC_VDP_REGISTERS_SCROLLBBASE, 2, VDP_Reg.Pat_ScrB_Adr);
+	if (currentControlFocus != IDC_VDP_REGISTERS_SCROLLBBASE_E)
+	{
+		value = GET_BITS(VDP_Reg.Pat_ScrB_Adr, 0, (extendedVRAMModeEnabled) ? 4 : 3) << 13;
+		UpdateDlgItemHex(hwnd, IDC_VDP_REGISTERS_SCROLLBBASE_E, 5, value);
+	}
+	if (currentControlFocus != IDC_VDP_REGISTERS_SPRITEBASE)
+		UpdateDlgItemHex(hwnd, IDC_VDP_REGISTERS_SPRITEBASE, 2, VDP_Reg.Spr_Att_Adr);
+	if (currentControlFocus != IDC_VDP_REGISTERS_SPRITEBASE_E)
+	{
+		value = GET_BITS(VDP_Reg.Spr_Att_Adr, 0, (extendedVRAMModeEnabled) ? 8 : 7) << 9;
+
+		if (mode4Enabled)
+		{
+			value = GET_BITS(VDP_Reg.Spr_Att_Adr, 1, 6) << 8;
+		}
+		else if (h40ModeActive)
+		{
+			value = GET_BITS(VDP_Reg.Spr_Att_Adr, 1, (extendedVRAMModeEnabled) ? 7 : 6) << 10;
+		}
+
+		UpdateDlgItemHex(hwnd, IDC_VDP_REGISTERS_SPRITEBASE_E, 5, value);
+	}
+	if (currentControlFocus != IDC_VDP_REGISTERS_SPRITEPATTERNBASE)
+		UpdateDlgItemHex(hwnd, IDC_VDP_REGISTERS_SPRITEPATTERNBASE, 2, VDP_Reg.Reg6);
+	if (currentControlFocus != IDC_VDP_REGISTERS_SPRITEPATTERNBASE_E)
+	{
+		if (mode4Enabled)
+		{
+			value = GET_BITS(VDP_Reg.Reg6, 2, 1) << 13;
+		}
+		else if (extendedVRAMModeEnabled)
+		{
+			value = GET_BITS(VDP_Reg.Reg6, 5, 1) << 16;
+		}
+
+		UpdateDlgItemHex(hwnd, IDC_VDP_REGISTERS_SPRITEPATTERNBASE_E, 5, value);
+	}
+	if (currentControlFocus != IDC_VDP_REGISTERS_HSCROLLBASE)
+		UpdateDlgItemHex(hwnd, IDC_VDP_REGISTERS_HSCROLLBASE, 2, VDP_Reg.H_Scr_Adr);
+	if (currentControlFocus != IDC_VDP_REGISTERS_HSCROLLBASE_E)
+	{
+		value = GET_BITS(VDP_Reg.H_Scr_Adr, 0, (extendedVRAMModeEnabled) ? 7 : 6) << 10;
+		UpdateDlgItemHex(hwnd, IDC_VDP_REGISTERS_HSCROLLBASE_E, 5, value);
+	}
+	if (currentControlFocus != IDC_VDP_REGISTERS_DMALENGTH)
+	{
+		value = VDP_Reg.DMA_Length_L;
+		value += VDP_Reg.DMA_Length_H << 8;
+
+		UpdateDlgItemHex(hwnd, IDC_VDP_REGISTERS_DMALENGTH, 4, value);
+	}
+	if (currentControlFocus != IDC_VDP_REGISTERS_DMASOURCE)
+	{
+		value = VDP_Reg.DMA_Src_Adr_L << 1;
+		value += VDP_Reg.DMA_Src_Adr_M << 9;
+		value += GET_BITS(VDP_Reg.DMA_Src_Adr_H, 0, 7) << 17;
+
+		UpdateDlgItemHex(hwnd, IDC_VDP_REGISTERS_DMASOURCE, 6, value >> 1);
+	}
+	if (currentControlFocus != IDC_VDP_REGISTERS_DMASOURCE_E)
+	{
+		value = VDP_Reg.DMA_Src_Adr_L << 1;
+		value += VDP_Reg.DMA_Src_Adr_M << 9;
+		value += GET_BITS(VDP_Reg.DMA_Src_Adr_H, 0, 7) << 17;
+
+		UpdateDlgItemHex(hwnd, IDC_VDP_REGISTERS_DMASOURCE_E, 6, value);
+	}
+	CheckDlgButton(hwnd, IDC_VDP_REGISTERS_DMD1, (VDP_Reg.DMA_Src_Adr_H & mask(7)) ? BST_CHECKED : BST_UNCHECKED);
+	CheckDlgButton(hwnd, IDC_VDP_REGISTERS_DMD0, (VDP_Reg.DMA_Src_Adr_H & mask(6)) ? BST_CHECKED : BST_UNCHECKED);
+
+	if (currentControlFocus != IDC_VDP_REGISTERS_0E57)
+	{
+		value = GET_BITS(VDP_Reg.Reg14, 5, 3);
+		UpdateDlgItemHex(hwnd, IDC_VDP_REGISTERS_0E57, 1, value);
+	}
+	if (currentControlFocus != IDC_VDP_REGISTERS_SCROLLAPATTERNBASE)
+	{
+		value = VDP_Reg.Reg14 & 0x0F;
+		UpdateDlgItemHex(hwnd, IDC_VDP_REGISTERS_SCROLLAPATTERNBASE, 1, value);
+	}
+	if (currentControlFocus != IDC_VDP_REGISTERS_SCROLLAPATTERNBASE_E)
+	{
+		if (extendedVRAMModeEnabled)
+		{
+			value = GET_BITS(VDP_Reg.Reg14, 0, 1) << 16;
+		}
+
+		UpdateDlgItemHex(hwnd, IDC_VDP_REGISTERS_SCROLLAPATTERNBASE_E, 5, value);
+	}
+	if (currentControlFocus != IDC_VDP_REGISTERS_0E13)
+	{
+		value = GET_BITS(VDP_Reg.Reg14, 1, 3);
+		UpdateDlgItemHex(hwnd, IDC_VDP_REGISTERS_0E13, 1, value);
+	}
+	if (currentControlFocus != IDC_VDP_REGISTERS_SCROLLBPATTERNBASE)
+	{
+		value = (VDP_Reg.Reg14 >> 4) & 0x0F;
+		UpdateDlgItemHex(hwnd, IDC_VDP_REGISTERS_SCROLLBPATTERNBASE, 1, value);
+	}
+	if (currentControlFocus != IDC_VDP_REGISTERS_SCROLLBPATTERNBASE_E)
+	{
+		if (extendedVRAMModeEnabled)
+		{
+			value = (GET_BITS(VDP_Reg.Reg14, 0, 1) << 16) & (GET_BITS(VDP_Reg.Reg14, 4, 1) << 16);
+		}
+
+		UpdateDlgItemHex(hwnd, IDC_VDP_REGISTERS_SCROLLBPATTERNBASE_E, 5, value);
+	}
+	if (currentControlFocus != IDC_VDP_REGISTERS_1067)
+	{
+		value = GET_BITS(VDP_Reg.Scr_Size, 6, 2);
+		UpdateDlgItemHex(hwnd, IDC_VDP_REGISTERS_1067, 1, value);
+	}
+	if (currentControlFocus != IDC_VDP_REGISTERS_VSZ)
+	{
+		value = GET_BITS(VDP_Reg.Scr_Size, 4, 2);
+		UpdateDlgItemHex(hwnd, IDC_VDP_REGISTERS_VSZ, 1, value);
+	}
+	if (currentControlFocus != IDC_VDP_REGISTERS_1023)
+	{
+		value = GET_BITS(VDP_Reg.Scr_Size, 2, 2);
+		UpdateDlgItemHex(hwnd, IDC_VDP_REGISTERS_1023, 1, value);
+	}
+	if (currentControlFocus != IDC_VDP_REGISTERS_HSZ)
+	{
+		value = GET_BITS(VDP_Reg.Scr_Size, 0, 2);
+		UpdateDlgItemHex(hwnd, IDC_VDP_REGISTERS_HSZ, 1, value);
+	}
+	CheckDlgButton(hwnd, IDC_VDP_REGISTERS_WINDOWRIGHT, (VDP_Reg.Win_H_Pos & mask(7)) ? BST_CHECKED : BST_UNCHECKED);
+	if (currentControlFocus != IDC_VDP_REGISTERS_1156)
+	{
+		value = GET_BITS(VDP_Reg.Win_H_Pos, 5, 2);
+		UpdateDlgItemHex(hwnd, IDC_VDP_REGISTERS_1156, 1, value);
+	}
+	if (currentControlFocus != IDC_VDP_REGISTERS_WINDOWBASEX)
+	{
+		value = GET_BITS(VDP_Reg.Win_H_Pos, 0, 5);
+		UpdateDlgItemHex(hwnd, IDC_VDP_REGISTERS_WINDOWBASEX, 1, value);
+	}
+	CheckDlgButton(hwnd, IDC_VDP_REGISTERS_WINDOWDOWN, (VDP_Reg.Win_V_Pos & mask(7)) ? BST_CHECKED : BST_UNCHECKED);
+	if (currentControlFocus != IDC_VDP_REGISTERS_1256)
+	{
+		value = GET_BITS(VDP_Reg.Win_V_Pos, 5, 2);
+		UpdateDlgItemHex(hwnd, IDC_VDP_REGISTERS_1256, 1, value);
+	}
+	if (currentControlFocus != IDC_VDP_REGISTERS_WINDOWBASEY)
+	{
+		value = GET_BITS(VDP_Reg.Win_V_Pos, 0, 5);
+		UpdateDlgItemHex(hwnd, IDC_VDP_REGISTERS_WINDOWBASEY, 1, value);
+	}
+
+	unsigned int screenSizeCellsH = 0x20 + (VDP_Reg.Scr_Size & 0x3) * 32;
+	unsigned int screenSizeCellsV = 0x20 + ((VDP_Reg.Scr_Size >> 4) & 0x3) * 32;
+
+	UpdateDlgItemBin(hwnd, IDC_VDP_REGISTERS_HSZ_E, screenSizeCellsH);
+	UpdateDlgItemBin(hwnd, IDC_VDP_REGISTERS_VSZ_E, screenSizeCellsV);
+
+	return TRUE;
+}
+#undef GET_BITS
+
+#define SET_BIT(number, n, x) (number = (number & ~mask(n)) | (x << n))
+#define SET_BITS(number, n, c, x) (number = (number & ~mask(n, c)) | (x << n))
 //----------------------------------------------------------------------------------------
 INT_PTR msgModeRegistersWM_COMMAND(HWND hwnd, WPARAM wparam, LPARAM lparam)
 {
@@ -344,40 +559,6 @@ INT_PTR msgModeRegistersWM_COMMAND(HWND hwnd, WPARAM wparam, LPARAM lparam)
 }
 
 //----------------------------------------------------------------------------------------
-std::string GetDlgItemString(HWND hwnd, int controlID)
-{
-	std::string result;
-
-	const unsigned int maxTextLength = 1024;
-	char currentTextTemp[maxTextLength];
-	if (GetDlgItemText(hwnd, controlID, currentTextTemp, maxTextLength) == 0)
-	{
-		currentTextTemp[0] = '\0';
-	}
-	result = currentTextTemp;
-
-	return result;
-}
-
-//----------------------------------------------------------------------------------------
-unsigned int GetDlgItemHex(HWND hwnd, int controlID)
-{
-	unsigned int value = 0;
-
-	const unsigned int maxTextLength = 1024;
-	char currentTextTemp[maxTextLength];
-	if (GetDlgItemText(hwnd, controlID, currentTextTemp, maxTextLength) == 0)
-	{
-		currentTextTemp[0] = '\0';
-	}
-	std::stringstream buffer;
-	buffer << std::hex << currentTextTemp;
-	buffer >> value;
-
-	return value;
-}
-
-//----------------------------------------------------------------------------------------
 INT_PTR msgOtherRegistersWM_COMMAND(HWND hwnd, WPARAM wparam, LPARAM lparam)
 {
 	if (HIWORD(wparam) == BN_CLICKED)
@@ -406,6 +587,10 @@ INT_PTR msgOtherRegistersWM_COMMAND(HWND hwnd, WPARAM wparam, LPARAM lparam)
 			break;
 		}
 	}
+	else if ((HIWORD(wparam) == EN_CHANGE))
+	{
+		return FALSE;
+	}
 	else if ((HIWORD(wparam) == EN_SETFOCUS))
 	{
 		previousText = GetDlgItemString(hwnd, LOWORD(wparam));
@@ -413,7 +598,7 @@ INT_PTR msgOtherRegistersWM_COMMAND(HWND hwnd, WPARAM wparam, LPARAM lparam)
 	}
 	else if ((HIWORD(wparam) == EN_KILLFOCUS))
 	{
-		/*std::string newText = GetDlgItemString(hwnd, LOWORD(wparam));
+		std::string newText = GetDlgItemString(hwnd, LOWORD(wparam));
 		if (newText != previousText)
 		{
 			switch (LOWORD(wparam))
@@ -440,96 +625,128 @@ INT_PTR msgOtherRegistersWM_COMMAND(HWND hwnd, WPARAM wparam, LPARAM lparam)
 				VDP_Reg.Pat_ScrA_Adr = GetDlgItemHex(hwnd, LOWORD(wparam));
 				break;
 			case IDC_VDP_REGISTERS_SCROLLABASE_E:
-				model.RegSetNameTableBaseScrollA(GetDlgItemHex(hwnd, LOWORD(wparam)));
+				VDP_Reg.Pat_ScrA_Adr = (GetDlgItemHex(hwnd, LOWORD(wparam)) >> 10) & 0xFF;
 				break;
 			case IDC_VDP_REGISTERS_WINDOWBASE:
-				model.SetRegisterData(0x03, GetDlgItemHex(hwnd, LOWORD(wparam)));
+				VDP_Reg.Pat_Win_Adr = GetDlgItemHex(hwnd, LOWORD(wparam));
 				break;
 			case IDC_VDP_REGISTERS_WINDOWBASE_E:
-				model.RegSetNameTableBaseWindow(GetDlgItemHex(hwnd, LOWORD(wparam)));
+				VDP_Reg.Pat_Win_Adr = (GetDlgItemHex(hwnd, LOWORD(wparam)) >> 10) & 0xFF;
 				break;
 			case IDC_VDP_REGISTERS_SCROLLBBASE:
-				model.SetRegisterData(0x04, GetDlgItemHex(hwnd, LOWORD(wparam)));
+				VDP_Reg.Pat_ScrB_Adr = GetDlgItemHex(hwnd, LOWORD(wparam));
 				break;
 			case IDC_VDP_REGISTERS_SCROLLBBASE_E:
-				model.RegSetNameTableBaseScrollB(GetDlgItemHex(hwnd, LOWORD(wparam)));
+				VDP_Reg.Pat_ScrB_Adr = (GetDlgItemHex(hwnd, LOWORD(wparam)) >> 13) & 0xFF;
 				break;
 			case IDC_VDP_REGISTERS_SPRITEBASE:
-				model.SetRegisterData(0x05, GetDlgItemHex(hwnd, LOWORD(wparam)));
+				VDP_Reg.Spr_Att_Adr = GetDlgItemHex(hwnd, LOWORD(wparam));
 				break;
 			case IDC_VDP_REGISTERS_SPRITEBASE_E:
-				model.RegSetNameTableBaseSprite(GetDlgItemHex(hwnd, LOWORD(wparam)));
+				if (!(VDP_Reg.Set2 & mask(2)))
+				{
+					VDP_Reg.Spr_Att_Adr = (GetDlgItemHex(hwnd, LOWORD(wparam)) >> 7) & 0xFF;
+				}
+				else
+				{
+					VDP_Reg.Spr_Att_Adr = (GetDlgItemHex(hwnd, LOWORD(wparam)) >> 9) & 0xFF;
+				}
 				break;
 			case IDC_VDP_REGISTERS_SPRITEPATTERNBASE:
-				model.SetRegisterData(0x06, GetDlgItemHex(hwnd, LOWORD(wparam)));
+				VDP_Reg.Reg6 = GetDlgItemHex(hwnd, LOWORD(wparam));
 				break;
 			case IDC_VDP_REGISTERS_SPRITEPATTERNBASE_E:
-				model.RegSetPatternBaseSprite(GetDlgItemHex(hwnd, LOWORD(wparam)));
+				if (!(VDP_Reg.Set2 & mask(2)))
+				{
+					VDP_Reg.Reg6 = (GetDlgItemHex(hwnd, LOWORD(wparam)) >> 13) & 0xFF;
+				}
+				else
+				{
+					VDP_Reg.Reg6 = (GetDlgItemHex(hwnd, LOWORD(wparam)) >> 16) & 0xFF;
+				}
 				break;
 			case IDC_VDP_REGISTERS_HSCROLLBASE:
-				model.SetRegisterData(0x0D, GetDlgItemHex(hwnd, LOWORD(wparam)));
+				VDP_Reg.H_Scr_Adr = GetDlgItemHex(hwnd, LOWORD(wparam));
 				break;
 			case IDC_VDP_REGISTERS_HSCROLLBASE_E:
-				model.RegSetHScrollDataBase(GetDlgItemHex(hwnd, LOWORD(wparam)));
+				VDP_Reg.H_Scr_Adr = (GetDlgItemHex(hwnd, LOWORD(wparam)) >> 10) & 0xFF;
 				break;
 			case IDC_VDP_REGISTERS_DMALENGTH:
-				model.RegSetDMALengthCounter(GetDlgItemHex(hwnd, LOWORD(wparam)));
-				break;
+			{
+				unsigned short w = GetDlgItemHex(hwnd, LOWORD(wparam));
+				VDP_Reg.DMA_Length_L = (w & 0xFF);
+				VDP_Reg.DMA_Length_H = (w >> 8) & 0xFF;
+			} break;
 			case IDC_VDP_REGISTERS_DMASOURCE:
-				model.RegSetDMASourceAddress(GetDlgItemHex(hwnd, LOWORD(wparam)) << 1);
-				break;
+			{
+				unsigned int l = GetDlgItemHex(hwnd, LOWORD(wparam)) << 1;
+				VDP_Reg.DMA_Src_Adr_L = (l >> 1) & 0xFF;
+				VDP_Reg.DMA_Src_Adr_M = (l >> 9) & 0xFF;
+				VDP_Reg.DMA_Src_Adr_H = (l >> 17) & mask(0, 7);
+			} break;
 			case IDC_VDP_REGISTERS_DMASOURCE_E:
-				model.RegSetDMASourceAddress(GetDlgItemHex(hwnd, LOWORD(wparam)));
-				break;
+			{
+				unsigned int l = GetDlgItemHex(hwnd, LOWORD(wparam));
+				VDP_Reg.DMA_Src_Adr_L = (l >> 1) & 0xFF;
+				VDP_Reg.DMA_Src_Adr_M = (l >> 9) & 0xFF;
+				VDP_Reg.DMA_Src_Adr_H = (l >> 17) & mask(0, 7);
+			} break;
 			case IDC_VDP_REGISTERS_0E57:
-				model.RegSet0E57(GetDlgItemHex(hwnd, LOWORD(wparam)));
+				SET_BITS(VDP_Reg.Reg14, 5, 3, GetDlgItemHex(hwnd, LOWORD(wparam)));
 				break;
 			case IDC_VDP_REGISTERS_SCROLLAPATTERNBASE:
-				model.SetRegisterData(0x0E, (model.GetRegisterData(0x0E) & 0xF0) | GetDlgItemHex(hwnd, LOWORD(wparam)));
+				VDP_Reg.Reg14 = (VDP_Reg.Reg14 & 0xF0) | GetDlgItemHex(hwnd, LOWORD(wparam));
 				break;
 			case IDC_VDP_REGISTERS_SCROLLAPATTERNBASE_E:
-				model.RegSetPatternBaseScrollA(GetDlgItemHex(hwnd, LOWORD(wparam)));
+				SET_BITS(VDP_Reg.Reg14, 4, 1, (GetDlgItemHex(hwnd, LOWORD(wparam)) >> 16));
 				break;
 			case IDC_VDP_REGISTERS_0E13:
-				model.RegSet0E13(GetDlgItemHex(hwnd, LOWORD(wparam)));
+				SET_BITS(VDP_Reg.Reg14, 1, 3, GetDlgItemHex(hwnd, LOWORD(wparam)));
 				break;
 			case IDC_VDP_REGISTERS_SCROLLBPATTERNBASE:
-				model.SetRegisterData(0x0E, (model.GetRegisterData(0x0E) & 0x0F) | GetDlgItemHex(hwnd, LOWORD(wparam)));
+				VDP_Reg.Reg14 = (VDP_Reg.Reg14 & 0x0F) | GetDlgItemHex(hwnd, LOWORD(wparam));
 				break;
 			case IDC_VDP_REGISTERS_SCROLLBPATTERNBASE_E:
-				model.RegSetPatternBaseScrollB(GetDlgItemHex(hwnd, LOWORD(wparam)));
-				break;
+			{
+				unsigned int newData = GetDlgItemHex(hwnd, LOWORD(wparam)) >> 16;
+				SET_BITS(VDP_Reg.Reg14, 0, 1, newData);
+				if (newData != 0)
+				{
+					SET_BITS(VDP_Reg.Reg14, 4, 1, newData);
+				}
+			} break;
 			case IDC_VDP_REGISTERS_1067:
-				model.RegSet1067(GetDlgItemHex(hwnd, LOWORD(wparam)));
+				SET_BITS(VDP_Reg.Scr_Size, 6, 2, GetDlgItemHex(hwnd, LOWORD(wparam)));
 				break;
 			case IDC_VDP_REGISTERS_VSZ:
-				model.RegSetVSZ(GetDlgItemHex(hwnd, LOWORD(wparam)));
+				SET_BITS(VDP_Reg.Scr_Size, 4, 2, GetDlgItemHex(hwnd, LOWORD(wparam)));
 				break;
 			case IDC_VDP_REGISTERS_1023:
-				model.RegSet1023(GetDlgItemHex(hwnd, LOWORD(wparam)));
+				SET_BITS(VDP_Reg.Scr_Size, 2, 2, GetDlgItemHex(hwnd, LOWORD(wparam)));
 				break;
 			case IDC_VDP_REGISTERS_HSZ:
-				model.RegSetHSZ(GetDlgItemHex(hwnd, LOWORD(wparam)));
+				SET_BITS(VDP_Reg.Scr_Size, 0, 2, GetDlgItemHex(hwnd, LOWORD(wparam)));
 				break;
 			case IDC_VDP_REGISTERS_1156:
-				model.RegSet1156(GetDlgItemHex(hwnd, LOWORD(wparam)));
+				SET_BITS(VDP_Reg.Win_H_Pos, 5, 2, GetDlgItemHex(hwnd, LOWORD(wparam)));
 				break;
 			case IDC_VDP_REGISTERS_WINDOWBASEX:
-				model.RegSetWindowBasePointX(GetDlgItemHex(hwnd, LOWORD(wparam)));
+				SET_BITS(VDP_Reg.Win_H_Pos, 0, 5, GetDlgItemHex(hwnd, LOWORD(wparam)));
 				break;
 			case IDC_VDP_REGISTERS_1256:
-				model.RegSet1256(GetDlgItemHex(hwnd, LOWORD(wparam)));
+				SET_BITS(VDP_Reg.Win_V_Pos, 5, 2, GetDlgItemHex(hwnd, LOWORD(wparam)));
 				break;
 			case IDC_VDP_REGISTERS_WINDOWBASEY:
-				model.RegSetWindowBasePointY(GetDlgItemHex(hwnd, LOWORD(wparam)));
+				SET_BITS(VDP_Reg.Win_V_Pos, 0, 5, GetDlgItemHex(hwnd, LOWORD(wparam)));
 				break;
 			}
-		}*/
+		}
 	}
 
 	return TRUE;
 }
 #undef SET_BIT
+#undef SET_BITS
 
 //----------------------------------------------------------------------------------------
 INT_PTR WndProcModeRegisters(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
@@ -650,6 +867,7 @@ INT_PTR CALLBACK WndProcOtherRegistersStatic(HWND hwnd, UINT msg, WPARAM wparam,
 INT_PTR msgModeRegistersWM_INITDIALOG(HWND hDlg, WPARAM wparam, LPARAM lparam)
 {
 	//Add our set of tab items to the list of tabs
+	tabItems.clear();
 	tabItems.push_back(TabInfo("Mode Registers", IDD_VDP_REGISTERS_MODEREGISTERS, WndProcModeRegistersStatic));
 	tabItems.push_back(TabInfo("Other Registers", IDD_VDP_REGISTERS_OTHERREGISTERS, WndProcOtherRegistersStatic));
 
@@ -918,75 +1136,6 @@ LRESULT CALLBACK VDPRamProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
             }
         }
         break;
-        case IDC_BUTTON4:
-        {
-            char buff[4 * 16 * 5];
-            int i, j, o = 0;
-            for (j = 0; j < 4; ++j)
-            {
-                for (i = 0; i < 16; ++i)
-                {
-                    sprintf(buff + o, "%03X ", (int)CRam[(j << 4) + i]);
-                    o += 4;
-                }
-                sprintf(buff + o, "\r\n");
-                o += 2;
-            }
-            SetClipboardText(buff);
-        }
-        break;
-
-        case IDC_BUTTON5:
-        {
-            char buff[4 * 16 * 8];
-            int i, j, o = 0;
-            for (j = 0; j < 4; ++j)
-            {
-                for (i = 0; i < 16; ++i)
-                {
-                    sprintf(buff + o, "%06X ", Palette32[CRam[(j << 4) + i] | 0x4000] & 0xFFFFFF);
-                    o += 7;
-                }
-                sprintf(buff + o, "\r\n");
-                o += 2;
-            }
-            SetClipboardText(buff);
-        }
-        break;
-        case IDC_BUTTON6:
-        {
-            char buff[4 * 16 * 8];
-            int i, j, o = 0;
-            for (j = 0; j < 4; ++j)
-            {
-                for (i = 0; i < 16; ++i)
-                {
-                    sprintf(buff + o, "%06X ", swappp(Palette32[CRam[(j << 4) + i] | 0x4000]));
-                    o += 7;
-                }
-                sprintf(buff + o, "\r\n");
-                o += 2;
-            }
-            SetClipboardText(buff);
-        }
-        break;
-        case IDC_BUTTON7:
-        {
-            char buff[4 * 16 * 12];
-            int i, j, o = 0;
-            for (j = 0; j < 4; ++j)
-            {
-                for (i = 0; i < 16; ++i)
-                {
-                    sprintf(buff + o, "dc.w $%03X\r\n", (int)CRam[(j << 4) + i]);
-                    o += 11;
-                }
-                sprintf(buff + o, "\r\n");
-                o += 2;
-            }
-            SetClipboardText(buff);
-        }
-        break;
         case IDC_BUTTON8:
         {
             char fname[2048];
@@ -1099,7 +1248,7 @@ LRESULT CALLBACK VDPRamProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
         }	break;
         }
         SetScrollPos(GetDlgItem(hDlg, IDC_SCROLLBAR1), SB_CTL, CurPos, TRUE);
-        Update_VDP_RAM();
+		Redraw_VDP_View();
     }	break;
 #define _GetPal(x) Palette32[CRam[x]|0x4000] //((MD_Palette32[x]>>16)|((MD_Palette32[x]&0xff)<<16)|(MD_Palette32[x]&0xff00))
     case WM_PAINT:
@@ -1145,6 +1294,7 @@ LRESULT CALLBACK VDPRamProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
         EndPaint(hDlg, &ps);
 
 		msgModeRegistersWM_PAINT(activeTabWindow, wParam, lParam);
+		msgOtherRegistersWM_PAINT(activeTabWindow, wParam, lParam);
         return true;
     }	break;
 
@@ -1156,7 +1306,7 @@ LRESULT CALLBACK VDPRamProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
             y >= 0 && y <= 16 * 4)
         {
             VDPRamPal = y & 0x30;
-            Update_VDP_RAM();
+			Redraw_VDP_View();
         }
 		else
 		{
@@ -1176,7 +1326,7 @@ LRESULT CALLBACK VDPRamProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 				sprintf(buff, "Offset: %04X\r\nId: %03X", offset, id);
 				SetDlgItemText(hDlg, IDC_TILE_INFO, buff);
 
-				Update_VDP_RAM();
+				Redraw_VDP_View();
 			}
 		}
     }	break;
