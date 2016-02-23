@@ -31,16 +31,21 @@
 #include <iomanip>
 #include <Windowsx.h>
 
-HDC VDPRamMemDC;
-HBITMAP VDPRamMemBMP;
-HBITMAP VDPRamLastBMP;
-BITMAPINFO MemBMPi;
-COLORREF *MemBMPBits;
 int VDPRamPal, VDPRamTile;
 bool IsVRAM;
 
-#define VDP_RAM_VCOUNT 24
-#define _GetPal(x) Palette32[CRam[x]|0x4000]
+#define VDP_PAL_COUNT 4
+#define VDP_PAL_COLORS 16
+#define VDP_TILES_IN_ROW 16
+#define VDP_TILES_IN_COL 24
+#define VDP_TILE_W 8
+#define VDP_TILE_H 8
+#define VDP_TILE_ZOOM 2
+#define VDP_BLOCK_W (VDP_TILE_W * VDP_TILE_ZOOM)
+#define VDP_BLOCK_H (VDP_TILE_H * VDP_TILE_ZOOM)
+#define VDP_SCROLL_MAX (sizeof(VRam) / (VDP_TILES_IN_ROW * 0x20) - VDP_TILES_IN_COL)
+#define SwapPalColor(x) ((((x) >> 16) & 0xFF) | (((x) & 0xFF) << 16) | ((x) & 0xFF00))
+#define GetPalColor(x) (COLORREF)SwapPalColor(Palette32[CRam[x]|0x4000])
 
 struct TabInfo
 {
@@ -924,21 +929,8 @@ void Redraw_VDP_View()
 {
 	if (!VDPRamHWnd) return;
 
-	RECT r;
-
-	r.left = 5;
-	r.top = 5 + 4 * 16 + 5;
-	r.right = r.left + 8 * 16 * 2;
-	r.bottom = r.top + VDP_RAM_VCOUNT * 8 * 2;
-	//InvalidateRect(VDPRamHWnd, &r, FALSE);
-
 	RedrawWindow(GetDlgItem(VDPRamHWnd, IDC_VDP_PALETTE), NULL, NULL, RDW_INVALIDATE);
-
-	r.left = 5 + 16 * 16 + 16 + 8;
-	r.top = 295;
-	r.right = r.left + 64;
-	r.bottom = r.top + 64;
-	//InvalidateRect(VDPRamHWnd, &r, FALSE);
+	RedrawWindow(GetDlgItem(VDPRamHWnd, IDC_VDP_TILES), NULL, NULL, RDW_INVALIDATE);
 }
 
 LRESULT CALLBACK VDPRamProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -951,28 +943,6 @@ LRESULT CALLBACK VDPRamProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
     switch (uMsg)
     {
     case WM_INITDIALOG: {
-		/*HDC hdc = GetDC(hDlg);
-        VDPRamMemDC = CreateCompatibleDC(hdc);
-        MemBMPi.bmiHeader.biSize = sizeof(MemBMPi.bmiHeader);
-        MemBMPi.bmiHeader.biWidth = 8 * 16;
-        MemBMPi.bmiHeader.biHeight = (sizeof(VRam) / 32 / 16) * 8 + 8;
-        MemBMPi.bmiHeader.biBitCount = 32;
-        MemBMPi.bmiHeader.biPlanes = 1;
-        MemBMPi.bmiHeader.biCompression = BI_RGB;
-        MemBMPi.bmiHeader.biClrImportant = 0;
-        MemBMPi.bmiHeader.biClrUsed = 0;
-        MemBMPi.bmiHeader.biSizeImage = (MemBMPi.bmiHeader.biWidth*MemBMPi.bmiHeader.biHeight) * 4;
-        MemBMPi.bmiHeader.biXPelsPerMeter = 0;
-        MemBMPi.bmiHeader.biYPelsPerMeter = 0;
-        //VDPRamMemBMP=CreateCompatibleBitmap(hdc,8*16,(sizeof(VRam)/32/16)*8+8);
-        VDPRamMemBMP = CreateDIBSection(VDPRamMemDC, &MemBMPi, DIB_RGB_COLORS, (void **)&MemBMPBits, NULL, NULL);
-        VDPRamLastBMP = (HBITMAP)SelectObject(VDPRamMemDC, VDPRamMemBMP);
-        VDPRamPal = VDPRamTile = 0;
-        //memset(&MemBMPi,0,sizeof(MemBMPi));
-        //MemBMPi.bmiHeader.biSize=sizeof(MemBMPi.bmiHeader);
-        //GetDIBits(VDPRamMemDC,VDPRamMemBMP,0,0,NULL,&MemBMPi,DIB_RGB_COLORS);
-        //MemBMPBits = new COLORREF[MemBMPi.bmiHeader.biSizeImage/4+1];
-		*/
 		IsVRAM = true;
 		CheckRadioButton(hDlg, IDC_SHOW_VRAM, IDC_SHOW_M68K_RAM, IDC_SHOW_VRAM);
 
@@ -1007,15 +977,36 @@ LRESULT CALLBACK VDPRamProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
         }
 
         SetWindowPos(hDlg, NULL, r.left, r.top, NULL, NULL, SWP_NOSIZE | SWP_NOZORDER | SWP_SHOWWINDOW);
-		SetWindowPos(GetDlgItem(hDlg, IDC_VDP_PALETTE), NULL, 0, 0, 16 * 16, 4 * 16, SWP_NOACTIVATE | SWP_NOOWNERZORDER | SWP_NOZORDER | SWP_NOMOVE); // CRAM
+		SetWindowPos(GetDlgItem(hDlg, IDC_VDP_PALETTE), NULL,
+			0,
+			0,
+			VDP_PAL_COLORS * VDP_BLOCK_W,
+			VDP_PAL_COUNT * VDP_BLOCK_H,
+			SWP_NOZORDER | SWP_NOMOVE);
 
-        SetWindowPos(GetDlgItem(hDlg, IDC_SCROLLBAR1), NULL, 5 + 16 * 16, 5 + 16 * 4 + 5, 16, 16 * VDP_RAM_VCOUNT, SWP_NOZORDER | SWP_SHOWWINDOW);
-        SetScrollRange(GetDlgItem(hDlg, IDC_SCROLLBAR1), SB_CTL, 0, sizeof(VRam) / 0x200 - VDP_RAM_VCOUNT, TRUE);
+		GetWindowRect(GetDlgItem(hDlg, IDC_VDP_PALETTE), &r);
+		MapWindowPoints(HWND_DESKTOP, hDlg, (LPPOINT)&r, 2);
+		SetWindowPos(GetDlgItem(hDlg, IDC_VDP_TILES), NULL,
+			r.left,
+			r.bottom + 5,
+			VDP_TILES_IN_ROW * VDP_BLOCK_W,
+			VDP_TILES_IN_COL * VDP_BLOCK_H,
+			SWP_NOZORDER);
+
+		GetWindowRect(GetDlgItem(hDlg, IDC_VDP_TILES), &r);
+		MapWindowPoints(HWND_DESKTOP, hDlg, (LPPOINT)&r, 2);
+        SetWindowPos(GetDlgItem(hDlg, IDC_SCROLLBAR1), NULL,
+			r.right + 1,
+			r.top,
+			VDP_BLOCK_W,
+			(r.bottom - r.top),
+			SWP_NOZORDER);
+        SetScrollRange(GetDlgItem(hDlg, IDC_SCROLLBAR1), SB_CTL, 0, VDP_SCROLL_MAX, TRUE);
 
 		// Exodus VDP Regs window init
 		msgRegistersWM_INITDIALOG(hDlg, wParam, lParam);
         return true;
-    }	break;
+    } break;
 
 	case WM_DRAWITEM:
 	{
@@ -1024,15 +1015,13 @@ LRESULT CALLBACK VDPRamProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		if ((UINT)wParam == IDC_VDP_PALETTE)
 		{
 			HDC hSmallDC = CreateCompatibleDC(di->hDC);
-			HBITMAP hSmallBmp = CreateCompatibleBitmap(di->hDC, 16, 4);
+			HBITMAP hSmallBmp = CreateCompatibleBitmap(di->hDC, VDP_PAL_COLORS, VDP_PAL_COUNT);
 			HBITMAP hOldSmallBmp = (HBITMAP)SelectObject(hSmallDC, hSmallBmp);
 
-			for (int j = 0; j < 4; ++j)
-				for (int i = 0; i < 16; ++i)
+			for (int j = 0; j < VDP_PAL_COUNT; ++j)
+				for (int i = 0; i < VDP_PAL_COLORS; ++i)
 				{
-					COLORREF c = (COLORREF)Palette32[CRam[16 * j + i] | 0x4000];
-					c = ((c >> 16) & 0xFF) | (c & 0xFF00) | ((c & 0xFF) << 16);
-					SetPixelV(hSmallDC, i, j, c);
+					SetPixelV(hSmallDC, i, j, GetPalColor(VDP_PAL_COLORS * j + i));
 				}
 
 			StretchBlt(
@@ -1044,8 +1033,8 @@ LRESULT CALLBACK VDPRamProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 				hSmallDC,
 				0,
 				0,
-				16,
-				4,
+				VDP_PAL_COLORS,
+				VDP_PAL_COUNT,
 				SRCCOPY
 				);
 
@@ -1054,12 +1043,65 @@ LRESULT CALLBACK VDPRamProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			DeleteDC(hSmallDC);
 
 			r.left = di->rcItem.left;
-			r.right = r.left + 16 * 16;
-			r.top = di->rcItem.top + (VDPRamPal << 4);
-			r.bottom = r.top + 16;
+			r.right = r.left + VDP_PAL_COLORS * VDP_BLOCK_W;
+			r.top = di->rcItem.top + VDPRamPal * VDP_BLOCK_H;
+			r.bottom = r.top + VDP_BLOCK_H;
 			DrawFocusRect(di->hDC, &r);
 
 			return TRUE;
+		}
+		else if ((UINT)wParam == IDC_VDP_TILES)
+		{
+			HDC hSmallDC = CreateCompatibleDC(di->hDC);
+			HBITMAP hSmallBmp = CreateCompatibleBitmap(di->hDC, VDP_TILE_W * VDP_TILES_IN_ROW, VDP_TILE_H * VDP_TILES_IN_COL);
+			HBITMAP hOldSmallBmp = (HBITMAP)SelectObject(hSmallDC, hSmallBmp);
+
+			unsigned char *ptr = (unsigned char*)(IsVRAM ? VRam : Ram_68k);
+
+			int scroll = GetScrollPos(GetDlgItem(hDlg, IDC_SCROLLBAR1), SB_CTL);
+			int start = scroll * VDP_TILES_IN_ROW;
+			int end = start + VDP_TILES_IN_ROW * VDP_TILES_IN_COL;
+			int tiles = end - start;
+
+			for (int i = 0; i < tiles; ++i)
+			{
+				for (int y = 0; y < VDP_TILE_H; ++y)
+				{
+					for (int x = 0; x < (VDP_TILE_W / 2); ++x)
+					{
+						unsigned char t = ptr[(start + i) * 0x20 + y * (VDP_TILE_W / 2) + (x ^ 1)];
+						SetPixelV(hSmallDC, (i % VDP_TILES_IN_ROW) * VDP_TILE_W + x * 2 + 0, (i / VDP_TILES_IN_ROW) * VDP_TILE_H + y, GetPalColor(VDP_PAL_COLORS * VDPRamPal + (t >> 4)));
+						SetPixelV(hSmallDC, (i % VDP_TILES_IN_ROW) * VDP_TILE_W + x * 2 + 1, (i / VDP_TILES_IN_ROW) * VDP_TILE_H + y, GetPalColor(VDP_PAL_COLORS * VDPRamPal + (t & 0xF)));
+					}
+				}
+			}
+
+			StretchBlt(
+				di->hDC,
+				0,
+				0,
+				di->rcItem.right - di->rcItem.left,
+				di->rcItem.bottom - di->rcItem.top,
+				hSmallDC,
+				0,
+				0,
+				VDP_TILE_W * VDP_TILES_IN_ROW,
+				VDP_TILE_H * VDP_TILES_IN_COL,
+				SRCCOPY
+				);
+
+			SelectObject(hSmallDC, hOldSmallBmp);
+			DeleteObject(hSmallBmp);
+			DeleteDC(hSmallDC);
+
+			r.left = di->rcItem.left + (VDPRamTile % VDP_TILES_IN_ROW) * VDP_BLOCK_W;
+			r.right = r.left + VDP_BLOCK_W;
+			int row = (VDPRamTile / VDP_TILES_IN_ROW) - scroll;
+			r.top = di->rcItem.top + row * VDP_BLOCK_H;
+			r.bottom = r.top + VDP_BLOCK_H;
+
+			if (row >= 0 && row < VDP_TILES_IN_COL)
+				DrawFocusRect(di->hDC, &r);
 		}
 	} break;
 
@@ -1070,19 +1112,14 @@ LRESULT CALLBACK VDPRamProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		{
 			if ((nmhdr->code == TCN_SELCHANGE))
 			{
-				//Begin a session for processing this batch of window visibility changes.
-				//Processing all the changes in a single operation in this manner gives the
-				//best performance and appearance.
 				HDWP deferWindowPosSession = BeginDeferWindowPos(2);
 
-				//If another tab window is currently visible, hide it now.
 				if (activeTabWindow != NULL)
 				{
 					DeferWindowPos(deferWindowPosSession, activeTabWindow, NULL, 0, 0, 0, 0, SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_NOACTIVATE | SWP_NOSIZE | SWP_NOMOVE | SWP_HIDEWINDOW);
 					activeTabWindow = NULL;
 				}
 
-				//Show the window for the new selected tab on the tab control
 				int currentlySelectedTab = (int)SendMessage(nmhdr->hwndFrom, TCM_GETCURSEL, 0, 0);
 				if ((currentlySelectedTab < 0) || (currentlySelectedTab >= (int)tabItems.size()))
 				{
@@ -1091,7 +1128,6 @@ LRESULT CALLBACK VDPRamProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 				activeTabWindow = tabItems[currentlySelectedTab].hwndDialog;
 				DeferWindowPos(deferWindowPosSession, activeTabWindow, NULL, 0, 0, 0, 0, SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_NOACTIVATE | SWP_NOSIZE | SWP_NOMOVE | SWP_SHOWWINDOW);
 
-				//Process all the window size and position changes involved in this update
 				EndDeferWindowPos(deferWindowPosSession);
 			}
 		}
@@ -1119,8 +1155,7 @@ LRESULT CALLBACK VDPRamProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
                 fwrite(fname, 1, i & 2047, out);
                 fclose(out);
             }
-        }
-        break;
+        } break;
         case IDC_BUTTON2:
         {
             char fname[2048];
@@ -1142,9 +1177,7 @@ LRESULT CALLBACK VDPRamProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
                     Show_Genesis_Screen(HWnd);
                 }
             }
-        }
-        break;
-#define swappp(x) ((((x)>>16)&0xff)|(((x)&0xff)<<16)|((x)&0xff00))
+        } break;
         case IDC_BUTTON3:
         {
             char fname[2048];
@@ -1153,9 +1186,9 @@ LRESULT CALLBACK VDPRamProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
             {
                 FILE *out = fopen(fname, "wb+");
                 int i;
-                for (i = 0; i < 16 * 4; ++i)
+                for (i = 0; i < VDP_PAL_COLORS * VDP_PAL_COUNT; ++i)
                 {
-                    *((DWORD*)fname) = swappp(Palette32[CRam[i] | 0x4000]);
+                    *((DWORD*)fname) = GetPalColor(i);
                     fwrite(fname, 1, 3, out);
                 }
                 *((DWORD*)fname) = 0;
@@ -1163,8 +1196,7 @@ LRESULT CALLBACK VDPRamProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
                     fwrite(fname, 1, 3, out);
                 fclose(out);
             }
-        }
-        break;
+        } break;
         case IDC_BUTTON8:
         {
             char fname[2048];
@@ -1182,8 +1214,7 @@ LRESULT CALLBACK VDPRamProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
                 fwrite(fname, 1, i & 2047, out);
                 fclose(out);
             }
-        }
-        break;
+        } break;
         case IDC_BUTTON9:
         {
             char fname[2048];
@@ -1202,23 +1233,19 @@ LRESULT CALLBACK VDPRamProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
                 if (Genesis_Started || _32X_Started || SegaCD_Started)
                     Show_Genesis_Screen(HWnd);
             }
-        }
-        break;
+        } break;
 		case IDC_SHOW_VRAM:
 		{
 			IsVRAM = true;
 			Redraw_VDP_View();
-		}
-		break;
+		} break;
 		case IDC_SHOW_M68K_RAM:
 		{
 			IsVRAM = false;
 			Redraw_VDP_View();
-		}
-		break;
+		} break;
         }
-    }	break;
-#undef swappp
+    } break;
 
     case WM_VSCROLL:
     {
@@ -1232,7 +1259,7 @@ LRESULT CALLBACK VDPRamProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
             break;
 
         case SB_RIGHT:      // Scroll to far right.
-            CurPos = sizeof(VRam) / 0x200 - VDP_RAM_VCOUNT;
+            CurPos = VDP_SCROLL_MAX;
             break;
 
         case SB_ENDSCROLL:   // End scroll.
@@ -1244,20 +1271,20 @@ LRESULT CALLBACK VDPRamProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
             break;
 
         case SB_LINERIGHT:   // Scroll right.
-            if (CurPos < sizeof(VRam) / 0x200 - VDP_RAM_VCOUNT)
+            if (CurPos < VDP_SCROLL_MAX)
                 CurPos++;
             break;
 
         case SB_PAGELEFT:    // Scroll one page left.
-            CurPos -= VDP_RAM_VCOUNT;
+            CurPos -= VDP_TILES_IN_COL;
             if (CurPos < 0)
                 CurPos = 0;
             break;
 
         case SB_PAGERIGHT:      // Scroll one page righ
-            CurPos += VDP_RAM_VCOUNT;
-            if (CurPos >= sizeof(VRam) / 0x200 - VDP_RAM_VCOUNT)
-                CurPos = sizeof(VRam) / 0x200 - VDP_RAM_VCOUNT - 1;
+            CurPos += VDP_TILES_IN_COL;
+            if (CurPos >= VDP_SCROLL_MAX)
+                CurPos = VDP_SCROLL_MAX - 1;
             break;
 
         case SB_THUMBTRACK:   // Drag scroll box to specified position. nPos is the
@@ -1274,95 +1301,64 @@ LRESULT CALLBACK VDPRamProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
             if (!GetScrollInfo(GetDlgItem(hDlg, IDC_SCROLLBAR1), SB_CTL, &si))
                 return 1; // GetScrollInfo failed
             CurPos = si.nTrackPos;
-        }	break;
+        } break;
         }
         SetScrollPos(GetDlgItem(hDlg, IDC_SCROLLBAR1), SB_CTL, CurPos, TRUE);
 		Redraw_VDP_View();
-    }	break;
+    } break;
 
     case WM_PAINT:
     {
-        /*SelectObject(VDPRamMemDC, VDPRamLastBMP);
-		unsigned char *ptr = (unsigned char*)(IsVRAM ? VRam : Ram_68k);
-        int i, j, x, y, xx;
-        for (i = 0; i < sizeof(VRam); ++i)
-        {
-            x = ((i >> 5) & 0xf) << 3;
-            y = ((i >> 9) << 3);
-            xx = (MemBMPi.bmiHeader.biHeight - 8 - y + 7 - ((i >> 2) & 7))*MemBMPi.bmiHeader.biWidth + (x + (i & 3 ^ 1) * 2);
-            MemBMPBits[xx] = _GetPal(((ptr[i]) >> 4) + VDPRamPal);
-            MemBMPBits[xx + 1] = _GetPal((ptr[i] & 0xf) + VDPRamPal);
-        }
-
-        SelectObject(VDPRamMemDC, VDPRamMemBMP);*/
-
-        int scroll = GetScrollPos(GetDlgItem(hDlg, IDC_SCROLLBAR1), SB_CTL);
-
-        //StretchBlt(ps.hdc, 5, 5 + 4 * 16 + 5, 8 * 16 * 2, VDP_RAM_VCOUNT * 8 * 2, VDPRamMemDC, 0, scroll * 8, 8 * 16, VDP_RAM_VCOUNT * 8, SRCCOPY); // VRAM
-
-		RECT palR;
 		PAINTSTRUCT ps;
-
 		BeginPaint(hDlg, &ps);
 
-		//StretchBlt(ps.hdc, 5 + 16 * 16 + 16 + 8, 295, 64, 64, VDPRamMemDC, (VDPRamTile % 16) << 3, (VDPRamTile >> 4) << 3, 8, 8, SRCCOPY); // Selected Tile
-
-		r.left = 5 + ((VDPRamTile % 16) << 4);
-		r.right = r.left + 16;
-		int row = (VDPRamTile >> 4) - scroll;
-		r.top = 5 + 4 * 16 + 5 + (row << 4);
-		r.bottom = r.top + 16;
-
-		//if (row >= 0 && row < VDP_RAM_VCOUNT)
-			//DrawFocusRect(ps.hdc, &r);
-
 		RedrawWindow(GetDlgItem(VDPRamHWnd, IDC_VDP_PALETTE), NULL, NULL, RDW_INVALIDATE);
+		RedrawWindow(GetDlgItem(VDPRamHWnd, IDC_VDP_TILES), NULL, NULL, RDW_INVALIDATE);
 
 		EndPaint(hDlg, &ps);
 
 		msgModeRegistersWM_PAINT(activeTabWindow, wParam, lParam);
 		msgOtherRegistersWM_PAINT(activeTabWindow, wParam, lParam);
         return true;
-    }	break;
+    } break;
 
     case WM_LBUTTONDOWN:
     {
-		RECT palR;
-		POINT palPt;
+		RECT r;
+		POINT pt;
 
-		GetWindowRect(GetDlgItem(hDlg, IDC_VDP_PALETTE), &palR);
-		MapWindowPoints(HWND_DESKTOP, hDlg, (LPPOINT)&palR, 2);
+		pt.x = GET_X_LPARAM(lParam);
+		pt.y = GET_Y_LPARAM(lParam);
 
-		palPt.x = GET_X_LPARAM(lParam);
-		palPt.y = GET_Y_LPARAM(lParam);
+		GetWindowRect(GetDlgItem(hDlg, IDC_VDP_PALETTE), &r);
+		MapWindowPoints(HWND_DESKTOP, hDlg, (LPPOINT)&r, 2);
 
-        if (PtInRect(&palR, palPt))
+        if (PtInRect(&r, pt))
         {
-            VDPRamPal = (palPt.y - palR.top) >> 4;
+            VDPRamPal = (pt.y - r.top) / VDP_BLOCK_H;
 			Redraw_VDP_View();
         }
 		else
 		{
-			int x = LOWORD(lParam) - 5;
-			int y = HIWORD(lParam) - (5 + 4 * 16 + 5);
+			GetWindowRect(GetDlgItem(hDlg, IDC_VDP_TILES), &r);
+			MapWindowPoints(HWND_DESKTOP, hDlg, (LPPOINT)&r, 2);
 
-			if (x >= 0 &&
-				x < 16 * 16 &&
-				y >= 0 &&
-				y < VDP_RAM_VCOUNT * 8 * 2)
+			if (PtInRect(&r, pt))
 			{
 				int scroll = GetScrollPos(GetDlgItem(hDlg, IDC_SCROLLBAR1), SB_CTL);
+				int row = (pt.y - r.top) / VDP_BLOCK_H + scroll;
+				int col = (pt.x - r.left) / VDP_BLOCK_W;
+				int id = VDPRamTile = row * VDP_TILES_IN_ROW + col;
+				int offset = id * 0x20;
 
 				char buff[30];
-				int offset = (((y >> 4) + scroll) << 9) + ((x >> 4) << 5);
-				int id = VDPRamTile = (((y >> 4) + scroll) << 4) + (x >> 4);
 				sprintf(buff, "Offset: %04X\r\nId: %03X", offset | (IsVRAM ? 0x0000 : 0xFF0000), id);
 				SetDlgItemText(hDlg, IDC_TILE_INFO, buff);
 
 				Redraw_VDP_View();
 			}
 		}
-    }	break;
+    } break;
 
     case WM_CLOSE:
 		if (activeTabWindow != NULL)
@@ -1376,9 +1372,6 @@ LRESULT CALLBACK VDPRamProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
             while (ShowCursor(true) < 0);
             while (ShowCursor(false) >= 0);
         }
-        SelectObject(VDPRamMemDC, VDPRamLastBMP);
-        DeleteObject(VDPRamMemBMP);
-        DeleteObject(VDPRamMemDC);
         DialogsOpen--;
         VDPRamHWnd = NULL;
         EndDialog(hDlg, true);

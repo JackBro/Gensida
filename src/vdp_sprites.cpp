@@ -26,9 +26,9 @@ COLORREF GetPal_KMod(unsigned char numPal, unsigned numColor)
     return newColor;
 }
 
-void DrawTile_KMod(HDC hDCMain, unsigned short int numTile, WORD x, WORD y, UCHAR pal, UCHAR zoom)
+void DrawTile_KMod(HDC hDCMain, unsigned short int numTile, WORD xpos, WORD ypos, UCHAR pal, UCHAR zoom)
 {
-    unsigned char j;
+    unsigned char y, x;
     unsigned char TileData;
     HDC hDC;
     HBITMAP hBitmap, hOldBitmap;
@@ -37,42 +37,21 @@ void DrawTile_KMod(HDC hDCMain, unsigned short int numTile, WORD x, WORD y, UCHA
     hBitmap = CreateCompatibleBitmap(hDCMain, 8, 8);
     hOldBitmap = (HBITMAP)SelectObject(hDC, hBitmap);
 
-    for (j = 0; j < 8; j++)
+    for (y = 0; y < 8; y++)
     {
-        TileData = VRam[numTile * 32 + j * 4 + 1] & 0xF0;
-        TileData >>= 4;
-        SetPixelV(hDC, 0, j, GetPal_KMod(pal, TileData));
-
-        TileData = VRam[numTile * 32 + j * 4 + 1] & 0x0F;
-        SetPixelV(hDC, 1, j, GetPal_KMod(pal, TileData));
-
-        TileData = VRam[numTile * 32 + j * 4] & 0xF0;
-        TileData >>= 4;
-        SetPixelV(hDC, 2, j, GetPal_KMod(pal, TileData));
-
-        TileData = VRam[numTile * 32 + j * 4] & 0x0F;
-        SetPixelV(hDC, 3, j, GetPal_KMod(pal, TileData));
-
-        TileData = VRam[numTile * 32 + j * 4 + 3] & 0xF0;
-        TileData >>= 4;
-        SetPixelV(hDC, 4, j, GetPal_KMod(pal, TileData));
-
-        TileData = VRam[numTile * 32 + j * 4 + 3] & 0x0F;
-        SetPixelV(hDC, 5, j, GetPal_KMod(pal, TileData));
-
-        TileData = VRam[numTile * 32 + j * 4 + 2] & 0xF0;
-        TileData >>= 4;
-        SetPixelV(hDC, 6, j, GetPal_KMod(pal, TileData));
-
-        TileData = VRam[numTile * 32 + j * 4 + 2] & 0x0F;
-        SetPixelV(hDC, 7, j, GetPal_KMod(pal, TileData));
+		for (x = 0; x < 4; x++)
+		{
+			TileData = VRam[numTile * 32 + y * 4 + (x ^ 1)];
+			SetPixelV(hDC, x * 2 + 0, y, GetPal_KMod(pal, TileData >> 4));
+			SetPixelV(hDC, x * 2 + 1, y, GetPal_KMod(pal, TileData & 0xF));
+		}
     }
 
     StretchBlt(
         hDCMain, // handle to destination device context
-        x,  // x-coordinate of destination rectangle's upper-left
+        xpos,  // x-coordinate of destination rectangle's upper-left
         // corner
-        y,  // y-coordinate of destination rectangle's upper-left
+        ypos,  // y-coordinate of destination rectangle's upper-left
         // corner
         8 * zoom,  // width of destination rectangle
         8 * zoom, // height of destination rectangle
