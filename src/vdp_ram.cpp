@@ -36,8 +36,8 @@ HBITMAP VDPRamLastBMP;
 BITMAPINFO MemBMPi;
 COLORREF *MemBMPBits;
 int VDPRamPal, VDPRamTile;
-bool ShowVRAM;
-#define VDP_RAM_VCOUNT 20
+bool IsVRAM;
+#define VDP_RAM_VCOUNT 24
 
 struct TabInfo
 {
@@ -992,7 +992,7 @@ LRESULT CALLBACK VDPRamProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
         //GetDIBits(VDPRamMemDC,VDPRamMemBMP,0,0,NULL,&MemBMPi,DIB_RGB_COLORS);
         //MemBMPBits = new COLORREF[MemBMPi.bmiHeader.biSizeImage/4+1];
 
-		ShowVRAM = true;
+		IsVRAM = true;
 		CheckRadioButton(hDlg, IDC_SHOW_VRAM, IDC_SHOW_M68K_RAM, IDC_SHOW_VRAM);
 
         VDPRamHWnd = hDlg;
@@ -1177,13 +1177,13 @@ LRESULT CALLBACK VDPRamProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
         break;
 		case IDC_SHOW_VRAM:
 		{
-			ShowVRAM = true;
+			IsVRAM = true;
 			Redraw_VDP_View();
 		}
 		break;
 		case IDC_SHOW_M68K_RAM:
 		{
-			ShowVRAM = false;
+			IsVRAM = false;
 			Redraw_VDP_View();
 		}
 		break;
@@ -1256,7 +1256,7 @@ LRESULT CALLBACK VDPRamProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
         PAINTSTRUCT ps;
         BeginPaint(hDlg, &ps);
         SelectObject(VDPRamMemDC, VDPRamLastBMP);
-		unsigned char *ptr = (unsigned char*)(ShowVRAM ? VRam : Ram_68k);
+		unsigned char *ptr = (unsigned char*)(IsVRAM ? VRam : Ram_68k);
         int i, j, x, y, xx;
         for (i = 0; i < sizeof(VRam); ++i)
         {
@@ -1323,7 +1323,7 @@ LRESULT CALLBACK VDPRamProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 				char buff[30];
 				int offset = (((y >> 4) + scroll) << 9) + ((x >> 4) << 5);
 				int id = VDPRamTile = (((y >> 4) + scroll) << 4) + (x >> 4);
-				sprintf(buff, "Offset: %04X\r\nId: %03X", offset, id);
+				sprintf(buff, "Offset: %04X\r\nId: %03X", offset | (IsVRAM ? 0x0000 : 0xFF0000), id);
 				SetDlgItemText(hDlg, IDC_TILE_INFO, buff);
 
 				Redraw_VDP_View();
