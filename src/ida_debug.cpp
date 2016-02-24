@@ -574,7 +574,7 @@ static int idaapi read_registers(thid_t tid, int clsmask, regval_t *values)
 		case 0x09: // VRAM
 		case 0x0A: // CRAM
 		case 0x0B: // VSRAM
-			values[R_VDP_WRITE_ADDR].ival = (0xB0000000 + 0x10000 * (Ctrl.Access - 0x09)) + Ctrl.Address;
+			values[R_VDP_WRITE_ADDR].ival = (0xB0000000 + 0x10000 * (Ctrl.Access - 0x09)) + (Ctrl.Address & 0xFFFF);
 			break;
 		}
 	}
