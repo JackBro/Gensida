@@ -244,8 +244,8 @@ static void apply_codemap()
 	{
 		if (g_codemap[i].second && g_codemap[i].first && !get_func((ea_t)i))
 		{
-			add_func(i, BADADDR);
-			add_cref(g_codemap[i].first, i, fl_CN);
+			if (add_func(i, BADADDR))
+				add_cref(g_codemap[i].first, i, fl_CN);
 			noUsed((ea_t)i);
 		}
 		showAddr((ea_t)i);
