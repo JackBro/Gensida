@@ -918,8 +918,8 @@ void Redraw_VDP_View()
 	RedrawWindow(GetDlgItem(VDPRamHWnd, IDC_VDP_TILES), NULL, NULL, RDW_INVALIDATE);
 	RedrawWindow(GetDlgItem(VDPRamHWnd, IDC_VDP_TILE_VIEW), NULL, NULL, RDW_INVALIDATE);
 
-	msgModeRegistersUPDATE(activeTabWindow);
-	msgOtherRegistersUPDATE(activeTabWindow);
+	msgModeRegistersUPDATE(tabItems[0].hwndDialog);
+	msgOtherRegistersUPDATE(tabItems[1].hwndDialog);
 }
 
 BOOL CALLBACK MoveGroupCallback(HWND hChild, LPARAM lParam)
@@ -1539,8 +1539,8 @@ LRESULT CALLBACK VDPRamProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 		EndPaint(hDlg, &ps);
 
-		msgModeRegistersUPDATE(activeTabWindow);
-		msgOtherRegistersUPDATE(activeTabWindow);
+		msgModeRegistersUPDATE(tabItems[0].hwndDialog);
+		msgOtherRegistersUPDATE(tabItems[1].hwndDialog);
         return true;
     } break;
 
