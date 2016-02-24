@@ -161,10 +161,12 @@
 #define IDC_BUTTON2                     1126
 #define IDC_DISABLEKEY                  1126
 #define IDC_SAVE                        1126
+#define IDC_VDP_PAL_LOAD                1126
 #define IDC_BUTTON_STATE_BROWSE         1127
 #define IDC_USEDEFAULTKEY               1127
 #define IDC_BUTTON11                    1127
 #define IDC_BUTTON9                     1127
+#define IDC_VDP_VRAM_LOAD               1127
 #define IDC_RADIO_PLAY_STATE            1128
 #define IDC_USEDEFAULTKEY2              1128
 #define IDC_REVERTKEY                   1128
@@ -189,9 +191,11 @@
 #define IDC_REASSIGNKEY                 1146
 #define IDC_BUTTON_LUABROWSE            1146
 #define IDC_BTN_HELP                    1146
+#define IDC_VDP_PAL_DUMP                1146
 #define IDC_BUTTON_LUAEDIT              1147
 #define IDC_STATIC_WARNING_EXIST        1147
 #define IDC_BUTTON8                     1147
+#define IDC_VDP_VRAM_DUMP               1147
 #define IDC_EDIT_NOTE                   1148
 #define IDC_STATIC_CON1_CURSET          1149
 #define IDC_STATIC_CON2_CURSET          1150
@@ -709,12 +713,14 @@
 #define ID_TOOLS_OPENRECENTMOVIEMAX     44199
 #define ID_LUA_OPENRECENTSCRIPT0        44200
 #define ID_LUA_OPENRECENTSCRIPTMAX      44299
-#define IDC_SCROLLBAR1                  50001
+#define IDC_VDP_TILES_SCROLLBAR         50001
 #define IDC_BUTTON3                     50004
+#define IDC_VDP_PAL_YY                  50004
 #define IDC_SET_BREAK                   50005
 #define IDC_BUTTON4                     50016
 #define IDC_VDP_TILES                   50016
 #define IDC_VDP_PALETTE                 50017
+#define IDC_VDP_TILE_VIEW               50018
 #define IDC_BUTTON5                     50020
 #define IDC_BUTTON6                     50021
 #define IDC_BUTTON7                     50022
@@ -723,9 +729,12 @@
 #define IDC_SPRITES_PREVIEW2            50027
 #define IDC_SPRITES_DUMP                50028
 #define ID_VDP_SPRITES                  50029
-#define IDC_TILE_INFO                   50031
+#define IDC_VDP_TILE_INFO               50031
 #define IDC_SHOW_VRAM                   50034
 #define IDC_SHOW_M68K_RAM               50035
+#define IDC_VDP_PAL_GROUP               50036
+#define IDC_VDP_VRAM_GROUP              50037
+#define IDC_VDP_VIEW_MODE               50038
 #define IDC_PLANEEXPLORER_MAIN          54001
 #define IDC_PLANEEXPLORER_TILEINFO      54002
 #define IDC_PLANEEXPLORER_TRANS         54003
@@ -740,7 +749,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        163
 #define _APS_NEXT_COMMAND_VALUE         3002
-#define _APS_NEXT_CONTROL_VALUE         50037
+#define _APS_NEXT_CONTROL_VALUE         50039
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

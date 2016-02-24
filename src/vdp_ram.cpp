@@ -64,9 +64,6 @@ unsigned int currentControlFocus;
 HWND activeTabWindow;
 std::vector<TabInfo> tabItems;
 
-//----------------------------------------------------------------------------------------
-//Window procedure helper functions
-//----------------------------------------------------------------------------------------
 void WndProcDialogImplementSaveFieldWhenLostFocus(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 {
 	switch (msg)
@@ -735,9 +732,6 @@ INT_PTR WndProcOtherRegisters(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 	return FALSE;
 }
 
-//----------------------------------------------------------------------------------------
-//Mode registers dialog window procedure
-//----------------------------------------------------------------------------------------
 INT_PTR CALLBACK WndProcModeRegistersStatic(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 {
 	//Obtain the object pointer
@@ -781,9 +775,6 @@ INT_PTR CALLBACK WndProcModeRegistersStatic(HWND hwnd, UINT msg, WPARAM wparam, 
 	return result;
 }
 
-//----------------------------------------------------------------------------------------
-//Other registers dialog window procedure
-//----------------------------------------------------------------------------------------
 INT_PTR CALLBACK WndProcOtherRegistersStatic(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 {
 	//Obtain the object pointer
@@ -931,12 +922,31 @@ void Redraw_VDP_View()
 
 	RedrawWindow(GetDlgItem(VDPRamHWnd, IDC_VDP_PALETTE), NULL, NULL, RDW_INVALIDATE);
 	RedrawWindow(GetDlgItem(VDPRamHWnd, IDC_VDP_TILES), NULL, NULL, RDW_INVALIDATE);
+	RedrawWindow(GetDlgItem(VDPRamHWnd, IDC_VDP_TILE_VIEW), NULL, NULL, RDW_INVALIDATE);
+}
+
+BOOL CALLBACK MoveGroupCallback(HWND hChild, LPARAM lParam)
+{
+	RECT rChild;
+	LPRECT r = (LPRECT)lParam;
+
+	GetWindowRect(hChild, &rChild);
+	OffsetRect(&rChild, -r->left, -r->top);
+	MapWindowPoints(HWND_DESKTOP, GetParent(hChild), (LPPOINT)&rChild, 2);
+
+	SetWindowPos(hChild, NULL,
+		rChild.left,
+		rChild.top,
+		0,
+		0,
+		SWP_NOZORDER | SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW);
+
+	return TRUE;
 }
 
 LRESULT CALLBACK VDPRamProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-    RECT r;
-    RECT r2;
+    RECT r, r2, r3;
     int dx1, dy1, dx2, dy2;
     static int watchIndex = 0;
 
@@ -977,34 +987,142 @@ LRESULT CALLBACK VDPRamProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
         }
 
         SetWindowPos(hDlg, NULL, r.left, r.top, NULL, NULL, SWP_NOSIZE | SWP_NOZORDER | SWP_SHOWWINDOW);
-		SetWindowPos(GetDlgItem(hDlg, IDC_VDP_PALETTE), NULL,
-			0,
-			0,
+
+		// Palette view
+		HWND hPalette = GetDlgItem(hDlg, IDC_VDP_PALETTE);
+		SetWindowPos(hPalette, NULL,
+			5,
+			5,
 			VDP_PAL_COLORS * VDP_BLOCK_W,
 			VDP_PAL_COUNT * VDP_BLOCK_H,
-			SWP_NOZORDER | SWP_NOMOVE);
+			SWP_NOZORDER | SWP_NOACTIVATE);
+		// Palette view
 
-		GetWindowRect(GetDlgItem(hDlg, IDC_VDP_PALETTE), &r);
+		// Tiles view
+		HWND hTiles = GetDlgItem(hDlg, IDC_VDP_TILES);
+		GetWindowRect(hPalette, &r);
 		MapWindowPoints(HWND_DESKTOP, hDlg, (LPPOINT)&r, 2);
-		SetWindowPos(GetDlgItem(hDlg, IDC_VDP_TILES), NULL,
+		SetWindowPos(hTiles, NULL,
 			r.left,
 			r.bottom + 5,
 			VDP_TILES_IN_ROW * VDP_BLOCK_W,
 			VDP_TILES_IN_COL * VDP_BLOCK_H,
-			SWP_NOZORDER);
+			SWP_NOZORDER | SWP_NOACTIVATE);
+		// Tiles view
 
-		GetWindowRect(GetDlgItem(hDlg, IDC_VDP_TILES), &r);
+		// Scrollbar
+		GetWindowRect(hTiles, &r);
 		MapWindowPoints(HWND_DESKTOP, hDlg, (LPPOINT)&r, 2);
-        SetWindowPos(GetDlgItem(hDlg, IDC_SCROLLBAR1), NULL,
+		HWND hScrollbar = GetDlgItem(hDlg, IDC_VDP_TILES_SCROLLBAR);
+        SetWindowPos(hScrollbar, NULL,
 			r.right + 1,
 			r.top,
 			VDP_BLOCK_W,
 			(r.bottom - r.top),
-			SWP_NOZORDER);
-        SetScrollRange(GetDlgItem(hDlg, IDC_SCROLLBAR1), SB_CTL, 0, VDP_SCROLL_MAX, TRUE);
+			SWP_NOZORDER | SWP_NOACTIVATE);
+        SetScrollRange(hScrollbar, SB_CTL, 0, VDP_SCROLL_MAX, TRUE);
+		// Scrollbar
+
+		// Palette group
+		HWND hPalGroup = GetDlgItem(hDlg, IDC_VDP_PAL_GROUP);
+		GetWindowRect(hScrollbar, &r);
+		MapWindowPoints(HWND_DESKTOP, hDlg, (LPPOINT)&r, 2);
+		GetWindowRect(hPalette, &r2);
+		MapWindowPoints(HWND_DESKTOP, hDlg, (LPPOINT)&r2, 2);
+		GetWindowRect(hPalGroup, &r3);
+		MapWindowPoints(HWND_DESKTOP, hDlg, (LPPOINT)&r3, 2);
+
+		SetParent(GetDlgItem(hDlg, IDC_VDP_PAL_DUMP), hPalGroup);
+		SetParent(GetDlgItem(hDlg, IDC_VDP_PAL_LOAD), hPalGroup);
+		SetParent(GetDlgItem(hDlg, IDC_VDP_PAL_YY), hPalGroup);
+
+		SetWindowPos(hPalGroup, NULL,
+			r.right + 5,
+			r2.top,
+			0,
+			0,
+			SWP_NOZORDER | SWP_NOSIZE | SWP_NOACTIVATE);
+		GetWindowRect(hPalGroup, &r);
+		MapWindowPoints(HWND_DESKTOP, hDlg, (LPPOINT)&r, 2);
+		SubtractRect(&r3, &r3, &r);
+		EnumChildWindows(hPalGroup, MoveGroupCallback, (LPARAM)&r3);
+		// Palette group
+
+		// VRAM group
+		HWND hVramGroup = GetDlgItem(hDlg, IDC_VDP_VRAM_GROUP);
+		GetWindowRect(hVramGroup, &r3);
+		MapWindowPoints(HWND_DESKTOP, hDlg, (LPPOINT)&r3, 2);
+
+		SetParent(GetDlgItem(hDlg, IDC_VDP_VRAM_DUMP), hVramGroup);
+		SetParent(GetDlgItem(hDlg, IDC_VDP_VRAM_LOAD), hVramGroup);
+
+		SetWindowPos(hVramGroup, NULL,
+			r.left,
+			r.bottom + 5,
+			0,
+			0,
+			SWP_NOZORDER | SWP_NOSIZE | SWP_NOACTIVATE);
+		GetWindowRect(hVramGroup, &r);
+		MapWindowPoints(HWND_DESKTOP, hDlg, (LPPOINT)&r, 2);
+		SubtractRect(&r3, &r3, &r);
+		EnumChildWindows(hVramGroup, MoveGroupCallback, (LPARAM)&r3);
+		// VRAM group
+
+		// View mode group
+		HWND hViewMode = GetDlgItem(hDlg, IDC_VDP_VIEW_MODE);
+		GetWindowRect(hViewMode, &r3);
+		MapWindowPoints(HWND_DESKTOP, hDlg, (LPPOINT)&r3, 2);
+
+		SetParent(GetDlgItem(hDlg, IDC_SHOW_VRAM), hViewMode);
+		SetParent(GetDlgItem(hDlg, IDC_SHOW_M68K_RAM), hViewMode);
+
+		SetWindowPos(hViewMode, NULL,
+			r.left,
+			r.bottom + 5,
+			0,
+			0,
+			SWP_NOZORDER | SWP_NOSIZE | SWP_NOACTIVATE);
+		GetWindowRect(hViewMode, &r);
+		MapWindowPoints(HWND_DESKTOP, hDlg, (LPPOINT)&r, 2);
+		SubtractRect(&r3, &r3, &r);
+		EnumChildWindows(hViewMode, MoveGroupCallback, (LPARAM)&r3);
+		// View mode group
+
+		// Tile view
+		HWND hTileView = GetDlgItem(hDlg, IDC_VDP_TILE_VIEW);
+		GetWindowRect(hViewMode, &r);
+		MapWindowPoints(HWND_DESKTOP, hDlg, (LPPOINT)&r, 2);
+		SetWindowPos(hTileView, NULL,
+			r.left,
+			r.bottom + 10,
+			r.right - r.left,
+			r.right - r.left,
+			SWP_NOZORDER | SWP_NOACTIVATE);
+		// Tile view
+
+		// Tile info
+		HWND hTileInfo = GetDlgItem(hDlg, IDC_VDP_TILE_INFO);
+		GetWindowRect(hTileView, &r);
+		MapWindowPoints(HWND_DESKTOP, hDlg, (LPPOINT)&r, 2);
+		SetWindowPos(hTileInfo, NULL,
+			r.left,
+			r.bottom + 10,
+			r.right - r.left,
+			50,
+			SWP_NOZORDER | SWP_NOACTIVATE);
+		// Tile info
 
 		// Exodus VDP Regs window init
 		msgRegistersWM_INITDIALOG(hDlg, wParam, lParam);
+
+		GetWindowRect(hDlg, &r);
+		GetWindowRect(GetDlgItem(hDlg, IDC_VDP_REGISTERS_TABCONTROL), &r3);
+		SetWindowPos(hDlg, NULL,
+			0,
+			0,
+			r3.right - r.left + 5,
+			r3.bottom - r.top + 5,
+			SWP_NOMOVE | SWP_NOZORDER | SWP_SHOWWINDOW);
         return true;
     } break;
 
@@ -1058,7 +1176,7 @@ LRESULT CALLBACK VDPRamProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 			unsigned char *ptr = (unsigned char*)(IsVRAM ? VRam : Ram_68k);
 
-			int scroll = GetScrollPos(GetDlgItem(hDlg, IDC_SCROLLBAR1), SB_CTL);
+			int scroll = GetScrollPos(GetDlgItem(hDlg, IDC_VDP_TILES_SCROLLBAR), SB_CTL);
 			int start = scroll * VDP_TILES_IN_ROW;
 			int end = start + VDP_TILES_IN_ROW * VDP_TILES_IN_COL;
 			int tiles = end - start;
@@ -1102,6 +1220,48 @@ LRESULT CALLBACK VDPRamProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 			if (row >= 0 && row < VDP_TILES_IN_COL)
 				DrawFocusRect(di->hDC, &r);
+
+			return TRUE;
+		}
+		else if ((UINT)wParam == IDC_VDP_TILE_VIEW)
+		{
+			HDC hSmallDC = CreateCompatibleDC(di->hDC);
+			HBITMAP hSmallBmp = CreateCompatibleBitmap(di->hDC, VDP_TILE_W, VDP_TILE_H);
+			HBITMAP hOldSmallBmp = (HBITMAP)SelectObject(hSmallDC, hSmallBmp);
+
+			for (int y = 0; y < VDP_TILE_H; ++y)
+			{
+				for (int x = 0; x < (VDP_TILE_W / 2); ++x)
+				{
+					unsigned char t = VRam[VDPRamTile * 0x20 + y * (VDP_TILE_W / 2) + (x ^ 1)];
+					SetPixelV(hSmallDC, x * 2 + 0, y, GetPalColor(VDP_PAL_COLORS * VDPRamPal + (t >> 4)));
+					SetPixelV(hSmallDC, x * 2 + 1, y, GetPalColor(VDP_PAL_COLORS * VDPRamPal + (t & 0xF)));
+				}
+			}
+
+			StretchBlt(
+				di->hDC,
+				0,
+				0,
+				di->rcItem.right - di->rcItem.left,
+				di->rcItem.bottom - di->rcItem.top,
+				hSmallDC,
+				0,
+				0,
+				VDP_TILE_W,
+				VDP_TILE_H,
+				SRCCOPY
+				);
+
+			SelectObject(hSmallDC, hOldSmallBmp);
+			DeleteObject(hSmallBmp);
+			DeleteDC(hSmallDC);
+
+			char buff[30];
+			sprintf(buff, "Offset: %04X\r\nId: %03X", (VDPRamTile * 0x20) | (IsVRAM ? 0x0000 : 0xFF0000), VDPRamTile);
+			SetDlgItemText(hDlg, IDC_VDP_TILE_INFO, buff);
+
+			return TRUE;
 		}
 	} break;
 
@@ -1249,7 +1409,7 @@ LRESULT CALLBACK VDPRamProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
     case WM_VSCROLL:
     {
-        int CurPos = GetScrollPos(GetDlgItem(hDlg, IDC_SCROLLBAR1), SB_CTL);
+        int CurPos = GetScrollPos(GetDlgItem(hDlg, IDC_VDP_TILES_SCROLLBAR), SB_CTL);
         int nSBCode = LOWORD(wParam);
         int nPos = HIWORD(wParam);
         switch (nSBCode)
@@ -1298,12 +1458,12 @@ LRESULT CALLBACK VDPRamProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
             // Call GetScrollInfo to get current tracking
             //    position in si.nTrackPos
 
-            if (!GetScrollInfo(GetDlgItem(hDlg, IDC_SCROLLBAR1), SB_CTL, &si))
+            if (!GetScrollInfo(GetDlgItem(hDlg, IDC_VDP_TILES_SCROLLBAR), SB_CTL, &si))
                 return 1; // GetScrollInfo failed
             CurPos = si.nTrackPos;
         } break;
         }
-        SetScrollPos(GetDlgItem(hDlg, IDC_SCROLLBAR1), SB_CTL, CurPos, TRUE);
+        SetScrollPos(GetDlgItem(hDlg, IDC_VDP_TILES_SCROLLBAR), SB_CTL, CurPos, TRUE);
 		Redraw_VDP_View();
     } break;
 
@@ -1314,6 +1474,7 @@ LRESULT CALLBACK VDPRamProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 		RedrawWindow(GetDlgItem(VDPRamHWnd, IDC_VDP_PALETTE), NULL, NULL, RDW_INVALIDATE);
 		RedrawWindow(GetDlgItem(VDPRamHWnd, IDC_VDP_TILES), NULL, NULL, RDW_INVALIDATE);
+		RedrawWindow(GetDlgItem(VDPRamHWnd, IDC_VDP_TILE_VIEW), NULL, NULL, RDW_INVALIDATE);
 
 		EndPaint(hDlg, &ps);
 
@@ -1345,15 +1506,10 @@ LRESULT CALLBACK VDPRamProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 			if (PtInRect(&r, pt))
 			{
-				int scroll = GetScrollPos(GetDlgItem(hDlg, IDC_SCROLLBAR1), SB_CTL);
+				int scroll = GetScrollPos(GetDlgItem(hDlg, IDC_VDP_TILES_SCROLLBAR), SB_CTL);
 				int row = (pt.y - r.top) / VDP_BLOCK_H + scroll;
 				int col = (pt.x - r.left) / VDP_BLOCK_W;
-				int id = VDPRamTile = row * VDP_TILES_IN_ROW + col;
-				int offset = id * 0x20;
-
-				char buff[30];
-				sprintf(buff, "Offset: %04X\r\nId: %03X", offset | (IsVRAM ? 0x0000 : 0xFF0000), id);
-				SetDlgItemText(hDlg, IDC_TILE_INFO, buff);
+				VDPRamTile = row * VDP_TILES_IN_ROW + col;
 
 				Redraw_VDP_View();
 			}
