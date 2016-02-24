@@ -150,7 +150,7 @@ void UpdateDlgItemBin(HWND hwnd, int controlID, unsigned int data)
 }
 
 //----------------------------------------------------------------------------------------
-INT_PTR msgModeRegistersWM_PAINT(HWND hwnd, WPARAM wparam, LPARAM lparam)
+void msgModeRegistersUPDATE(HWND hwnd)
 {
 	//Mode registers
 	CheckDlgButton(hwnd, IDC_VDP_REGISTERS_VSI, (VDP_Reg.Set1 & mask(7)) ? BST_CHECKED : BST_UNCHECKED);
@@ -185,13 +185,11 @@ INT_PTR msgModeRegistersWM_PAINT(HWND hwnd, WPARAM wparam, LPARAM lparam)
 	CheckDlgButton(hwnd, IDC_VDP_REGISTERS_LSM1, (VDP_Reg.Set4 & mask(2)) ? BST_CHECKED : BST_UNCHECKED);
 	CheckDlgButton(hwnd, IDC_VDP_REGISTERS_LSM0, (VDP_Reg.Set4 & mask(1)) ? BST_CHECKED : BST_UNCHECKED);
 	CheckDlgButton(hwnd, IDC_VDP_REGISTERS_RS1, (VDP_Reg.Set4 & mask(0)) ? BST_CHECKED : BST_UNCHECKED);
-
-	return TRUE;
 }
 
 #define GET_BITS(number, n, c) ((number & mask(n, c)) >> n)
 //----------------------------------------------------------------------------------------
-INT_PTR msgOtherRegistersWM_PAINT(HWND hwnd, WPARAM wparam, LPARAM lparam)
+void msgOtherRegistersUPDATE(HWND hwnd)
 {
 	unsigned int value = 0;
 	bool mode4Enabled = !(VDP_Reg.Set2 & mask(2));
@@ -400,8 +398,6 @@ INT_PTR msgOtherRegistersWM_PAINT(HWND hwnd, WPARAM wparam, LPARAM lparam)
 
 	UpdateDlgItemBin(hwnd, IDC_VDP_REGISTERS_HSZ_E, screenSizeCellsH);
 	UpdateDlgItemBin(hwnd, IDC_VDP_REGISTERS_VSZ_E, screenSizeCellsV);
-
-	return TRUE;
 }
 #undef GET_BITS
 
@@ -923,6 +919,9 @@ void Redraw_VDP_View()
 	RedrawWindow(GetDlgItem(VDPRamHWnd, IDC_VDP_PALETTE), NULL, NULL, RDW_INVALIDATE);
 	RedrawWindow(GetDlgItem(VDPRamHWnd, IDC_VDP_TILES), NULL, NULL, RDW_INVALIDATE);
 	RedrawWindow(GetDlgItem(VDPRamHWnd, IDC_VDP_TILE_VIEW), NULL, NULL, RDW_INVALIDATE);
+
+	msgModeRegistersUPDATE(activeTabWindow);
+	msgOtherRegistersUPDATE(activeTabWindow);
 }
 
 BOOL CALLBACK MoveGroupCallback(HWND hChild, LPARAM lParam)
@@ -944,6 +943,134 @@ BOOL CALLBACK MoveGroupCallback(HWND hChild, LPARAM lParam)
 	return TRUE;
 }
 
+LRESULT CALLBACK ButtonsProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData)
+{
+	switch (uMsg)
+	{
+	case WM_COMMAND:
+	{
+		switch (wParam)
+		{
+		case IDC_VDP_PAL_DUMP:
+		{
+			char fname[2048];
+			strcpy(fname, "pal.bin");
+			if (Change_File_S(fname, ".", "Save Dump Pal As...", "All Files\0*.*\0\0", "*.*", hWnd))
+			{
+				FILE *out = fopen(fname, "wb+");
+				int i;
+				for (i = 0; i < sizeof(CRam); ++i)
+				{
+					fname[i & 2047] = ((char*)&CRam)[i ^ 1];
+					if ((i & 2047) == 2047)
+						fwrite(fname, 1, sizeof(fname), out);
+				}
+				fwrite(fname, 1, i & 2047, out);
+				fclose(out);
+			}
+
+			return FALSE;
+		} break;
+		case IDC_VDP_PAL_LOAD:
+		{
+			char fname[2048];
+			strcpy(fname, "pal.bin");
+			if (Change_File_L(fname, ".", "Load Dump Pal As...", "All Files\0*.*\0\0", "*.*", hWnd))
+			{
+				FILE *in = fopen(fname, "rb");
+				int i;
+				for (i = 0; i < sizeof(CRam); ++i)
+				{
+					if (!(i & 2047))
+						fread(fname, 1, sizeof(fname), in);
+					((char*)&CRam)[i ^ 1] = fname[i & 2047];
+				}
+				fclose(in);
+				if (Game)
+				{
+					CRam_Flag = 1;
+					Show_Genesis_Screen(HWnd);
+				}
+			}
+			return FALSE;
+		} break;
+		case IDC_VDP_PAL_YY:
+		{
+			char fname[2048];
+			strcpy(fname, "pal.pal");
+			if (Change_File_S(fname, ".", "Save YY-CHR Pal As...", "All Files\0*.*\0\0", "*.*", hWnd))
+			{
+				FILE *out = fopen(fname, "wb+");
+				int i;
+				for (i = 0; i < VDP_PAL_COLORS * VDP_PAL_COUNT; ++i)
+				{
+					*((DWORD*)fname) = GetPalColor(i);
+					fwrite(fname, 1, 3, out);
+				}
+				*((DWORD*)fname) = 0;
+				for (; i < 256; ++i)
+					fwrite(fname, 1, 3, out);
+				fclose(out);
+			}
+			return FALSE;
+		} break;
+		case IDC_VDP_VRAM_DUMP:
+		{
+			char fname[2048];
+			strcpy(fname, "vram.bin");
+			if (Change_File_S(fname, ".", "Save Dump VRAM As...", "All Files\0*.*\0\0", "*.*", hWnd))
+			{
+				FILE *out = fopen(fname, "wb+");
+				int i;
+				for (i = 0; i < sizeof(VRam); ++i)
+				{
+					fname[i & 2047] = ((char*)&VRam)[i ^ 1];
+					if ((i & 2047) == 2047)
+						fwrite(fname, 1, sizeof(fname), out);
+				}
+				fwrite(fname, 1, i & 2047, out);
+				fclose(out);
+			}
+			return FALSE;
+		} break;
+		case IDC_VDP_VRAM_LOAD:
+		{
+			char fname[2048];
+			strcpy(fname, "vram.bin");
+			if (Change_File_L(fname, ".", "Load Dump VRAM As...", "All Files\0*.*\0\0", "*.*", hWnd))
+			{
+				FILE *in = fopen(fname, "rb");
+				int i;
+				for (i = 0; i < sizeof(VRam); ++i)
+				{
+					if (!(i & 2047))
+						fread(fname, 1, sizeof(fname), in);
+					((char*)&VRam)[i ^ 1] = fname[i & 2047];
+				}
+				fclose(in);
+				if (Genesis_Started || _32X_Started || SegaCD_Started)
+					Show_Genesis_Screen(HWnd);
+			}
+			return FALSE;
+		} break;
+		case IDC_VDP_VIEW_VRAM:
+		{
+			IsVRAM = true;
+			Redraw_VDP_View();
+			return FALSE;
+		} break;
+		case IDC_VDP_VIEW_RAM:
+		{
+			IsVRAM = false;
+			Redraw_VDP_View();
+			return FALSE;
+		} break;
+		}
+	} break;
+	}
+	return DefSubclassProc(hWnd, uMsg, wParam, lParam);
+}
+
 LRESULT CALLBACK VDPRamProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
     RECT r, r2, r3;
@@ -952,9 +1079,10 @@ LRESULT CALLBACK VDPRamProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
     switch (uMsg)
     {
-    case WM_INITDIALOG: {
+    case WM_INITDIALOG:
+	{
 		IsVRAM = true;
-		CheckRadioButton(hDlg, IDC_SHOW_VRAM, IDC_SHOW_M68K_RAM, IDC_SHOW_VRAM);
+		CheckRadioButton(hDlg, IDC_VDP_VIEW_VRAM, IDC_VDP_VIEW_RAM, IDC_VDP_VIEW_VRAM);
 
         VDPRamHWnd = hDlg;
 
@@ -1046,6 +1174,8 @@ LRESULT CALLBACK VDPRamProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		MapWindowPoints(HWND_DESKTOP, hDlg, (LPPOINT)&r, 2);
 		SubtractRect(&r3, &r3, &r);
 		EnumChildWindows(hPalGroup, MoveGroupCallback, (LPARAM)&r3);
+
+		SetWindowSubclass(hPalGroup, ButtonsProc, 0, 0);
 		// Palette group
 
 		// VRAM group
@@ -1066,6 +1196,8 @@ LRESULT CALLBACK VDPRamProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		MapWindowPoints(HWND_DESKTOP, hDlg, (LPPOINT)&r, 2);
 		SubtractRect(&r3, &r3, &r);
 		EnumChildWindows(hVramGroup, MoveGroupCallback, (LPARAM)&r3);
+
+		SetWindowSubclass(hVramGroup, ButtonsProc, 0, 0);
 		// VRAM group
 
 		// View mode group
@@ -1073,8 +1205,8 @@ LRESULT CALLBACK VDPRamProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		GetWindowRect(hViewMode, &r3);
 		MapWindowPoints(HWND_DESKTOP, hDlg, (LPPOINT)&r3, 2);
 
-		SetParent(GetDlgItem(hDlg, IDC_SHOW_VRAM), hViewMode);
-		SetParent(GetDlgItem(hDlg, IDC_SHOW_M68K_RAM), hViewMode);
+		SetParent(GetDlgItem(hDlg, IDC_VDP_VIEW_VRAM), hViewMode);
+		SetParent(GetDlgItem(hDlg, IDC_VDP_VIEW_RAM), hViewMode);
 
 		SetWindowPos(hViewMode, NULL,
 			r.left,
@@ -1086,6 +1218,8 @@ LRESULT CALLBACK VDPRamProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		MapWindowPoints(HWND_DESKTOP, hDlg, (LPPOINT)&r, 2);
 		SubtractRect(&r3, &r3, &r);
 		EnumChildWindows(hViewMode, MoveGroupCallback, (LPARAM)&r3);
+
+		SetWindowSubclass(hViewMode, ButtonsProc, 0, 0);
 		// View mode group
 
 		// Tile view
@@ -1229,11 +1363,13 @@ LRESULT CALLBACK VDPRamProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			HBITMAP hSmallBmp = CreateCompatibleBitmap(di->hDC, VDP_TILE_W, VDP_TILE_H);
 			HBITMAP hOldSmallBmp = (HBITMAP)SelectObject(hSmallDC, hSmallBmp);
 
+			unsigned char *ptr = (unsigned char*)(IsVRAM ? VRam : Ram_68k);
+
 			for (int y = 0; y < VDP_TILE_H; ++y)
 			{
 				for (int x = 0; x < (VDP_TILE_W / 2); ++x)
 				{
-					unsigned char t = VRam[VDPRamTile * 0x20 + y * (VDP_TILE_W / 2) + (x ^ 1)];
+					unsigned char t = ptr[VDPRamTile * 0x20 + y * (VDP_TILE_W / 2) + (x ^ 1)];
 					SetPixelV(hSmallDC, x * 2 + 0, y, GetPalColor(VDP_PAL_COLORS * VDPRamPal + (t >> 4)));
 					SetPixelV(hSmallDC, x * 2 + 1, y, GetPalColor(VDP_PAL_COLORS * VDPRamPal + (t & 0xF)));
 				}
@@ -1292,120 +1428,7 @@ LRESULT CALLBACK VDPRamProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			}
 		}
 		return TRUE;
-	}
-
-    case WM_COMMAND:
-    {
-        switch (wParam)
-        {
-        case IDC_BUTTON1:
-        {
-            char fname[2048];
-            strcpy(fname, "pal.bin");
-            if (Change_File_S(fname, ".", "Save Dump Pal As...", "All Files\0*.*\0\0", "*.*", hDlg))
-            {
-                FILE *out = fopen(fname, "wb+");
-                int i;
-                for (i = 0; i < sizeof(CRam); ++i)
-                {
-                    fname[i & 2047] = ((char*)&CRam)[i ^ 1];
-                    if ((i & 2047) == 2047)
-                        fwrite(fname, 1, sizeof(fname), out);
-                }
-                fwrite(fname, 1, i & 2047, out);
-                fclose(out);
-            }
-        } break;
-        case IDC_BUTTON2:
-        {
-            char fname[2048];
-            strcpy(fname, "pal.bin");
-            if (Change_File_L(fname, ".", "Load Dump Pal As...", "All Files\0*.*\0\0", "*.*", hDlg))
-            {
-                FILE *in = fopen(fname, "rb");
-                int i;
-                for (i = 0; i < sizeof(CRam); ++i)
-                {
-                    if (!(i & 2047))
-                        fread(fname, 1, sizeof(fname), in);
-                    ((char*)&CRam)[i ^ 1] = fname[i & 2047];
-                }
-                fclose(in);
-                if (Game)
-                {
-                    CRam_Flag = 1;
-                    Show_Genesis_Screen(HWnd);
-                }
-            }
-        } break;
-        case IDC_BUTTON3:
-        {
-            char fname[2048];
-            strcpy(fname, "pal.pal");
-            if (Change_File_S(fname, ".", "Save YY-CHR Pal As...", "All Files\0*.*\0\0", "*.*", hDlg))
-            {
-                FILE *out = fopen(fname, "wb+");
-                int i;
-                for (i = 0; i < VDP_PAL_COLORS * VDP_PAL_COUNT; ++i)
-                {
-                    *((DWORD*)fname) = GetPalColor(i);
-                    fwrite(fname, 1, 3, out);
-                }
-                *((DWORD*)fname) = 0;
-                for (; i < 256; ++i)
-                    fwrite(fname, 1, 3, out);
-                fclose(out);
-            }
-        } break;
-        case IDC_BUTTON8:
-        {
-            char fname[2048];
-            strcpy(fname, "vram.bin");
-            if (Change_File_S(fname, ".", "Save Dump VRAM As...", "All Files\0*.*\0\0", "*.*", hDlg))
-            {
-                FILE *out = fopen(fname, "wb+");
-                int i;
-                for (i = 0; i < sizeof(VRam); ++i)
-                {
-                    fname[i & 2047] = ((char*)&VRam)[i ^ 1];
-                    if ((i & 2047) == 2047)
-                        fwrite(fname, 1, sizeof(fname), out);
-                }
-                fwrite(fname, 1, i & 2047, out);
-                fclose(out);
-            }
-        } break;
-        case IDC_BUTTON9:
-        {
-            char fname[2048];
-            strcpy(fname, "vram.bin");
-            if (Change_File_L(fname, ".", "Load Dump VRAM As...", "All Files\0*.*\0\0", "*.*", hDlg))
-            {
-                FILE *in = fopen(fname, "rb");
-                int i;
-                for (i = 0; i < sizeof(VRam); ++i)
-                {
-                    if (!(i & 2047))
-                        fread(fname, 1, sizeof(fname), in);
-                    ((char*)&VRam)[i ^ 1] = fname[i & 2047];
-                }
-                fclose(in);
-                if (Genesis_Started || _32X_Started || SegaCD_Started)
-                    Show_Genesis_Screen(HWnd);
-            }
-        } break;
-		case IDC_SHOW_VRAM:
-		{
-			IsVRAM = true;
-			Redraw_VDP_View();
-		} break;
-		case IDC_SHOW_M68K_RAM:
-		{
-			IsVRAM = false;
-			Redraw_VDP_View();
-		} break;
-        }
-    } break;
+	} break;
 
     case WM_VSCROLL:
     {
@@ -1478,8 +1501,8 @@ LRESULT CALLBACK VDPRamProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 		EndPaint(hDlg, &ps);
 
-		msgModeRegistersWM_PAINT(activeTabWindow, wParam, lParam);
-		msgOtherRegistersWM_PAINT(activeTabWindow, wParam, lParam);
+		msgModeRegistersUPDATE(activeTabWindow);
+		msgOtherRegistersUPDATE(activeTabWindow);
         return true;
     } break;
 
@@ -1517,21 +1540,23 @@ LRESULT CALLBACK VDPRamProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
     } break;
 
     case WM_CLOSE:
+	{
 		if (activeTabWindow != NULL)
 		{
 			DestroyWindow(activeTabWindow);
 			activeTabWindow = NULL;
 		}
-		
+
 		if (Full_Screen)
-        {
-            while (ShowCursor(true) < 0);
-            while (ShowCursor(false) >= 0);
-        }
-        DialogsOpen--;
-        VDPRamHWnd = NULL;
-        EndDialog(hDlg, true);
-        return true;
+		{
+			while (ShowCursor(true) < 0);
+			while (ShowCursor(false) >= 0);
+		}
+		DialogsOpen--;
+		VDPRamHWnd = NULL;
+		EndDialog(hDlg, true);
+		return true;
+	} break;
     }
 
     return false;

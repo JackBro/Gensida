@@ -161,7 +161,6 @@
 #define IDC_BUTTON2                     1126
 #define IDC_DISABLEKEY                  1126
 #define IDC_SAVE                        1126
-#define IDC_VDP_PAL_LOAD                1126
 #define IDC_BUTTON_STATE_BROWSE         1127
 #define IDC_USEDEFAULTKEY               1127
 #define IDC_BUTTON11                    1127
@@ -191,7 +190,6 @@
 #define IDC_REASSIGNKEY                 1146
 #define IDC_BUTTON_LUABROWSE            1146
 #define IDC_BTN_HELP                    1146
-#define IDC_VDP_PAL_DUMP                1146
 #define IDC_BUTTON_LUAEDIT              1147
 #define IDC_STATIC_WARNING_EXIST        1147
 #define IDC_BUTTON8                     1147
@@ -715,7 +713,6 @@
 #define ID_LUA_OPENRECENTSCRIPTMAX      44299
 #define IDC_VDP_TILES_SCROLLBAR         50001
 #define IDC_BUTTON3                     50004
-#define IDC_VDP_PAL_YY                  50004
 #define IDC_SET_BREAK                   50005
 #define IDC_BUTTON4                     50016
 #define IDC_VDP_TILES                   50016
@@ -730,11 +727,14 @@
 #define IDC_SPRITES_DUMP                50028
 #define ID_VDP_SPRITES                  50029
 #define IDC_VDP_TILE_INFO               50031
-#define IDC_SHOW_VRAM                   50034
-#define IDC_SHOW_M68K_RAM               50035
+#define IDC_VDP_VIEW_VRAM               50034
+#define IDC_VDP_VIEW_RAM                50035
 #define IDC_VDP_PAL_GROUP               50036
 #define IDC_VDP_VRAM_GROUP              50037
 #define IDC_VDP_VIEW_MODE               50038
+#define IDC_VDP_PAL_LOAD                51100
+#define IDC_VDP_PAL_DUMP                51101
+#define IDC_VDP_PAL_YY                  51102
 #define IDC_PLANEEXPLORER_MAIN          54001
 #define IDC_PLANEEXPLORER_TILEINFO      54002
 #define IDC_PLANEEXPLORER_TRANS         54003
