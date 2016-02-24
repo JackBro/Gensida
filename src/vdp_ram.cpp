@@ -44,8 +44,6 @@ bool IsVRAM;
 #define VDP_BLOCK_W (VDP_TILE_W * VDP_TILE_ZOOM)
 #define VDP_BLOCK_H (VDP_TILE_H * VDP_TILE_ZOOM)
 #define VDP_SCROLL_MAX (sizeof(VRam) / (VDP_TILES_IN_ROW * 0x20) - VDP_TILES_IN_COL)
-#define SwapPalColor(x) ((((x) >> 16) & 0xFF) | (((x) & 0xFF) << 16) | ((x) & 0xFF00))
-#define GetPalColor(x) (COLORREF)SwapPalColor(Palette32[CRam[x]|0x4000])
 
 struct TabInfo
 {
@@ -1266,27 +1264,38 @@ LRESULT CALLBACK VDPRamProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 		if ((UINT)wParam == IDC_VDP_PALETTE)
 		{
+			BYTE* pdst;
+			BITMAPINFOHEADER bmih = { sizeof(BITMAPINFOHEADER), VDP_PAL_COLORS, -VDP_PAL_COUNT, 1, 32 };
+
 			HDC hSmallDC = CreateCompatibleDC(di->hDC);
-			HBITMAP hSmallBmp = CreateCompatibleBitmap(di->hDC, VDP_PAL_COLORS, VDP_PAL_COUNT);
+			HBITMAP hSmallBmp = CreateDIBSection(hSmallDC, (BITMAPINFO *)&bmih, DIB_RGB_COLORS, (void **)&pdst, NULL, NULL);
 			HBITMAP hOldSmallBmp = (HBITMAP)SelectObject(hSmallDC, hSmallBmp);
 
-			for (int j = 0; j < VDP_PAL_COUNT; ++j)
-				for (int i = 0; i < VDP_PAL_COLORS; ++i)
+			for (int y = 0; y < VDP_PAL_COUNT; ++y)
+				for (int x = 0; x < VDP_PAL_COLORS; ++x)
 				{
-					SetPixelV(hSmallDC, i, j, GetPalColor(VDP_PAL_COLORS * j + i));
+					int bytes = 4;
+					int xMul = bytes;
+					int xOff = x * xMul;
+					int yMul = (bytes * VDP_PAL_COLORS);
+					int yOff = y * yMul;
+
+					*(COLORREF*)(&pdst[yOff + xOff]) = GetPalColorNoSwap(VDP_PAL_COLORS * y + x);
 				}
 
-			StretchBlt(
+			StretchDIBits(
 				di->hDC,
 				0,
 				0,
 				di->rcItem.right - di->rcItem.left,
 				di->rcItem.bottom - di->rcItem.top,
-				hSmallDC,
 				0,
 				0,
 				VDP_PAL_COLORS,
 				VDP_PAL_COUNT,
+				pdst,
+				(const BITMAPINFO *)&bmih,
+				DIB_RGB_COLORS,
 				SRCCOPY
 				);
 
@@ -1304,41 +1313,56 @@ LRESULT CALLBACK VDPRamProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		}
 		else if ((UINT)wParam == IDC_VDP_TILES)
 		{
-			HDC hSmallDC = CreateCompatibleDC(di->hDC);
-			HBITMAP hSmallBmp = CreateCompatibleBitmap(di->hDC, VDP_TILE_W * VDP_TILES_IN_ROW, VDP_TILE_H * VDP_TILES_IN_COL);
-			HBITMAP hOldSmallBmp = (HBITMAP)SelectObject(hSmallDC, hSmallBmp);
-
-			unsigned char *ptr = (unsigned char*)(IsVRAM ? VRam : Ram_68k);
-
 			int scroll = GetScrollPos(GetDlgItem(hDlg, IDC_VDP_TILES_SCROLLBAR), SB_CTL);
 			int start = scroll * VDP_TILES_IN_ROW;
 			int end = start + VDP_TILES_IN_ROW * VDP_TILES_IN_COL;
 			int tiles = end - start;
 
+			BYTE* pdst;
+			BITMAPINFOHEADER bmih = { sizeof(BITMAPINFOHEADER), VDP_TILE_W * VDP_TILES_IN_ROW, -VDP_TILE_H * VDP_TILES_IN_COL, 1, 32 };
+
+			HDC hSmallDC = CreateCompatibleDC(di->hDC);
+			HBITMAP hSmallBmp = CreateDIBSection(hSmallDC, (BITMAPINFO *)&bmih, DIB_RGB_COLORS, (void **)&pdst, NULL, NULL);
+			HBITMAP hOldSmallBmp = (HBITMAP)SelectObject(hSmallDC, hSmallBmp);
+
+			BYTE *ptr = (BYTE *)(IsVRAM ? VRam : Ram_68k);
 			for (int i = 0; i < tiles; ++i)
 			{
 				for (int y = 0; y < VDP_TILE_H; ++y)
 				{
 					for (int x = 0; x < (VDP_TILE_W / 2); ++x)
 					{
-						unsigned char t = ptr[(start + i) * 0x20 + y * (VDP_TILE_W / 2) + (x ^ 1)];
-						SetPixelV(hSmallDC, (i % VDP_TILES_IN_ROW) * VDP_TILE_W + x * 2 + 0, (i / VDP_TILES_IN_ROW) * VDP_TILE_H + y, GetPalColor(VDP_PAL_COLORS * VDPRamPal + (t >> 4)));
-						SetPixelV(hSmallDC, (i % VDP_TILES_IN_ROW) * VDP_TILE_W + x * 2 + 1, (i / VDP_TILES_IN_ROW) * VDP_TILE_H + y, GetPalColor(VDP_PAL_COLORS * VDPRamPal + (t & 0xF)));
+						int bytes = 4;
+						int xMul = bytes;
+						int _x = (i % VDP_TILES_IN_ROW) * VDP_TILE_W + x * 2 + 0;
+						int xOff = _x * xMul;
+						int yMul = (bytes * VDP_TILES_IN_ROW * VDP_TILE_W);
+						int _y = (i / VDP_TILES_IN_ROW) * VDP_TILE_H + y;
+						int yOff = _y * yMul;
+
+						BYTE t = ptr[(start + i) * 0x20 + y * (VDP_TILE_W / 2) + (x ^ 1)];
+						COLORREF c1 = GetPalColorNoSwap(VDP_PAL_COLORS * VDPRamPal + (t >> 4));
+						COLORREF c2 = GetPalColorNoSwap(VDP_PAL_COLORS * VDPRamPal + (t & 0xF));
+
+						*(COLORREF*)(&pdst[yOff + xOff]) = c1;
+						*(COLORREF*)(&pdst[yOff + xOff + bytes]) = c2;
 					}
 				}
 			}
 
-			StretchBlt(
+			StretchDIBits(
 				di->hDC,
 				0,
 				0,
 				di->rcItem.right - di->rcItem.left,
 				di->rcItem.bottom - di->rcItem.top,
-				hSmallDC,
 				0,
 				0,
 				VDP_TILE_W * VDP_TILES_IN_ROW,
 				VDP_TILE_H * VDP_TILES_IN_COL,
+				pdst,
+				(const BITMAPINFO *)&bmih,
+				DIB_RGB_COLORS,
 				SRCCOPY
 				);
 
@@ -1359,33 +1383,47 @@ LRESULT CALLBACK VDPRamProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		}
 		else if ((UINT)wParam == IDC_VDP_TILE_VIEW)
 		{
+			BYTE* pdst;
+			BITMAPINFOHEADER bmih = { sizeof(BITMAPINFOHEADER), VDP_TILE_W, -VDP_TILE_H, 1, 32 };
+
 			HDC hSmallDC = CreateCompatibleDC(di->hDC);
-			HBITMAP hSmallBmp = CreateCompatibleBitmap(di->hDC, VDP_TILE_W, VDP_TILE_H);
+			HBITMAP hSmallBmp = CreateDIBSection(hSmallDC, (BITMAPINFO *)&bmih, DIB_RGB_COLORS, (void **)&pdst, NULL, NULL);
 			HBITMAP hOldSmallBmp = (HBITMAP)SelectObject(hSmallDC, hSmallBmp);
 
-			unsigned char *ptr = (unsigned char*)(IsVRAM ? VRam : Ram_68k);
-
+			BYTE *ptr = (BYTE *)(IsVRAM ? VRam : Ram_68k);
 			for (int y = 0; y < VDP_TILE_H; ++y)
 			{
 				for (int x = 0; x < (VDP_TILE_W / 2); ++x)
 				{
-					unsigned char t = ptr[VDPRamTile * 0x20 + y * (VDP_TILE_W / 2) + (x ^ 1)];
-					SetPixelV(hSmallDC, x * 2 + 0, y, GetPalColor(VDP_PAL_COLORS * VDPRamPal + (t >> 4)));
-					SetPixelV(hSmallDC, x * 2 + 1, y, GetPalColor(VDP_PAL_COLORS * VDPRamPal + (t & 0xF)));
+					int bytes = 4;
+					int xMul = bytes;
+					int _x = x * 2 + 0;
+					int xOff = _x * xMul;
+					int yMul = (bytes * VDP_TILE_W);
+					int yOff = y * yMul;
+
+					BYTE t = ptr[VDPRamTile * 0x20 + y * (VDP_TILE_W / 2) + (x ^ 1)];
+					COLORREF c1 = GetPalColorNoSwap(VDP_PAL_COLORS * VDPRamPal + (t >> 4));
+					COLORREF c2 = GetPalColorNoSwap(VDP_PAL_COLORS * VDPRamPal + (t & 0xF));
+
+					*(COLORREF*)(&pdst[yOff + xOff]) = c1;
+					*(COLORREF*)(&pdst[yOff + xOff + bytes]) = c2;
 				}
 			}
 
-			StretchBlt(
+			StretchDIBits(
 				di->hDC,
 				0,
 				0,
 				di->rcItem.right - di->rcItem.left,
 				di->rcItem.bottom - di->rcItem.top,
-				hSmallDC,
 				0,
 				0,
 				VDP_TILE_W,
 				VDP_TILE_H,
+				pdst,
+				(const BITMAPINFO *)&bmih,
+				DIB_RGB_COLORS,
 				SRCCOPY
 				);
 

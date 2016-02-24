@@ -1,6 +1,7 @@
 #include <windows.h>
 #include <commctrl.h>
 
+#include "vdp_ram.h"
 #include "vdp_rend.h"
 #include "vdp_io.h"
 #include "resource.h"
@@ -10,22 +11,6 @@
 
 /******************** SPRITES ***************/
 
-COLORREF GetPal_KMod(unsigned char numPal, unsigned numColor)
-{
-    /* can't use MD_Palette since it's DirectX mode (555 or 565) */
-    /* !! CRAM is (binary:)GGG0RRR00000BBB0   while COLORREF is (hexa:)0x00BBGGRR */
-    COLORREF newColor;
-
-    newColor = (COLORREF)Palette32[CRam[16 * numPal + numColor] | 0x4000];
-    newColor = ((newColor >> 16) & 0xFF) | (newColor & 0xFF00) | ((newColor & 0xFF) << 16);
-
-    // handle our false pal ;)
-    if (numPal == 4)
-        newColor = PALETTEINDEX(numColor);
-
-    return newColor;
-}
-
 void DrawTile_KMod(HDC hDCMain, unsigned short int numTile, WORD xpos, WORD ypos, UCHAR pal, UCHAR zoom)
 {
     unsigned char y, x;
@@ -33,41 +18,51 @@ void DrawTile_KMod(HDC hDCMain, unsigned short int numTile, WORD xpos, WORD ypos
     HDC hDC;
     HBITMAP hBitmap, hOldBitmap;
 
-    hDC = CreateCompatibleDC(hDCMain);
-    hBitmap = CreateCompatibleBitmap(hDCMain, 8, 8);
-    hOldBitmap = (HBITMAP)SelectObject(hDC, hBitmap);
+	BYTE* pdst;
+	BITMAPINFOHEADER bmih = { sizeof(BITMAPINFOHEADER), 8, -8, 1, 32 };
+
+	hDC = CreateCompatibleDC(hDCMain);
+	hBitmap = CreateDIBSection(hDC, (BITMAPINFO *)&bmih, DIB_RGB_COLORS, (void **)&pdst, NULL, NULL);
+	hOldBitmap = (HBITMAP)SelectObject(hDC, hBitmap);
 
     for (y = 0; y < 8; y++)
     {
 		for (x = 0; x < 4; x++)
 		{
+			int bytes = 4;
+			int xMul = bytes;
+			int _x = x * 2 + 0;
+			int xOff = _x * xMul;
+			int yMul = (bytes * 8);
+			int yOff = y * yMul;
+
 			TileData = VRam[numTile * 32 + y * 4 + (x ^ 1)];
-			SetPixelV(hDC, x * 2 + 0, y, GetPal_KMod(pal, TileData >> 4));
-			SetPixelV(hDC, x * 2 + 1, y, GetPal_KMod(pal, TileData & 0xF));
+			COLORREF c1 = GetPalColorNoSwap(16 * pal + (TileData >> 4));
+			COLORREF c2 = GetPalColorNoSwap(16 * pal + (TileData & 0xF));
+
+			*(COLORREF*)(&pdst[yOff + xOff]) = c1;
+			*(COLORREF*)(&pdst[yOff + xOff + bytes]) = c2;
 		}
     }
 
-    StretchBlt(
-        hDCMain, // handle to destination device context
-        xpos,  // x-coordinate of destination rectangle's upper-left
-        // corner
-        ypos,  // y-coordinate of destination rectangle's upper-left
-        // corner
-        8 * zoom,  // width of destination rectangle
-        8 * zoom, // height of destination rectangle
-        hDC,  // handle to source device context
-        0,   // x-coordinate of source rectangle's upper-left
-        // corner
-        0,   // y-coordinate of source rectangle's upper-left
-        // corner
-        8,
-        8,
-        SRCCOPY  // raster operation code
-        );
+	StretchDIBits(
+		hDCMain,
+		xpos,
+		ypos,
+		8 * zoom,
+		8 * zoom,
+		0,
+		0,
+		8,
+		8,
+		pdst,
+		(const BITMAPINFO *)&bmih,
+		DIB_RGB_COLORS,
+		SRCCOPY
+		);
 
     SelectObject(hDC, hOldBitmap);
     DeleteObject(hBitmap);
-
     DeleteDC(hDC);
 }
 
@@ -317,7 +312,7 @@ void DumpSprite_KMod(HWND hwnd)
 
     for (j = 0; j < 16; j++)
     {
-        tmpColor = GetPal_KMod(pal, j);
+        tmpColor = GetPalColor(pal * 16 + j);
         bmiColors[j].rgbRed = (BYTE)tmpColor & 0xFF;
         tmpColor >>= 8;
         bmiColors[j].rgbGreen = (BYTE)tmpColor & 0xFF;
