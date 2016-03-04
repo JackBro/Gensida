@@ -274,7 +274,7 @@ char comment[] = "GensIDA debugger plugin by Dr. MefistO.";
 char help[] =
 "GensIDA debugger plugin by Dr. MefistO.\n"
 "\n"
-"This module lets you debug Genesis roms in Gens.\n";
+"This module lets you debug Genesis roms in IDA.\n";
 
 //--------------------------------------------------------------------------
 //
