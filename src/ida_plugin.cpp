@@ -12,14 +12,14 @@
 // A copy of the GPL 2.0 should have been included with the program.
 // If not, see http ://www.gnu.org/licenses/
 
-#define VERSION "1.3"
-
 #include <Windows.h>
 
 #include <ida.hpp>
 #include <dbg.hpp>
 #include <idd.hpp>
 #include <loader.hpp>
+
+#include "ida_plugin.h"
 
 #include "m68k_debugwindow.h"
 #include "resource.h"
@@ -215,7 +215,7 @@ static int idaapi hook_ui(void *user_data, int notification_code, va_list va)
 //--------------------------------------------------------------------------
 static void print_version()
 {
-	static const char format[] = "GensIDA debugger plugin v%s;\nAuthor: Dr. MefistO [Lab 313] <meffi@lab313.ru>.";
+	static const char format[] = NAME " debugger plugin v%s;\nAuthor: Dr. MefistO [Lab 313] <meffi@lab313.ru>.";
 	info(format, VERSION);
 	msg(format, VERSION);
 }
@@ -269,10 +269,10 @@ static void idaapi run(int /*arg*/)
 }
 
 //--------------------------------------------------------------------------
-char comment[] = "GensIDA debugger plugin by Dr. MefistO.";
+char comment[] = NAME " debugger plugin by Dr. MefistO.";
 
 char help[] =
-"GensIDA debugger plugin by Dr. MefistO.\n"
+NAME " debugger plugin by Dr. MefistO.\n"
 "\n"
 "This module lets you debug Genesis roms in IDA.\n";
 
@@ -297,7 +297,7 @@ plugin_t PLUGIN =
 
 	help, // multiline help about the plugin
 
-	"GensIDA debugger plugin", // the preferred short name of the plugin
+	NAME " debugger plugin", // the preferred short name of the plugin
 
 	"" // the preferred hotkey to run the plugin
 };

@@ -20,6 +20,7 @@
 
 #include "ida_registers.h"
 #include "ida_debug.h"
+#include "ida_plugin.h"
 
 #include <vector>
 
@@ -977,7 +978,7 @@ static bool idaapi update_call_stack(thid_t tid, call_stack_t *trace)
 debugger_t debugger =
 {
 	IDD_INTERFACE_VERSION,
-	"GensIDA", // Short debugger name
+	NAME, // Short debugger name
 	124, // Debugger API module id
 	"m68k", // Required processor name
 	DBG_FLAG_NOHOST | DBG_FLAG_CAN_CONT_BPT | DBG_FLAG_FAKE_ATTACH | DBG_FLAG_SAFE | DBG_FLAG_NOPASSWORD | DBG_FLAG_NOSTARTDIR | DBG_FLAG_LOWCNDS | DBG_FLAG_CONNSTRING | DBG_FLAG_ANYSIZE_HWBPT,
