@@ -99,44 +99,44 @@ void trace_exec_pc()
 	}
 #undef CHECK_BIT
 
-    M68kDW.TracePC(hook_pc);
 	CallRegisteredLuaMemHook(hook_pc, 2, 0, LUAMEMHOOK_EXEC);
+    M68kDW.TracePC(hook_pc);
 }
 
 void trace_read_byte()
 {
+	CallRegisteredLuaMemHook(hook_address, 1, hook_value, LUAMEMHOOK_READ);
     M68kDW.TraceRead(hook_address, hook_address, false);
-    CallRegisteredLuaMemHook(hook_address, 1, hook_value, LUAMEMHOOK_READ);
 }
 
 void trace_read_word()
 {
+	CallRegisteredLuaMemHook(hook_address, 2, hook_value, LUAMEMHOOK_READ);
 	M68kDW.TraceRead(hook_address, hook_address + 1, false);
-    CallRegisteredLuaMemHook(hook_address, 2, hook_value, LUAMEMHOOK_READ);
 }
 
 void trace_read_dword()
 {
+	CallRegisteredLuaMemHook(hook_address, 4, hook_value, LUAMEMHOOK_READ);
 	M68kDW.TraceRead(hook_address, hook_address + 3, false);
-    CallRegisteredLuaMemHook(hook_address, 4, hook_value, LUAMEMHOOK_READ);
 }
 
 void trace_write_byte()
 {
+	CallRegisteredLuaMemHook(hook_address, 1, hook_value, LUAMEMHOOK_WRITE);
 	M68kDW.TraceWrite(hook_address, hook_address, false);
-    CallRegisteredLuaMemHook(hook_address, 1, hook_value, LUAMEMHOOK_WRITE);
 }
 
 void trace_write_word()
 {
+	CallRegisteredLuaMemHook(hook_address, 2, hook_value, LUAMEMHOOK_WRITE);
 	M68kDW.TraceWrite(hook_address, hook_address + 1, false);
-    CallRegisteredLuaMemHook(hook_address, 2, hook_value, LUAMEMHOOK_WRITE);
 }
 
 void trace_write_dword()
 {
+	CallRegisteredLuaMemHook(hook_address, 4, hook_value, LUAMEMHOOK_WRITE);
 	M68kDW.TraceWrite(hook_address, hook_address + 3, false);
-    CallRegisteredLuaMemHook(hook_address, 4, hook_value, LUAMEMHOOK_WRITE);
 }
 
 static void hook_dma_internal()
