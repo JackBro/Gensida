@@ -1,13 +1,13 @@
 #include <stdio.h>
 #include <math.h>
-#include "G_ddraw.h"
-#include "G_dsound.h"
-#include "G_Input.h"
-#include "G_main.h"
+#include "g_ddraw.h"
+#include "g_dsound.h"
+#include "g_input.h"
+#include "g_main.h"
 #include "guidraw.h"
 #include "resource.h"
 #include "gens.h"
-#include "mem_M68K.h"
+#include "mem_m68k.h"
 #include "vdp_io.h"
 #include "vdp_rend.h"
 #include "misc.h"
@@ -18,7 +18,7 @@
 
 #include "movie.h"
 #include "moviegfx.h"
-#include "io.h"
+#include "joypads.h"
 #include "drawutil.h"
 #include "luascript.h"
 

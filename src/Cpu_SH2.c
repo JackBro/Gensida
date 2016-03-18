@@ -1,8 +1,8 @@
-#include "SH2.h"
-#include "Cpu_SH2.h"
-#include "Mem_SH2.h"
-#include "Mem_M68K.h"
-#include "vdp_32X.h"
+#include "sh2.h"
+#include "cpu_sh2.h"
+#include "mem_sh2.h"
+#include "mem_m68k.h"
+#include "vdp_32x.h"
 #include <memory.h>
 
 int MSH2_Speed;

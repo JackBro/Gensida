@@ -1,7 +1,7 @@
 #include "m68k_debugwindow.h"
-#include "Mem_M68k.h"
+#include "mem_m68k.h"
 #include "Star_68k.h"
-#include "M68KD.h"
+#include "m68kd.h"
 #include "ram_dump.h"
 #include "resource.h"
 

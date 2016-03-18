@@ -23,7 +23,7 @@
 #include "mem_s68k.h"
 #include "mem_sh2.h"
 #include "mem_z80.h"
-#include "G_main.h"
+#include "g_main.h"
 #include "G_ddraw.h"
 #include "G_dsound.h"
 #include "vdp_io.h"

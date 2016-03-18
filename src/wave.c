@@ -19,7 +19,7 @@
 #include <windows.h>
 #include <mmsystem.h>
 #include <windowsx.h>
-#include "G_main.h"
+#include "g_main.h"
 #include "wave.h"
 
 /* This routine will create a wave file for writing. This will automatically overwrite any

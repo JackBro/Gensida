@@ -7,7 +7,7 @@
 #include <auto.hpp>
 #include <funcs.hpp>
 
-#include "G_main.h"
+#include "g_main.h"
 #include "G_ddraw.h"
 #include "G_dsound.h"
 #include "Star_68k.h"
@@ -381,8 +381,8 @@ static int idaapi start_process(const char *path,
 	uint32 start = get_entry_point(path);
 
 	M68kDW.Breakpoints.clear();
-	Breakpoint b(start & 0xFFFFFF, start & 0xFFFFFF, true, false, false);
-	M68kDW.Breakpoints.emplace(std::make_pair(BP_PC, b));
+	Breakpoint b(bp_type::BP_PC, start & 0xFFFFFF, start & 0xFFFFFF, true, false, false);
+	M68kDW.Breakpoints.push_back(b);
 
 	allow0_breaks = allow1_breaks = 0;
 	g_events.clear();
@@ -774,17 +774,17 @@ static int idaapi update_bpts(update_bpt_info_t *bpts, int nadd, int ndel)
 		switch (bpts[i].type)
 		{
 		case BPT_EXEC:
-			type1 = BP_PC;
+			type1 = bp_type::BP_PC;
 			break;
 		case BPT_READ:
-			type1 = BP_READ;
+			type1 = bp_type::BP_READ;
 			break;
 		case BPT_WRITE:
-			type1 = BP_WRITE;
+			type1 = bp_type::BP_WRITE;
 			break;
 		case BPT_RDWR:
-			type1 = BP_READ;
-			type2 = BP_WRITE;
+			type1 = bp_type::BP_READ;
+			type2 = (int)bp_type::BP_WRITE;
 			break;
 		}
 
@@ -795,13 +795,13 @@ static int idaapi update_bpts(update_bpt_info_t *bpts, int nadd, int ndel)
 			is_vdp = true;
 		}
 
-		Breakpoint b(start & 0xFFFFFF, end & 0xFFFFFF, true, is_vdp, false);
-		M68kDW.Breakpoints.emplace(std::make_pair(type1, b));
+		Breakpoint b(type1, start & 0xFFFFFF, end & 0xFFFFFF, true, is_vdp, false);
+		M68kDW.Breakpoints.push_back(b);
 
 		if (type2 != 0)
 		{
-			Breakpoint b(start & 0xFFFFFF, end & 0xFFFFFF, true, is_vdp, false);
-			M68kDW.Breakpoints.emplace(std::make_pair((bp_type)type2, b));
+			Breakpoint b((bp_type)type2, start & 0xFFFFFF, end & 0xFFFFFF, true, is_vdp, false);
+			M68kDW.Breakpoints.push_back(b);
 		}
 
 		bpts[i].code = BPT_OK;
@@ -818,17 +818,17 @@ static int idaapi update_bpts(update_bpt_info_t *bpts, int nadd, int ndel)
 		switch (bpts[nadd + i].type)
 		{
 		case BPT_EXEC:
-			type1 = BP_PC;
+			type1 = bp_type::BP_PC;
 			break;
 		case BPT_READ:
-			type1 = BP_READ;
+			type1 = bp_type::BP_READ;
 			break;
 		case BPT_WRITE:
-			type1 = BP_WRITE;
+			type1 = bp_type::BP_WRITE;
 			break;
 		case BPT_RDWR:
-			type1 = BP_READ;
-			type2 = BP_WRITE;
+			type1 = bp_type::BP_READ;
+			type2 = (int)bp_type::BP_WRITE;
 			break;
 		}
 
@@ -842,11 +842,12 @@ static int idaapi update_bpts(update_bpt_info_t *bpts, int nadd, int ndel)
 		start &= 0xFFFFFF;
 		end &= 0xFFFFFF;
 
-		auto range = M68kDW.Breakpoints.equal_range(type1);
-		for (auto j = range.first; j != range.second; )
+		for (auto j = M68kDW.Breakpoints.begin(); j != M68kDW.Breakpoints.end(); )
 		{
-			if (start <= j->second.end && end >= j->second.start &&
-				is_vdp == j->second.is_vdp)
+			if (j->type != type1) continue;
+
+			if (start <= j->end && end >= j->start &&
+				is_vdp == j->is_vdp)
 			{
 				j = M68kDW.Breakpoints.erase(j);
 			}
@@ -856,11 +857,12 @@ static int idaapi update_bpts(update_bpt_info_t *bpts, int nadd, int ndel)
 
 		if (type2 != 0)
 		{
-			range = M68kDW.Breakpoints.equal_range((bp_type)type2);
-			for (auto j = range.first; j != range.second; )
+			for (auto j = M68kDW.Breakpoints.begin(); j != M68kDW.Breakpoints.end(); )
 			{
-				if (start <= j->second.end && end >= j->second.start &&
-					is_vdp == j->second.is_vdp)
+				if (j->type != (bp_type)type2) continue;
+
+				if (start <= j->end && end >= j->start &&
+					is_vdp == j->is_vdp)
 				{
 					j = M68kDW.Breakpoints.erase(j);
 				}
@@ -891,17 +893,17 @@ static int idaapi update_lowcnds(const lowcnd_t *lowcnds, int nlowcnds)
 		switch (lowcnds[i].type)
 		{
 		case BPT_EXEC:
-			type1 = BP_PC;
+			type1 = bp_type::BP_PC;
 			break;
 		case BPT_READ:
-			type1 = BP_READ;
+			type1 = bp_type::BP_READ;
 			break;
 		case BPT_WRITE:
-			type1 = BP_WRITE;
+			type1 = bp_type::BP_WRITE;
 			break;
 		case BPT_RDWR:
-			type1 = BP_READ;
-			type2 = BP_WRITE;
+			type1 = bp_type::BP_READ;
+			type2 = (int)bp_type::BP_WRITE;
 			break;
 		}
 
@@ -915,25 +917,27 @@ static int idaapi update_lowcnds(const lowcnd_t *lowcnds, int nlowcnds)
 		start &= 0xFFFFFF;
 		end &= 0xFFFFFF;
 
-		auto range = M68kDW.Breakpoints.equal_range(type1);
-		for (auto j = range.first; j != range.second; ++j)
+		for (auto j = M68kDW.Breakpoints.begin(); j != M68kDW.Breakpoints.end(); ++j)
 		{
-			if (start <= j->second.end && end >= j->second.start &&
-				j->second.is_vdp == is_vdp)
+			if (j->type != type1) continue;
+
+			if (start <= j->end && end >= j->start &&
+				j->is_vdp == is_vdp)
 			{
-				j->second.is_forbid = (lowcnds[i].cndbody.empty() ? false : ((lowcnds[i].cndbody[0] == '1') ? true : false));
+				j->is_forbid = (lowcnds[i].cndbody.empty() ? false : ((lowcnds[i].cndbody[0] == '1') ? true : false));
 			}
 		}
 
 		if (type2 != 0)
 		{
-			range = M68kDW.Breakpoints.equal_range((bp_type)type2);
-			for (auto j = range.first; j != range.second; ++j)
+			for (auto j = M68kDW.Breakpoints.begin(); j != M68kDW.Breakpoints.end(); ++j)
 			{
-				if (start <= j->second.end && end >= j->second.start &&
-					j->second.is_vdp == is_vdp)
+				if (j->type != (bp_type)type2) continue;
+
+				if (start <= j->end && end >= j->start &&
+					j->is_vdp == is_vdp)
 				{
-					j->second.is_forbid = (lowcnds[i].cndbody.empty() ? false : ((lowcnds[i].cndbody[0] == '1') ? true : false));
+					j->is_forbid = (lowcnds[i].cndbody.empty() ? false : ((lowcnds[i].cndbody[0] == '1') ? true : false));
 				}
 			}
 		}

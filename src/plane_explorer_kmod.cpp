@@ -1,5 +1,5 @@
 #include "gens.h"
-#include "G_main.h"
+#include "g_main.h"
 #include "resource.h"
 #include "plane_explorer_kmod.h"
 #include "vdp_io.h"

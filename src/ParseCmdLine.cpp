@@ -5,13 +5,11 @@
 #include <iostream>
 #include <vector>
 
-#include "G_main.h"
+#include "g_main.h"
 #include "rom.h"
 #include "movie.h"
 #include "save.h"
-#include "G_ddraw.h"
-
-using namespace std;
+#include "g_ddraw.h"
 
 extern int Paused;
 
@@ -23,34 +21,34 @@ extern int Paused;
 
 void ParseCmdLine(LPSTR lpCmdLine, HWND HWnd)
 {
-    string argumentList;					//Complete command line argument
+    std::string argumentList;					//Complete command line argument
     argumentList.assign(lpCmdLine);			//Assign command line to argumentList
     int argLength = argumentList.size();	//Size of command line argument
 
     //List of valid commandline args
-    string argCmds[] = { "-cfg", "-rom", "-play", "-readwrite", "-loadstate", "-pause", "-lua", "" };	//Hint:  to add new commandlines, start by inserting them here.
+    std::string argCmds[] = { "-cfg", "-rom", "-play", "-readwrite", "-loadstate", "-pause", "-lua", "" };	//Hint:  to add new commandlines, start by inserting them here.
 
     //Strings that will get parsed:
-    string CfgToLoad = "";		//Cfg filename
-    string RomToLoad = "";		//ROM filename
-    string MovieToLoad = "";	//Movie filename
-    string StateToLoad = "";	//Savestate filename
-    vector<string> ScriptsToLoad;	//Lua script filenames
-    string FileToLoad = "";		//Any file
-    string PauseGame = "";		//adelikat: If user puts anything after -pause it will flag true, documentation will probably say put "1".  There is no case for "-paused 0" since, to my knowledge, it would serve no purpose
-    string ReadWrite = "";		//adelikat: Read Only is the default so this will be the same situation as above, any value will set to read+write status
+	std::string CfgToLoad = "";		//Cfg filename
+	std::string RomToLoad = "";		//ROM filename
+	std::string MovieToLoad = "";	//Movie filename
+	std::string StateToLoad = "";	//Savestate filename
+	std::vector<std::string> ScriptsToLoad;	//Lua script filenames
+	std::string FileToLoad = "";		//Any file
+	std::string PauseGame = "";		//adelikat: If user puts anything after -pause it will flag true, documentation will probably say put "1".  There is no case for "-paused 0" since, to my knowledge, it would serve no purpose
+	std::string ReadWrite = "";		//adelikat: Read Only is the default so this will be the same situation as above, any value will set to read+write status
 
     //Temps for finding string list
     int commandBegin = 0;	//Beginning of Command
     int commandEnd = 0;		//End of Command
-    string newCommand;		//Will hold newest command being parsed in the loop
-    string trunc;			//Truncated argList (from beginning of command to end of argumentList
+	std::string newCommand;		//Will hold newest command being parsed in the loop
+	std::string trunc;			//Truncated argList (from beginning of command to end of argumentList
 
     //--------------------------------------------------------------------------------------------
     //Commandline parsing loop
-    for (int x = 0; x < (sizeof argCmds / sizeof string); x++)
+    for (int x = 0; x < (sizeof argCmds / sizeof std::string); x++)
     {
-        if (argumentList.find(argCmds[x]) != string::npos)
+        if (argumentList.find(argCmds[x]) != std::string::npos)
         {
             commandBegin = argumentList.find(argCmds[x]) + argCmds[x].size() + (argCmds[x].empty() ? 0 : 1);	//Find beginning of new command
             trunc = argumentList.substr(commandBegin);								//Truncate argumentList

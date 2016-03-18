@@ -12,7 +12,7 @@
 #include "pcm.h"
 #include "cd_sys.h"
 #include "star_68k.h"
-#include "Mem_M68k.h"
+#include "mem_m68k.h"
 #include <memory.h>
 
 #define PCM_STEP_SHIFT 11

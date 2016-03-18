@@ -3,8 +3,8 @@
 #include <map>
 #include "resource.h"
 #include "G_Input.h"
-#include "io.h"
-#include "G_main.h"
+#include "joypads.h"
+#include "g_main.h"
 #include "movie.h"
 #include "save.h" //Modif
 #include "luascript.h"

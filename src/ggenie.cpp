@@ -24,9 +24,9 @@
 #include <string.h>
 #include <stdlib.h>
 #include <windows.h>
-#include "G_main.h"
+#include "g_main.h"
 #include "ggenie.h"
-#include "mem_M68K.h"
+#include "mem_m68k.h"
 #include "cpu_68k.h"
 #include "rom.h"
 #include "misc.h"

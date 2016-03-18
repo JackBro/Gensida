@@ -1,13 +1,13 @@
 #include <stdio.h>
-#include "G_ddraw.h"
-#include "G_dsound.h"
+#include "g_ddraw.h"
+#include "g_dsound.h"
 #include "psg.h"
 #include "ym2612.h"
-#include "mem_M68K.h"
+#include "mem_m68k.h"
 #include "vdp_io.h"
-#include "G_Main.h"
+#include "g_main.h"
 #include "gens.h"
-#include "Rom.h"
+#include "rom.h"
 #include "wave.h"
 #include "pcm.h"
 #include "misc.h"		// for Have_MMX flag

@@ -1,11 +1,11 @@
 #include <stdio.h>
 #include "gens.h"
-#include "G_main.h"
-#include "io.h"
+#include "g_main.h"
+#include "joypads.h"
 #include "G_ddraw.h"
 #include "G_Input.h"
 #include "movie.h"
-#include "mem_M68K.h"
+#include "mem_m68k.h"
 #include "luascript.h"
 
 long unsigned int FrameCount = 0;

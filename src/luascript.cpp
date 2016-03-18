@@ -9,8 +9,8 @@
 #include "vdp_io.h"
 #include "drawutil.h"
 #include "unzip.h"
-#include "Cpu_68k.h"
-#include "io.h"
+#include "cpu_68k.h"
+#include "joypads.h"
 #include "ym2612.h"
 #include "resource.h"
 #include <assert.h>

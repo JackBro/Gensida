@@ -5,7 +5,7 @@
 #include "vdp_rend.h"
 #include "vdp_io.h"
 #include "resource.h"
-#include "G_main.h"
+#include "g_main.h"
 #include "Rom.h"
 #include "G_ddraw.h"
 

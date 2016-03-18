@@ -75,13 +75,14 @@ void DebugWindow::SetWhyBreak(LPCSTR lpString)
 
 bool DebugWindow::BreakPC(int pc)
 {
-	auto range = Breakpoints.equal_range(BP_PC);
-	for (auto i = range.first; i != range.second; ++i)
+	for (auto i = Breakpoints.cbegin(); i != Breakpoints.cend(); ++i)
 	{
-		if (!(i->second.enabled)) continue;
-		if (pc <= (int)(i->second.end) && pc >= (int)(i->second.start))
+		if (i->type != bp_type::BP_PC) continue;
+		if (!(i->enabled)) continue;
+
+		if (pc <= (int)(i->end) && pc >= (int)(i->start))
 		{
-			return !(i->second.is_forbid);
+			return !(i->is_forbid);
 		}
 	}
 	return false;
@@ -107,25 +108,27 @@ bool DebugWindow::BreakRead(int pc, uint32 start, uint32 stop, bool is_vdp)
 {
 	bool brk = false;
 
-	auto range = Breakpoints.equal_range(BP_READ);
-	for (auto i = range.first; i != range.second; ++i)
+	for (auto i = Breakpoints.cbegin(); i != Breakpoints.cend(); ++i)
 	{
-		if (!(i->second.enabled) || (i->second.is_vdp != is_vdp)) continue;
-		if (start <= i->second.end && stop >= i->second.start)
+		if (i->type != bp_type::BP_READ) continue;
+		if (!(i->enabled) || (i->is_vdp != is_vdp)) continue;
+
+		if (start <= i->end && stop >= i->start)
 		{
-			brk = !(i->second.is_forbid);
+			brk = !(i->is_forbid);
 			break;
 		}
 	}
 
 	if (!brk) return false;
 	
-	range = Breakpoints.equal_range(BP_PC);
-	for (auto i = range.first; i != range.second; ++i)
+	for (auto i = Breakpoints.cbegin(); i != Breakpoints.cend(); ++i)
 	{
-		if (i->second.enabled && i->second.is_forbid)
+		if (i->type != bp_type::BP_PC) continue;
+
+		if (i->enabled && i->is_forbid)
 		{
-			if (pc <= (int)(i->second.end) && pc >= (int)(i->second.start))
+			if (pc <= (int)(i->end) && pc >= (int)(i->start))
 				return false;
 		}
 	}
@@ -137,25 +140,27 @@ bool DebugWindow::BreakWrite(int pc, uint32 start, uint32 stop, bool is_vdp)
 {
 	bool brk = false;
 
-	auto range = Breakpoints.equal_range(BP_WRITE);
-	for (auto i = range.first; i != range.second; ++i)
+	for (auto i = Breakpoints.cbegin(); i != Breakpoints.cend(); ++i)
 	{
-		if (!(i->second.enabled) || (i->second.is_vdp != is_vdp)) continue;
-		if (start <= i->second.end && stop >= i->second.start)
+		if (i->type != bp_type::BP_WRITE) continue;
+		if (!(i->enabled) || (i->is_vdp != is_vdp)) continue;
+
+		if (start <= i->end && stop >= i->start)
 		{
-			brk = !(i->second.is_forbid);
+			brk = !(i->is_forbid);
 			break;
 		}
 	}
 
 	if (!brk) return false;
 
-	range = Breakpoints.equal_range(BP_PC);
-	for (auto i = range.first; i != range.second; ++i)
+	for (auto i = Breakpoints.cbegin(); i != Breakpoints.cend(); ++i)
 	{
-		if (i->second.enabled && i->second.is_forbid)
+		if (i->type != bp_type::BP_PC) continue;
+
+		if (i->enabled && i->is_forbid)
 		{
-			if (pc <= (int)(i->second.end) && pc >= (int)(i->second.start))
+			if (pc <= (int)(i->end) && pc >= (int)(i->start))
 				return false;
 		}
 	}

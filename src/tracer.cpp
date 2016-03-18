@@ -2,11 +2,11 @@
 #include <memory.h>
 #include <vector>
 
-#include "Cpu_68k.h"
-#include "M68KD.h"
-#include "M68k_debugwindow.h"
-#include "Mem_M68k.h"
-#include "Mem_S68k.h"
+#include "cpu_68k.h"
+#include "m68kd.h"
+#include "m68k_debugwindow.h"
+#include "mem_m68k.h"
+#include "mem_s68k.h"
 #include "vdp_io.h"
 #include "luascript.h"
 
