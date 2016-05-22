@@ -18,6 +18,7 @@
 #include <dbg.hpp>
 #include <idd.hpp>
 #include <loader.hpp>
+#include <idp.hpp>
 
 #include "ida_plugin.h"
 
@@ -70,146 +71,255 @@ static int idaapi idp_to_dbg_reg(int idp_reg)
 	return reg_idx;
 }
 
-static int idaapi hook_ui(void *user_data, int notification_code, va_list va)
+#ifdef _DEBUG
+static const char* const optype_names[] =
+{
+	"o_void",
+	"o_reg",
+	"o_mem",
+	"o_phrase",
+	"o_displ",
+	"o_imm",
+	"o_far",
+	"o_near",
+	"o_idpspec0",
+	"o_idpspec1",
+	"o_idpspec2",
+	"o_idpspec3",
+	"o_idpspec4",
+	"o_idpspec5",
+};
+
+static const char* const dtyp_names[] =
+{
+	"dt_byte",
+	"dt_word",
+	"dt_dword",
+	"dt_float",
+	"dt_double",
+	"dt_tbyte",
+	"dt_packreal",
+	"dt_qword",
+	"dt_byte16",
+	"dt_code",
+	"dt_void",
+	"dt_fword",
+	"dt_bitfild",
+	"dt_string",
+	"dt_unicode",
+	"dt_3byte",
+	"dt_ldbl",
+	"dt_byte32",
+	"dt_byte64",
+};
+#endif
+
+typedef const regval_t &(idaapi *getreg_func_t)(const char *name, const regval_t *regvalues);
+
+static int idaapi hook_idp(void *user_data, int notification_code, va_list va)
 {
 	switch (notification_code)
 	{
-	case ui_notification_t::ui_get_custom_viewer_hint:
-	{
-		TCustomControl *viewer = va_arg(va, TCustomControl *);
-		place_t *place = va_arg(va, place_t *);
-		int *important_lines = va_arg(va, int *);
-		qstring &hint = *va_arg(va, qstring *);
-
-		if (place == NULL)
-			return 0;
-
-		int x, y;
-		if (get_custom_viewer_place(viewer, true, &x, &y) == NULL)
-			return 0;
-
-		char buf[MAXSTR];
-		const char *line = get_custom_viewer_curline(viewer, true);
-		tag_remove(line, buf, sizeof(buf));
-		if (x >= (int)strlen(buf))
-			return 0;
-
-		idaplace_t &pl = *(idaplace_t *)place;
-		if (decode_insn(pl.ea) && dbg_started)
+		case processor_t::idp_notify::get_operand_info:
 		{
-			insn_t _cmd = cmd;
+			ea_t ea = va_arg(va, ea_t);
+			int n = va_arg(va, int);
+			int thread_id = va_arg(va, int);
+			getreg_func_t getreg = va_arg(va, getreg_func_t);
+			const regval_t *regvalues = va_arg(va, const regval_t *);
+			idd_opinfo_t * opinf = va_arg(va, idd_opinfo_t *);
 
-			int flags = calc_default_idaplace_flags();
-			linearray_t ln(&flags);
+			opinf->ea = BADADDR;
+			opinf->debregidx = 0;
+			opinf->modified = false;
+			opinf->value.ival = 0;
+			opinf->value_size = 4;
 
-			for (int i = 0; i < qnumber(_cmd.Operands); i++)
+			if (decode_insn(ea) && dbg_started)
 			{
-				op_t op = _cmd.Operands[i];
+				insn_t _cmd = cmd;
+				op_t op = _cmd.Operands[n];
 
-				if (op.type != o_void)
+#ifdef _DEBUG
+				msg("cs=%x, ", _cmd.cs);
+				msg("ip=%x, ", _cmd.ip);
+				msg("ea=%x, ", _cmd.ea);
+				msg("itype=%x, ", _cmd.itype);
+				msg("size=%x, ", _cmd.size);
+				msg("auxpref=%x, ", _cmd.auxpref);
+				msg("segpref=%x, ", _cmd.segpref);
+				msg("insnpref=%x, ", _cmd.insnpref);
+				msg("insnpref=%x, ", _cmd.insnpref);
+
+				msg("flags[");
+				if (_cmd.flags & INSN_MACRO)
+					msg("INSN_MACRO|");
+				if (_cmd.flags & INSN_MODMAC)
+					msg("OF_OUTER_DISP");
+				msg("]\n");
+
+				msg("type[%s], ", optype_names[op.type]);
+
+				msg("flags[");
+				if (op.flags & OF_NO_BASE_DISP)
+					msg("OF_NO_BASE_DISP|");
+				if (op.flags & OF_OUTER_DISP)
+					msg("OF_OUTER_DISP|");
+				if (op.flags & PACK_FORM_DEF)
+					msg("PACK_FORM_DEF|");
+				if (op.flags & OF_NUMBER)
+					msg("OF_NUMBER|");
+				if (op.flags & OF_SHOW)
+					msg("OF_SHOW");
+				msg("], ");
+
+				msg("dtyp[%s], ", dtyp_names[op.dtyp]);
+
+				if (op.type == o_reg)
+					msg("reg=%x, ", op.reg);
+				else if (op.type == o_displ || op.type == o_phrase)
+					msg("phrase=%x, ", op.phrase);
+				else
+					msg("reg_phrase=%x, ", op.phrase);
+
+				msg("addr=%x, ", op.addr);
+
+				msg("value=%x, ", op.value);
+
+				msg("specval=%x, ", op.specval);
+
+				msg("specflag1=%x, ", op.specflag1);
+				msg("specflag2=%x, ", op.specflag2);
+				msg("specflag3=%x, ", op.specflag3);
+				msg("specflag4=%x\n", op.specflag4);
+#endif
+
+				int size = 0;
+				switch (op.dtyp)
 				{
-					switch (op.type)
+				case dt_byte:
+					size = 1;
+					break;
+				case dt_word:
+					size = 2;
+					break;
+				default:
+					size = 4;
+					break;
+				}
+
+				opinf->value_size = size;
+
+				switch (op.type)
+				{
+				case o_mem:
+				case o_near:
+				{
+					opinf->ea = op.addr;
+				} break;
+				case o_phrase:
+				case o_reg:
+				{
+					int reg_idx = idp_to_dbg_reg(op.reg);
+					regval_t reg = getreg(dbg->registers(reg_idx).name, regvalues);
+
+					if (op.phrase >= 0x10 && op.phrase <= 0x1F || // (A0)..(A7), (A0)+..(A7)+
+						op.phrase >= 0x20 && op.phrase <= 0x27) // -(A0)..-(A7)
 					{
-					case o_mem:
-					case o_near:
-					{
-						idaplace_t here;
-						here.ea = op.addr;
-						here.lnnum = 0;
+						if (op.phrase >= 0x20 && op.phrase <= 0x27)
+							reg.ival -= size;
 
-						ln.set_place(&here);
+						opinf->ea = reg.ival;
 
-						hint.cat_sprnt((COLSTR(SCOLOR_INV"OPERAND#%d (ADDRESS: $%a)\n", SCOLOR_DREF)), op.n, op.addr);
-						(*important_lines)++;
-
-						int n = qmin(ln.get_linecnt(), 10);		   // how many lines for this address?
-						(*important_lines) += n;
-						for (int j = 0; j < n; ++j)
+						switch (size)
 						{
-							hint.cat_sprnt("%s\n", ln.down());
+						case 1:
+						{
+							uint8_t b = 0;
+							dbg->read_memory(reg.ival, &b, 1);
+							opinf->value.set_int(b);
+						} break;
+						case 2:
+						{
+							uint16_t w = 0;
+							dbg->read_memory(reg.ival, &w, 2);
+							w = swap16(w);
+							opinf->value.set_int(w);
+						} break;
+						default:
+						{
+							uint32_t l = 0;
+							dbg->read_memory(reg.ival, &l, 4);
+							l = swap32(l);
+							opinf->value.set_int(l);
+						} break;
 						}
+					}
+					else
+						opinf->value = reg;
+
+					opinf->debregidx = reg_idx;
+				} break;
+				case o_displ:
+				{
+					regval_t main_reg, add_reg;
+					int main_reg_idx = idp_to_dbg_reg(op.reg);
+					int add_reg_idx = idp_to_dbg_reg(op.specflag1 & 0xF);
+
+					main_reg.ival = 0;
+					add_reg.ival = 0;
+					if (op.specflag2 & 0x10)
+					{
+						add_reg = getreg(dbg->registers(add_reg_idx).name, regvalues);
+						if (op.specflag1 & 0x10)
+							add_reg.ival &= 0xFFFF;
+					}
+
+					if (main_reg_idx != R_PC)
+						main_reg = getreg(dbg->registers(main_reg_idx).name, regvalues);
+
+					ea_t addr = (ea_t)main_reg.ival + op.addr + (ea_t)add_reg.ival;
+					opinf->ea = addr;
+					
+					switch (size)
+					{
+					case 1:
+					{
+						uint8_t b = 0;
+						dbg->read_memory(addr, &b, 1);
+						opinf->value.set_int(b);
 					} break;
-					case o_phrase:
-					case o_reg:
+					case 2:
 					{
-						regval_t reg;
-						int reg_idx = idp_to_dbg_reg(op.reg);
-
-						const char *reg_name = dbg->registers(reg_idx).name;
-						if (get_reg_val(reg_name, &reg))
-						{
-							idaplace_t here;
-							here.ea = (uint32)reg.ival;
-							here.lnnum = 0;
-
-							ln.set_place(&here);
-
-							hint.cat_sprnt((COLSTR(SCOLOR_INV"OPERAND#%d (REGISTER: %s)\n", SCOLOR_DREF)), op.n, reg_name);
-							(*important_lines)++;
-
-							int n = qmin(ln.get_linecnt(), 10);		   // how many lines for this address?
-							(*important_lines) += n;
-							for (int j = 0; j < n; ++j)
-							{
-								hint.cat_sprnt("%s\n", ln.down());
-							}
-						}
+						uint16_t w = 0;
+						dbg->read_memory(addr, &w, 2);
+						w = swap16(w);
+						opinf->value.set_int(w);
 					} break;
-					case o_displ:
+					default:
 					{
-						regval_t main_reg, add_reg;
-						int main_reg_idx = idp_to_dbg_reg(op.reg);
-						int add_reg_idx = idp_to_dbg_reg(op.specflag1 & 0xF);
-
-						main_reg.ival = 0;
-						add_reg.ival = 0;
-						if (op.specflag2 & 0x10)
-						{
-							get_reg_val(dbg->registers(add_reg_idx).name, &add_reg);
-							if (op.specflag1 & 0x10)
-								add_reg.ival &= 0xFFFF;
-						}
-
-						if (main_reg_idx != R_PC)
-							get_reg_val(dbg->registers(main_reg_idx).name, &main_reg);
-
-						idaplace_t here;
-						ea_t addr = (uint32)main_reg.ival + op.addr + (uint32)add_reg.ival; // TODO: displacements with PC and other regs unk_123(pc, d0.l); unk_111(d0, d2.w)
-						here.ea = addr;
-						here.lnnum = 0;
-
-						ln.set_place(&here);
-
-						hint.cat_sprnt((COLSTR(SCOLOR_INV"OPERAND#%d (DISPLACEMENT: [$%s%X($%X", SCOLOR_DREF)),
-							op.n,
-							((int)op.addr < 0) ? "-" : "", ((int)op.addr < 0) ? -(int)op.addr : op.addr,
-							(uint32)main_reg.ival
-							);
-
-						if (op.specflag2 & 0x10)
-							hint.cat_sprnt((COLSTR(",$%X", SCOLOR_DREF)), (uint32)add_reg.ival);
-
-						hint.cat_sprnt((COLSTR(")])\n", SCOLOR_DREF)));
-
-						(*important_lines)++;
-
-						int n = qmin(ln.get_linecnt(), 10);		   // how many lines for this address?
-						(*important_lines) += n;
-						for (int j = 0; j < n; ++j)
-						{
-							hint.cat_sprnt("%s\n", ln.down());
-						}
+						uint32_t l = 0;
+						dbg->read_memory(addr, &l, 4);
+						l = swap32(l);
+						opinf->value.set_int(l);
 					} break;
 					}
-				}
-			}
 
-			return 1;
-		}
+					// TODO: displacements with PC and other regs unk_123(pc, d0.l); unk_111(d0, d2.w)
+				} break;
+				}
+
+				return -1;
+			}
+		} break;
+		default:
+			if (dbg_started)
+			{
+				//msg("msg = %x\n", notification_code);
+			}
+			break;
 	}
-	default:
-		return 0;
-	}
+	return 0;
 }
 
 //--------------------------------------------------------------------------
@@ -239,8 +349,9 @@ static int idaapi init(void)
 		dbg = &debugger;
 		plugin_inited = true;
 		dbg_started = false;
-		hook_to_notification_point(HT_UI, hook_ui, NULL);
+
 		hook_to_notification_point(HT_DBG, hook_dbg, NULL);
+		hook_to_notification_point(HT_IDP, hook_idp, NULL);
 
 		print_version();
 		return PLUGIN_KEEP;
@@ -255,8 +366,8 @@ static void idaapi term(void)
 	if (plugin_inited)
 	{
 		//term_plugin();
-		unhook_from_notification_point(HT_UI, hook_ui, NULL);
 		unhook_from_notification_point(HT_DBG, hook_dbg, NULL);
+		unhook_from_notification_point(HT_IDP, hook_idp, NULL);
 		plugin_inited = false;
 		dbg_started = false;
 	}
