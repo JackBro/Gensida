@@ -27,35 +27,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <None Include="asm\blit.asm">
-      <Filter>asm</Filter>
-    </None>
-    <None Include="asm\gfx_cd.asm">
-      <Filter>asm</Filter>
-    </None>
-    <None Include="asm\io.asm">
-      <Filter>asm</Filter>
-    </None>
-    <None Include="asm\mem_m68k.asm">
-      <Filter>asm</Filter>
-    </None>
-    <None Include="asm\mem_s68k.asm">
-      <Filter>asm</Filter>
-    </None>
-    <None Include="asm\mem_sh2.asm">
-      <Filter>asm</Filter>
-    </None>
-    <None Include="asm\mem_z80.asm">
-      <Filter>asm</Filter>
-    </None>
-    <None Include="asm\misc.asm">
-      <Filter>asm</Filter>
-    </None>
-    <None Include="asm\sh2a.asm">
-      <Filter>asm</Filter>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
     <CustomBuild Include="asm\vdp_32x.asm">
       <Filter>asm</Filter>
     </CustomBuild>
@@ -75,6 +46,33 @@
       <Filter>asm</Filter>
     </CustomBuild>
     <CustomBuild Include="asm\pwm_asm.asm">
+      <Filter>asm</Filter>
+    </CustomBuild>
+    <CustomBuild Include="asm\blit.asm">
+      <Filter>asm</Filter>
+    </CustomBuild>
+    <CustomBuild Include="asm\gfx_cd.asm">
+      <Filter>asm</Filter>
+    </CustomBuild>
+    <CustomBuild Include="asm\io.asm">
+      <Filter>asm</Filter>
+    </CustomBuild>
+    <CustomBuild Include="asm\mem_m68k.asm">
+      <Filter>asm</Filter>
+    </CustomBuild>
+    <CustomBuild Include="asm\mem_s68k.asm">
+      <Filter>asm</Filter>
+    </CustomBuild>
+    <CustomBuild Include="asm\mem_sh2.asm">
+      <Filter>asm</Filter>
+    </CustomBuild>
+    <CustomBuild Include="asm\mem_z80.asm">
+      <Filter>asm</Filter>
+    </CustomBuild>
+    <CustomBuild Include="asm\misc.asm">
+      <Filter>asm</Filter>
+    </CustomBuild>
+    <CustomBuild Include="asm\sh2a.asm">
       <Filter>asm</Filter>
     </CustomBuild>
   </ItemGroup>
