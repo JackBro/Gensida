@@ -300,6 +300,7 @@ static bool idaapi init_debugger(const char *hostname,
     const char *password)
 {
     prepare_codemap();
+    set_processor_type(ph.psnames[0], SETPROC_COMPAT); // reset proc to "M68000"
     return true;
 }
 
@@ -844,30 +845,30 @@ static int idaapi update_bpts(update_bpt_info_t *bpts, int nadd, int ndel)
 
         for (auto j = M68kDW.Breakpoints.begin(); j != M68kDW.Breakpoints.end(); )
         {
-            if (j->type != type1) continue;
-
-            if (start <= j->end && end >= j->start &&
-                is_vdp == j->is_vdp)
+            if (j->type != type1 ||
+                !(start <= j->end && end >= j->start && is_vdp == j->is_vdp))
+            {
+                ++j;
+            }
+            else
             {
                 j = M68kDW.Breakpoints.erase(j);
             }
-            else
-                ++j;
         }
 
         if (type2 != 0)
         {
             for (auto j = M68kDW.Breakpoints.begin(); j != M68kDW.Breakpoints.end(); )
             {
-                if (j->type != (bp_type)type2) continue;
-
-                if (start <= j->end && end >= j->start &&
-                    is_vdp == j->is_vdp)
+                if (j->type != (bp_type)type2 ||
+                    !(start <= j->end && end >= j->start && is_vdp == j->is_vdp))
+                {
+                    ++j;
+                }
+                else
                 {
                     j = M68kDW.Breakpoints.erase(j);
                 }
-                else
-                    ++j;
             }
         }
 
