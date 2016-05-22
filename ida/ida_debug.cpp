@@ -36,6 +36,8 @@ uint16 allow0_breaks = 0;
 uint32 allow1_breaks = 0;
 uint32 break_regs[16 + 24] = { 0 };
 
+#define BREAKPOINTS_BASE 0x00D00000
+
 #define CHECK_FOR_START(x) {if (!Gens_Running) return x;}
 
 static const char *const SRReg[] =
@@ -298,7 +300,6 @@ static bool idaapi init_debugger(const char *hostname,
     const char *password)
 {
     prepare_codemap();
-    set_processor_type(ph.psnames[2], SETPROC_COMPAT); // "68020"
     return true;
 }
 
@@ -309,7 +310,6 @@ static bool idaapi term_debugger(void)
 {
     finish_execution();
     apply_codemap();
-    set_processor_type(ph.psnames[0], SETPROC_COMPAT); // "68020"
     return true;
 }
 
@@ -569,13 +569,13 @@ static int idaapi read_registers(thid_t tid, int clsmask, regval_t *values)
             values[R_VDP_DMA_SRC].ival |= ((BYTE)(VDP_Reg.regs[R_DR23 - R_DR00] & mask(0, 6)) << 16);
         values[R_VDP_DMA_SRC].ival <<= 1;
 
-        values[R_VDP_WRITE_ADDR].ival = 0xB0000000;
+        values[R_VDP_WRITE_ADDR].ival = BREAKPOINTS_BASE;
         switch (Ctrl.Access)
         {
         case 0x09: // VRAM
         case 0x0A: // CRAM
         case 0x0B: // VSRAM
-            values[R_VDP_WRITE_ADDR].ival = (0xB0000000 + 0x10000 * (Ctrl.Access - 0x09)) + (Ctrl.Address & 0xFFFF);
+            values[R_VDP_WRITE_ADDR].ival = (BREAKPOINTS_BASE + 0x10000 * (Ctrl.Access - 0x09)) + (Ctrl.Address & 0xFFFF);
             break;
         }
     }
@@ -685,7 +685,7 @@ static int idaapi get_memory_info(meminfo_vec_t &areas)
     // Don't remove this loop
 
     info.name = "DBG_VDP_VRAM";
-    info.startEA = 0xB0000000;
+    info.startEA = BREAKPOINTS_BASE;
     info.endEA = info.startEA + 0x10000;
     info.bitness = 1;
     areas.push_back(info);
@@ -788,10 +788,10 @@ static int idaapi update_bpts(update_bpt_info_t *bpts, int nadd, int ndel)
             break;
         }
 
-        if (start >= 0xB0000000 && end < 0xB0030000)
+        if (start >= BREAKPOINTS_BASE && end < BREAKPOINTS_BASE + 0x30000)
         {
-            start -= 0xB0000000;
-            end -= 0xB0000000;
+            start -= BREAKPOINTS_BASE;
+            end -= BREAKPOINTS_BASE;
             is_vdp = true;
         }
 
@@ -832,10 +832,10 @@ static int idaapi update_bpts(update_bpt_info_t *bpts, int nadd, int ndel)
             break;
         }
 
-        if (start >= 0xB0000000 && end < 0xB0030000)
+        if (start >= BREAKPOINTS_BASE && end < BREAKPOINTS_BASE + 0x30000)
         {
-            start -= 0xB0000000;
-            end -= 0xB0000000;
+            start -= BREAKPOINTS_BASE;
+            end -= BREAKPOINTS_BASE;
             is_vdp = true;
         }
 
@@ -907,10 +907,10 @@ static int idaapi update_lowcnds(const lowcnd_t *lowcnds, int nlowcnds)
             break;
         }
 
-        if (start >= 0xB0000000 && end < 0xB0030000)
+        if (start >= BREAKPOINTS_BASE && end < BREAKPOINTS_BASE + 0x30000)
         {
-            start -= 0xB0000000;
-            end -= 0xB0000000;
+            start -= BREAKPOINTS_BASE;
+            end -= BREAKPOINTS_BASE;
             is_vdp = true;
         }
 

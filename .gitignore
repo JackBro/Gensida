@@ -11,3 +11,4 @@ sub68k.asm
 *.suo
 *.db
 *.opendb
+*.idb
