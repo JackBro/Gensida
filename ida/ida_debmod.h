@@ -1,6 +1,3 @@
-#ifndef __DEBUGGER_MODULE__
-#define __DEBUGGER_MODULE__
-
 #pragma once
 
 //
@@ -57,5 +54,3 @@ public:
         return true;
     }
 };
-
-#endif

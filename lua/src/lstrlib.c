@@ -355,7 +355,7 @@ init: /* using goto's to optimize tail recursion */
             p += 2;
             if (*p != '[')
                 luaL_error(ms->L, "missing " LUA_QL("[") " after "
-                LUA_QL("%%f") " in pattern");
+                    LUA_QL("%%f") " in pattern");
             ep = classend(ms, p);  /* points to what is next */
             previous = (s == ms->src_init) ? '\0' : *(s - 1);
             if (matchbracketclass(uchar(previous), p, ep - 1) ||
@@ -380,7 +380,7 @@ init: /* using goto's to optimize tail recursion */
             return (s == ms->src_end) ? s : NULL;  /* check end of string */
         else goto dflt;
     }
-    default: dflt : {  /* it is a pattern item */
+    default: dflt: {  /* it is a pattern item */
         const char *ep = classend(ms, p);  /* points to what is next */
         int m = s < ms->src_end && singlematch(uchar(*s), p, ep);
         switch (*ep) {

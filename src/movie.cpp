@@ -2,8 +2,8 @@
 #include "gens.h"
 #include "g_main.h"
 #include "joypads.h"
-#include "G_ddraw.h"
-#include "G_Input.h"
+#include "g_ddraw.h"
+#include "g_input.h"
 #include "movie.h"
 #include "mem_m68k.h"
 #include "luascript.h"
@@ -553,8 +553,8 @@ int GetMovieInfo(char *FileName, typeMovie *aMovie)
 
     // use ObtainFile to support loading movies from archives
     char LogicalName[1024], PhysicalName[1024];
-	strcpy(LogicalName, FileName);
-	strcpy(PhysicalName, FileName);
+    strcpy(LogicalName, FileName);
+    strcpy(PhysicalName, FileName);
 
     test = fopen(PhysicalName, "rb");
     if (test == NULL)
@@ -676,17 +676,17 @@ int OpenMovieFile(typeMovie *aMovie)
 
     // use ObtainFile to support loading movies from archives (read-only)
     char LogicalName[1024], PhysicalName[1024];
-	strcpy(LogicalName, aMovie->FileName);
-	strcpy(PhysicalName, aMovie->FileName);
+    strcpy(LogicalName, aMovie->FileName);
+    strcpy(PhysicalName, aMovie->FileName);
 
-	aMovie->File = fopen(PhysicalName, "r+b"); // so we can toggle readonly later without re-opening file
-	if (!aMovie->File)
-	{
-		aMovie->File = fopen(PhysicalName, "rb");
-		aMovie->ReadOnly = 2; // really read-only
-	}
-	strncpy(aMovie->PhysicalFileName, PhysicalName, 1024);
-	Update_Recent_Movie(LogicalName);
+    aMovie->File = fopen(PhysicalName, "r+b"); // so we can toggle readonly later without re-opening file
+    if (!aMovie->File)
+    {
+        aMovie->File = fopen(PhysicalName, "rb");
+        aMovie->ReadOnly = 2; // really read-only
+    }
+    strncpy(aMovie->PhysicalFileName, PhysicalName, 1024);
+    Update_Recent_Movie(LogicalName);
 
     if (!aMovie->File)
         return 0;

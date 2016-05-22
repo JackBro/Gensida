@@ -35,7 +35,7 @@ extern "C" {
 
     void hook_dma();
 
-	void trace_exec_pc();
+    void trace_exec_pc();
 };
 
 uint32 Current_PC;
@@ -81,62 +81,62 @@ extern UINT32 allow1_breaks;
 void trace_exec_pc()
 {
 #define CHECK_BIT(var,pos) ((var) & (1<<(pos)))
-	if (allow0_breaks)
-	{
-		for (unsigned char i = 0; i < 16; ++i)
-		{
-			if (!CHECK_BIT(allow0_breaks, i)) continue;
-			M68kDW.TraceRegValue(15 - i, main68k_context.dreg[15 - i], false); // Check for M68k register breakpoints
-		}
-	}
-	if (allow1_breaks)
-	{
-		for (unsigned char i = 0; i < 24; ++i)
-		{
-			if (!CHECK_BIT(allow1_breaks, i)) continue;
-			M68kDW.TraceRegValue(16 + (23 - i), VDP_Reg.regs[23 - i], true); // Check for VDP register breakpoints
-		}
-	}
+    if (allow0_breaks)
+    {
+        for (unsigned char i = 0; i < 16; ++i)
+        {
+            if (!CHECK_BIT(allow0_breaks, i)) continue;
+            M68kDW.TraceRegValue(15 - i, main68k_context.dreg[15 - i], false); // Check for M68k register breakpoints
+        }
+    }
+    if (allow1_breaks)
+    {
+        for (unsigned char i = 0; i < 24; ++i)
+        {
+            if (!CHECK_BIT(allow1_breaks, i)) continue;
+            M68kDW.TraceRegValue(16 + (23 - i), VDP_Reg.regs[23 - i], true); // Check for VDP register breakpoints
+        }
+    }
 #undef CHECK_BIT
 
-	CallRegisteredLuaMemHook(hook_pc, 2, 0, LUAMEMHOOK_EXEC);
+    CallRegisteredLuaMemHook(hook_pc, 2, 0, LUAMEMHOOK_EXEC);
     M68kDW.TracePC(hook_pc);
 }
 
 void trace_read_byte()
 {
-	CallRegisteredLuaMemHook(hook_address, 1, hook_value, LUAMEMHOOK_READ);
+    CallRegisteredLuaMemHook(hook_address, 1, hook_value, LUAMEMHOOK_READ);
     M68kDW.TraceRead(hook_address, hook_address, false);
 }
 
 void trace_read_word()
 {
-	CallRegisteredLuaMemHook(hook_address, 2, hook_value, LUAMEMHOOK_READ);
-	M68kDW.TraceRead(hook_address, hook_address + 1, false);
+    CallRegisteredLuaMemHook(hook_address, 2, hook_value, LUAMEMHOOK_READ);
+    M68kDW.TraceRead(hook_address, hook_address + 1, false);
 }
 
 void trace_read_dword()
 {
-	CallRegisteredLuaMemHook(hook_address, 4, hook_value, LUAMEMHOOK_READ);
-	M68kDW.TraceRead(hook_address, hook_address + 3, false);
+    CallRegisteredLuaMemHook(hook_address, 4, hook_value, LUAMEMHOOK_READ);
+    M68kDW.TraceRead(hook_address, hook_address + 3, false);
 }
 
 void trace_write_byte()
 {
-	CallRegisteredLuaMemHook(hook_address, 1, hook_value, LUAMEMHOOK_WRITE);
-	M68kDW.TraceWrite(hook_address, hook_address, false);
+    CallRegisteredLuaMemHook(hook_address, 1, hook_value, LUAMEMHOOK_WRITE);
+    M68kDW.TraceWrite(hook_address, hook_address, false);
 }
 
 void trace_write_word()
 {
-	CallRegisteredLuaMemHook(hook_address, 2, hook_value, LUAMEMHOOK_WRITE);
-	M68kDW.TraceWrite(hook_address, hook_address + 1, false);
+    CallRegisteredLuaMemHook(hook_address, 2, hook_value, LUAMEMHOOK_WRITE);
+    M68kDW.TraceWrite(hook_address, hook_address + 1, false);
 }
 
 void trace_write_dword()
 {
-	CallRegisteredLuaMemHook(hook_address, 4, hook_value, LUAMEMHOOK_WRITE);
-	M68kDW.TraceWrite(hook_address, hook_address + 3, false);
+    CallRegisteredLuaMemHook(hook_address, 4, hook_value, LUAMEMHOOK_WRITE);
+    M68kDW.TraceWrite(hook_address, hook_address + 3, false);
 }
 
 static void hook_dma_internal()
@@ -150,7 +150,7 @@ static void hook_dma_internal()
     start = VDP_Reg.DMA_Address << 1;
     stop = start + (VDP_Reg.DMA_Length << 1) - 1;
 
-	M68kDW.TraceRead(start, stop, false);
+    M68kDW.TraceRead(start, stop, false);
 
     /**************************************************/
     /**************************************************/
@@ -185,7 +185,7 @@ static void hook_dma_internal()
         return;
     }
 
-	M68kDW.TraceWrite(start_l, stop_l, true);
+    M68kDW.TraceWrite(start_l, stop_l, true);
 }
 void hook_dma()
 {
@@ -229,7 +229,7 @@ static void trace_write_vram_byte_internal()
         return;
     }
 
-	M68kDW.TraceWrite(start_l, stop_l, true);
+    M68kDW.TraceWrite(start_l, stop_l, true);
 }
 void trace_write_vram_byte()
 {
@@ -273,7 +273,7 @@ static void trace_write_vram_word_internal()
         return;
     }
 
-	M68kDW.TraceWrite(start_l, stop_l, true);
+    M68kDW.TraceWrite(start_l, stop_l, true);
 }
 void trace_write_vram_word()
 {
@@ -317,7 +317,7 @@ static void trace_read_vram_byte_internal()
         return;
     }
 
-	M68kDW.TraceRead(start_l, stop_l, true);
+    M68kDW.TraceRead(start_l, stop_l, true);
 }
 void trace_read_vram_byte()
 {
@@ -361,11 +361,10 @@ static void trace_read_vram_word_internal()
         return;
     }
 
-	M68kDW.TraceRead(start_l, stop_l, true);
+    M68kDW.TraceRead(start_l, stop_l, true);
 }
 void trace_read_vram_word()
 {
     if (hook_trace)
         trace_read_vram_word_internal();
 }
-

@@ -66,15 +66,15 @@
 
 #ifndef HAVE_VSNPRINTF
 #  ifdef MSDOS
-/* vsnprintf may exist on some MS-DOS compilers (DJGPP?),
-   but for now we just assume it doesn't. */
+ /* vsnprintf may exist on some MS-DOS compilers (DJGPP?),
+    but for now we just assume it doesn't. */
 #    define NO_vsnprintf
 #  endif
 #  ifdef __TURBOC__
 #    define NO_vsnprintf
 #  endif
 #  ifdef WIN32
-/* In Win32, vsnprintf is available as the "non-ANSI" _vsnprintf. */
+    /* In Win32, vsnprintf is available as the "non-ANSI" _vsnprintf. */
 #    if !defined(vsnprintf) && !defined(NO_vsnprintf)
 #      if !defined(_MSC_VER) || ( defined(_MSC_VER) && _MSC_VER < 1500 )
 #         define vsnprintf _vsnprintf
@@ -106,12 +106,12 @@
 #ifndef local
 #  define local static
 #endif
-/* compile with -Dlocal if your debugger can't find static symbols */
+   /* compile with -Dlocal if your debugger can't find static symbols */
 
-/* gz* functions always use library allocation functions */
+   /* gz* functions always use library allocation functions */
 #ifndef STDC
-  extern voidp  malloc OF((uInt size));
-  extern void   free   OF((voidpf ptr));
+extern voidp  malloc OF((uInt size));
+extern void   free   OF((voidpf ptr));
 #endif
 
 /* get errno and strerror definition */
@@ -129,10 +129,10 @@
 
 /* provide prototypes for these when building zlib without LFS */
 #if !defined(_LARGEFILE64_SOURCE) || _LFS64_LARGEFILE-0 == 0
-    ZEXTERN gzFile ZEXPORT gzopen64 OF((const char *, const char *));
-    ZEXTERN z_off64_t ZEXPORT gzseek64 OF((gzFile, z_off64_t, int));
-    ZEXTERN z_off64_t ZEXPORT gztell64 OF((gzFile));
-    ZEXTERN z_off64_t ZEXPORT gzoffset64 OF((gzFile));
+ZEXTERN gzFile ZEXPORT gzopen64 OF((const char *, const char *));
+ZEXTERN z_off64_t ZEXPORT gzseek64 OF((gzFile, z_off64_t, int));
+ZEXTERN z_off64_t ZEXPORT gztell64 OF((gzFile));
+ZEXTERN z_off64_t ZEXPORT gzoffset64 OF((gzFile));
 #endif
 
 /* default memLevel */
@@ -146,7 +146,7 @@
    twice this must be able to fit in an unsigned type) */
 #define GZBUFSIZE 8192
 
-/* gzip modes, also provide a little integrity check on the passed structure */
+   /* gzip modes, also provide a little integrity check on the passed structure */
 #define GZ_NONE 0
 #define GZ_READ 7247
 #define GZ_WRITE 31153
@@ -159,7 +159,7 @@
 
 /* internal gzip file state data structure */
 typedef struct {
-        /* exposed contents for gzgetc() macro */
+    /* exposed contents for gzgetc() macro */
     struct gzFile_s x;      /* "x" for exposed */
                             /* x.have: number of bytes available at x.next */
                             /* x.next: next output data to deliver or write */

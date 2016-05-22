@@ -6,6 +6,6 @@
  *
  */
 
-/* This file is obsolete in libpng-1.0.9 and later; its contents now appear
- * at the end of pngconf.h.
- */
+ /* This file is obsolete in libpng-1.0.9 and later; its contents now appear
+  * at the end of pngconf.h.
+  */

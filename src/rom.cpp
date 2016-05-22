@@ -383,8 +383,8 @@ int Get_Rom(HWND hWnd)
     if (GetOpenFileName(&ofn) == NULL) return 0;
 
     char LogicalName[1024], PhysicalName[1024];
-	strcpy(LogicalName, Name);
-	strcpy(PhysicalName, Name);
+    strcpy(LogicalName, Name);
+    strcpy(PhysicalName, Name);
 
     Free_Rom(Game);
 
@@ -447,8 +447,8 @@ int Pre_Load_Rom(HWND hWnd, const char *NameTemp)
     SetCurrentDirectory(Gens_Path);
 
     char LogicalName[1024], PhysicalName[1024];
-	strcpy(LogicalName, Name);
-	strcpy(PhysicalName, Name);
+    strcpy(LogicalName, Name);
+    strcpy(PhysicalName, Name);
 
     Free_Rom(Game);
 
@@ -520,8 +520,8 @@ Rom *Load_Bios(HWND hWnd, char *Name)
     SetCurrentDirectory(Gens_Path);
 
     char LogicalName[1024], PhysicalName[1024];
-	strcpy(LogicalName, Name);
-	strcpy(PhysicalName, Name);
+    strcpy(LogicalName, Name);
+    strcpy(PhysicalName, Name);
 
     Free_Rom(Game);
 

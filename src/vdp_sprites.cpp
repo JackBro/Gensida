@@ -6,8 +6,8 @@
 #include "vdp_io.h"
 #include "resource.h"
 #include "g_main.h"
-#include "Rom.h"
-#include "G_ddraw.h"
+#include "rom.h"
+#include "g_ddraw.h"
 
 /******************** SPRITES ***************/
 
@@ -18,48 +18,48 @@ void DrawTile_KMod(HDC hDCMain, unsigned short int numTile, WORD xpos, WORD ypos
     HDC hDC;
     HBITMAP hBitmap, hOldBitmap;
 
-	BYTE* pdst;
-	BITMAPINFOHEADER bmih = { sizeof(BITMAPINFOHEADER), 8, -8, 1, 32 };
+    BYTE* pdst;
+    BITMAPINFOHEADER bmih = { sizeof(BITMAPINFOHEADER), 8, -8, 1, 32 };
 
-	hDC = CreateCompatibleDC(hDCMain);
-	hBitmap = CreateDIBSection(hDC, (BITMAPINFO *)&bmih, DIB_RGB_COLORS, (void **)&pdst, NULL, NULL);
-	hOldBitmap = (HBITMAP)SelectObject(hDC, hBitmap);
+    hDC = CreateCompatibleDC(hDCMain);
+    hBitmap = CreateDIBSection(hDC, (BITMAPINFO *)&bmih, DIB_RGB_COLORS, (void **)&pdst, NULL, NULL);
+    hOldBitmap = (HBITMAP)SelectObject(hDC, hBitmap);
 
     for (y = 0; y < 8; y++)
     {
-		for (x = 0; x < 4; x++)
-		{
-			int bytes = 4;
-			int xMul = bytes;
-			int _x = x * 2 + 0;
-			int xOff = _x * xMul;
-			int yMul = (bytes * 8);
-			int yOff = y * yMul;
+        for (x = 0; x < 4; x++)
+        {
+            int bytes = 4;
+            int xMul = bytes;
+            int _x = x * 2 + 0;
+            int xOff = _x * xMul;
+            int yMul = (bytes * 8);
+            int yOff = y * yMul;
 
-			TileData = VRam[numTile * 32 + y * 4 + (x ^ 1)];
-			COLORREF c1 = GetPalColorNoSwap(16 * pal + (TileData >> 4));
-			COLORREF c2 = GetPalColorNoSwap(16 * pal + (TileData & 0xF));
+            TileData = VRam[numTile * 32 + y * 4 + (x ^ 1)];
+            COLORREF c1 = GetPalColorNoSwap(16 * pal + (TileData >> 4));
+            COLORREF c2 = GetPalColorNoSwap(16 * pal + (TileData & 0xF));
 
-			*(COLORREF*)(&pdst[yOff + xOff]) = c1;
-			*(COLORREF*)(&pdst[yOff + xOff + bytes]) = c2;
-		}
+            *(COLORREF*)(&pdst[yOff + xOff]) = c1;
+            *(COLORREF*)(&pdst[yOff + xOff + bytes]) = c2;
+        }
     }
 
-	StretchDIBits(
-		hDCMain,
-		xpos,
-		ypos,
-		8 * zoom,
-		8 * zoom,
-		0,
-		0,
-		8,
-		8,
-		pdst,
-		(const BITMAPINFO *)&bmih,
-		DIB_RGB_COLORS,
-		SRCCOPY
-		);
+    StretchDIBits(
+        hDCMain,
+        xpos,
+        ypos,
+        8 * zoom,
+        8 * zoom,
+        0,
+        0,
+        8,
+        8,
+        pdst,
+        (const BITMAPINFO *)&bmih,
+        DIB_RGB_COLORS,
+        SRCCOPY
+    );
 
     SelectObject(hDC, hOldBitmap);
     DeleteObject(hBitmap);
@@ -178,7 +178,7 @@ void DrawSprite_KMod(LPDRAWITEMSTRUCT hlDIS)
         0,   // y-coordinate of source rectangle's upper-left
         // corner
         SRCCOPY  // raster operation code
-        );
+    );
 
     SelectObject(hDC, hOldBitmap);
     DeleteObject(hBitmap);
@@ -238,7 +238,7 @@ void DrawSpriteZoom_KMod(LPDRAWITEMSTRUCT hlDIS)
         0,   // y-coordinate of source rectangle's upper-left
         // corner
         SRCCOPY  // raster operation code
-        );
+    );
 
     SelectObject(hDC, hOldBitmap);
     DeleteObject(hBitmap);

@@ -184,16 +184,16 @@ typedef enum {
 
     OP_FORLOOP,/*	A sBx	R(A)+=R(A+2);
                 if R(A) <?= R(A+1) then { pc+=sBx; R(A+3)=R(A) }*/
-                OP_FORPREP,/*	A sBx	R(A)-=R(A+2); pc+=sBx				*/
+    OP_FORPREP,/*	A sBx	R(A)-=R(A+2); pc+=sBx				*/
 
-                OP_TFORLOOP,/*	A C	R(A+3), ... ,R(A+2+C) := R(A)(R(A+1), R(A+2));
-                                        if R(A+3) ~= nil then R(A+2)=R(A+3) else pc++	*/
-                                        OP_SETLIST,/*	A B C	R(A)[(C-1)*FPF+i] := R(A+i), 1 <= i <= B	*/
+    OP_TFORLOOP,/*	A C	R(A+3), ... ,R(A+2+C) := R(A)(R(A+1), R(A+2));
+                            if R(A+3) ~= nil then R(A+2)=R(A+3) else pc++	*/
+    OP_SETLIST,/*	A B C	R(A)[(C-1)*FPF+i] := R(A+i), 1 <= i <= B	*/
 
-                                        OP_CLOSE,/*	A 	close all variables in the stack up to (>=) R(A)*/
-                                        OP_CLOSURE,/*	A Bx	R(A) := closure(KPROTO[Bx], R(A), ... ,R(A+n))	*/
+    OP_CLOSE,/*	A 	close all variables in the stack up to (>=) R(A)*/
+    OP_CLOSURE,/*	A Bx	R(A) := closure(KPROTO[Bx], R(A), ... ,R(A+n))	*/
 
-                                        OP_VARARG/*	A B	R(A), R(A+1), ..., R(A+B-1) = vararg		*/
+    OP_VARARG/*	A B	R(A), R(A+1), ..., R(A+B-1) = vararg		*/
 } OpCode;
 
 #define NUM_OPCODES	(cast(int, OP_VARARG) + 1)
@@ -218,14 +218,14 @@ typedef enum {
   (*) All `skips' (pc++) assume that next instruction is a jump
   ===========================================================================*/
 
-/*
-** masks for instruction properties. The format is:
-** bits 0-1: op mode
-** bits 2-3: C arg mode
-** bits 4-5: B arg mode
-** bit 6: instruction set register A
-** bit 7: operator is a test
-*/
+  /*
+  ** masks for instruction properties. The format is:
+  ** bits 0-1: op mode
+  ** bits 2-3: C arg mode
+  ** bits 4-5: B arg mode
+  ** bit 6: instruction set register A
+  ** bit 7: operator is a test
+  */
 
 enum OpArgMask {
     OpArgN,  /* argument is not used */

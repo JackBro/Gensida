@@ -4,8 +4,8 @@
 #include "lc89510.h"
 #include "cd_aspi.h"
 #include "cd_sys.h"
-#include "Star_68k.h"
-#include "mem_S68k.h"
+#include "star_68k.h"
+#include "mem_s68k.h"
 #include "pcm.h"
 
 #define CDC_DMA_SPEED 256
@@ -226,13 +226,13 @@ unsigned short Read_CDC_Host_SUB(void)
             __asm
             {
                 mov esi, CDC.DAC.N
-                    lea ebx, CDC.Buffer
-                    //				and esi, 0x3FFF
-                    mov ax, [ebx + esi]
-                    add esi, 2
-                    rol ax, 8
-                    mov CDC.DAC.N, esi
-                    mov val, ax
+                lea ebx, CDC.Buffer
+                //				and esi, 0x3FFF
+                mov ax, [ebx + esi]
+                add esi, 2
+                rol ax, 8
+                mov CDC.DAC.N, esi
+                mov val, ax
             }
 
 #ifdef DEBUG_CD
@@ -278,13 +278,13 @@ unsigned short Read_CDC_Host_MAIN(void)
             __asm
             {
                 mov esi, CDC.DAC.N
-                    lea ebx, CDC.Buffer
-                    //				and esi, 0x3FFF
-                    mov ax, [ebx + esi]
-                    add esi, 2
-                    rol ax, 8
-                    mov CDC.DAC.N, esi
-                    mov val, ax
+                lea ebx, CDC.Buffer
+                //				and esi, 0x3FFF
+                mov ax, [ebx + esi]
+                add esi, 2
+                rol ax, 8
+                mov CDC.DAC.N, esi
+                mov val, ax
             }
 
 #ifdef DEBUG_CD

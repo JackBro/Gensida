@@ -135,8 +135,8 @@ static const char* s_nonLuaExtensions[] = { "txt", "nfo", "htm", "html", "jpg", 
 void Update_Recent_Script(const char* Path, bool dontPutAtTop)
 {
     char LogicalName[1024], PhysicalName[1024];
-	strcpy(LogicalName, Path);
-	strcpy(PhysicalName, Path);
+    strcpy(LogicalName, Path);
+    strcpy(PhysicalName, Path);
 
     int i;
 
@@ -296,8 +296,8 @@ void UpdateFileEntered(HWND hDlg)
 
     // use ObtainFile to support opening files within archives
     char LogicalName[1024], PhysicalName[1024];
-	strcpy(LogicalName, filename);
-	strcpy(PhysicalName, filename);
+    strcpy(LogicalName, filename);
+    strcpy(PhysicalName, filename);
     bool exists = GetFileAttributes(filename) != INVALID_FILE_ATTRIBUTES;
     bool readonly = exists ? ((GetFileAttributes(PhysicalName) & FILE_ATTRIBUTE_READONLY) != 0) : (strchr(LogicalName, '|') != NULL || strchr(filename, '|') != NULL);
 
@@ -530,8 +530,8 @@ LRESULT CALLBACK LuaScriptProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
             strcpy(Str_Tmp, info.filename.c_str());
             SendDlgItemMessage(hDlg, IDC_EDIT_LUAPATH, WM_GETTEXT, (WPARAM)512, (LPARAM)Str_Tmp);
             char LogicalName[1024], PhysicalName[1024];
-			strcpy(LogicalName, Str_Tmp);
-			strcpy(PhysicalName, Str_Tmp);
+            strcpy(LogicalName, Str_Tmp);
+            strcpy(PhysicalName, Str_Tmp);
             bool exists = GetFileAttributes(Str_Tmp) != INVALID_FILE_ATTRIBUTES;
             bool created = false;
             if (!exists)
@@ -584,8 +584,8 @@ LRESULT CALLBACK LuaScriptProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
             char Str_Tmp[1024]; // shadow added because the global one is completely unreliable
             strcpy(Str_Tmp, info.filename.c_str());
             char LogicalName[1024], PhysicalName[1024];
-			strcpy(LogicalName, Str_Tmp);
-			strcpy(PhysicalName, Str_Tmp);
+            strcpy(LogicalName, Str_Tmp);
+            strcpy(PhysicalName, Str_Tmp);
             bool exists = GetFileAttributes(Str_Tmp) != INVALID_FILE_ATTRIBUTES;;
             Update_Recent_Script(LogicalName, info.subservient);
             RunLuaScriptFile((int)hDlg, PhysicalName);

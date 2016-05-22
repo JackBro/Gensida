@@ -15,9 +15,9 @@
 #include "ym2612.h"
 #include <memory.h>
 
-/********************************************
- *            Partie définition             *
- ********************************************/
+ /********************************************
+  *            Partie définition             *
+  ********************************************/
 
 #define YM_DEBUG_LEVEL 0
 
@@ -30,11 +30,11 @@
 #define SUBSTAIN  2
 #define RELEASE   3
 
-// SIN_LBITS <= 16
-// LFO_HBITS <= 16
-// (SIN_LBITS + SIN_HBITS) <= 26
-// (ENV_LBITS + ENV_HBITS) <= 28
-// (LFO_LBITS + LFO_HBITS) <= 28
+  // SIN_LBITS <= 16
+  // LFO_HBITS <= 16
+  // (SIN_LBITS + SIN_HBITS) <= 26
+  // (ENV_LBITS + ENV_HBITS) <= 28
+  // (LFO_LBITS + LFO_HBITS) <= 28
 
 #define SIN_HBITS      12								// Sinus phase counter int part
 #define SIN_LBITS      (26 - SIN_HBITS)					// Sinus phase counter float part (best setting)
@@ -234,7 +234,7 @@ extern int VDP_Current_Line;
 extern int YM2612_Enable;
 extern int DAC_Enable;
 extern int disableSound2, Seg_Junk[882];
-static int* LeftAudioBuffer()  { return disableSound2 ? Seg_Junk : Seg_L; }
+static int* LeftAudioBuffer() { return disableSound2 ? Seg_Junk : Seg_L; }
 static int* RightAudioBuffer() { return disableSound2 ? Seg_Junk : Seg_R; }
 
 int YM2612_Enable;
@@ -1771,7 +1771,7 @@ void Update_Chan_Algo7_LFO_Int(channel_ *CH, int **buf, int length)
  *            fonctions publiques              *
  ***********************************************/
 
-// Initialisation de l'émulateur YM2612
+ // Initialisation de l'émulateur YM2612
 int YM2612_Init(int Clock, int Rate, int Interpolation)
 {
     int i, j;
@@ -2176,11 +2176,11 @@ int YM2612_Write(unsigned char adr, unsigned char data)
                 CHANNEL_SET(YM2612.OPNAadr, data);
             }
         }
-		else					// YM2612
-		{
-			YM2612.REG[0][YM2612.OPNAadr] = data;
-			YM_SET(YM2612.OPNAadr, data);
-		}
+        else					// YM2612
+        {
+            YM2612.REG[0][YM2612.OPNAadr] = data;
+            YM_SET(YM2612.OPNAadr, data);
+        }
         break;
 
     case 2:

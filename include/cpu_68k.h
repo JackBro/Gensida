@@ -1,4 +1,4 @@
-#include "Star_68k.h"
+#include "star_68k.h"
 
 #ifndef _CPU_68K_H
 #define _CPU_68K_H

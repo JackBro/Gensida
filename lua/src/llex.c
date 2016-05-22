@@ -242,7 +242,7 @@ static void read_long_string(LexState *ls, SemInfo *seminfo, int sep) {
     } endloop:
     if (seminfo)
         seminfo->ts = luaX_newstring(ls, luaZ_buffer(ls->buff) + (2 + sep),
-        luaZ_bufflen(ls->buff) - 2 * (2 + sep));
+            luaZ_bufflen(ls->buff) - 2 * (2 + sep));
 }
 
 static void read_string(LexState *ls, int del, SemInfo *seminfo) {
@@ -279,7 +279,7 @@ static void read_string(LexState *ls, int del, SemInfo *seminfo) {
                     do {
                         c = 10 * c + (ls->current - '0');
                         next(ls);
-                    } while (++i<3 && isdigit(ls->current));
+                    } while (++i < 3 && isdigit(ls->current));
                     if (c > UCHAR_MAX)
                         luaX_lexerror(ls, "escape sequence too large", TK_STRING);
                     save(ls, c);

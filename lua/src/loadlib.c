@@ -420,7 +420,7 @@ static int ll_require(lua_State *L) {
         lua_rawgeti(L, -2, i);  /* get a loader */
         if (lua_isnil(L, -1))
             luaL_error(L, "module " LUA_QS " not found:%s",
-            name, lua_tostring(L, -2));
+                name, lua_tostring(L, -2));
         lua_pushstring(L, name);
         lua_call(L, 1, 1);  /* call it */
         if (lua_isfunction(L, -1))  /* did it find module? */

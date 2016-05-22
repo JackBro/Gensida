@@ -231,14 +231,14 @@ void init_layer3(int down_sample_sblimit)
     }
 
     for (j = 0; j < 9; j++) {
-        for (i = 0; i<23; i++) {
+        for (i = 0; i < 23; i++) {
             longLimit[j][i] = (bandInfo[j].longIdx[i] - 1 + 8) / 18 + 1;
-            if (longLimit[j][i] >(down_sample_sblimit))
+            if (longLimit[j][i] > (down_sample_sblimit))
                 longLimit[j][i] = down_sample_sblimit;
         }
-        for (i = 0; i<14; i++) {
+        for (i = 0; i < 14; i++) {
             shortLimit[j][i] = (bandInfo[j].shortIdx[i] - 1) / 18 + 1;
-            if (shortLimit[j][i] >(down_sample_sblimit))
+            if (shortLimit[j][i] > (down_sample_sblimit))
                 shortLimit[j][i] = down_sample_sblimit;
         }
     }
@@ -594,7 +594,7 @@ static int pretab2[22] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
  * don't forget to apply the same changes to III_dequantize_sample_ms() !!!
  */
 static int III_dequantize_sample(real xr[SBLIMIT][SSLIMIT], int *scf,
-struct gr_info_s *gr_info, int sfreq, int part2bits)
+    struct gr_info_s *gr_info, int sfreq, int part2bits)
 {
     int shift = 1 + gr_info->scalefac_scale;
     real *xrpnt = (real *)xr;
@@ -668,56 +668,56 @@ struct gr_info_s *gr_info, int sfreq, int part2bits)
                         step = 3;
                     }
                 }
-        {
-            register short *val = h->table;
-            while ((y = *val++) < 0) {
-                if (get1bit())
-                    val -= y;
-                part2remain--;
-            }
-            x = y >> 4;
-            y &= 0xf;
-        }
-        if (x == 15) {
-            max[lwin] = cb;
-            part2remain -= h->linbits + 1;
-            x += getbits(h->linbits);
-            if (get1bit())
-                *xrpnt = -ispow[x] * v;
-            else
-                *xrpnt = ispow[x] * v;
-        }
-        else if (x) {
-            max[lwin] = cb;
-            if (get1bit())
-                *xrpnt = -ispow[x] * v;
-            else
-                *xrpnt = ispow[x] * v;
-            part2remain--;
-        }
-        else
-            *xrpnt = 0.0;
-        xrpnt += step;
-        if (y == 15) {
-            max[lwin] = cb;
-            part2remain -= h->linbits + 1;
-            y += getbits(h->linbits);
-            if (get1bit())
-                *xrpnt = -ispow[y] * v;
-            else
-                *xrpnt = ispow[y] * v;
-        }
-        else if (y) {
-            max[lwin] = cb;
-            if (get1bit())
-                *xrpnt = -ispow[y] * v;
-            else
-                *xrpnt = ispow[y] * v;
-            part2remain--;
-        }
-        else
-            *xrpnt = 0.0;
-        xrpnt += step;
+                {
+                    register short *val = h->table;
+                    while ((y = *val++) < 0) {
+                        if (get1bit())
+                            val -= y;
+                        part2remain--;
+                    }
+                    x = y >> 4;
+                    y &= 0xf;
+                }
+                if (x == 15) {
+                    max[lwin] = cb;
+                    part2remain -= h->linbits + 1;
+                    x += getbits(h->linbits);
+                    if (get1bit())
+                        *xrpnt = -ispow[x] * v;
+                    else
+                        *xrpnt = ispow[x] * v;
+                }
+                else if (x) {
+                    max[lwin] = cb;
+                    if (get1bit())
+                        *xrpnt = -ispow[x] * v;
+                    else
+                        *xrpnt = ispow[x] * v;
+                    part2remain--;
+                }
+                else
+                    *xrpnt = 0.0;
+                xrpnt += step;
+                if (y == 15) {
+                    max[lwin] = cb;
+                    part2remain -= h->linbits + 1;
+                    y += getbits(h->linbits);
+                    if (get1bit())
+                        *xrpnt = -ispow[y] * v;
+                    else
+                        *xrpnt = ispow[y] * v;
+                }
+                else if (y) {
+                    max[lwin] = cb;
+                    if (get1bit())
+                        *xrpnt = -ispow[y] * v;
+                    else
+                        *xrpnt = ispow[y] * v;
+                    part2remain--;
+                }
+                else
+                    *xrpnt = 0.0;
+                xrpnt += step;
             }
         }
         for (; l3 && (part2remain > 0); l3--) {
@@ -833,55 +833,55 @@ struct gr_info_s *gr_info, int sfreq, int part2bits)
                     v = gr_info->pow2gain[((*scf++) + (*pretab++)) << shift];
                     cb = *m++;
                 }
-        {
-            register short *val = h->table;
-            while ((y = *val++) < 0) {
-                if (get1bit())
-                    val -= y;
-                part2remain--;
-            }
-            x = y >> 4;
-            y &= 0xf;
-        }
-        if (x == 15) {
-            max = cb;
-            part2remain -= h->linbits + 1;
-            x += getbits(h->linbits);
-            if (get1bit())
-                *xrpnt++ = -ispow[x] * v;
-            else
-                *xrpnt++ = ispow[x] * v;
-        }
-        else if (x) {
-            max = cb;
-            if (get1bit())
-                *xrpnt++ = -ispow[x] * v;
-            else
-                *xrpnt++ = ispow[x] * v;
-            part2remain--;
-        }
-        else
-            *xrpnt++ = 0.0;
+                {
+                    register short *val = h->table;
+                    while ((y = *val++) < 0) {
+                        if (get1bit())
+                            val -= y;
+                        part2remain--;
+                    }
+                    x = y >> 4;
+                    y &= 0xf;
+                }
+                if (x == 15) {
+                    max = cb;
+                    part2remain -= h->linbits + 1;
+                    x += getbits(h->linbits);
+                    if (get1bit())
+                        *xrpnt++ = -ispow[x] * v;
+                    else
+                        *xrpnt++ = ispow[x] * v;
+                }
+                else if (x) {
+                    max = cb;
+                    if (get1bit())
+                        *xrpnt++ = -ispow[x] * v;
+                    else
+                        *xrpnt++ = ispow[x] * v;
+                    part2remain--;
+                }
+                else
+                    *xrpnt++ = 0.0;
 
-        if (y == 15) {
-            max = cb;
-            part2remain -= h->linbits + 1;
-            y += getbits(h->linbits);
-            if (get1bit())
-                *xrpnt++ = -ispow[y] * v;
-            else
-                *xrpnt++ = ispow[y] * v;
-        }
-        else if (y) {
-            max = cb;
-            if (get1bit())
-                *xrpnt++ = -ispow[y] * v;
-            else
-                *xrpnt++ = ispow[y] * v;
-            part2remain--;
-        }
-        else
-            *xrpnt++ = 0.0;
+                if (y == 15) {
+                    max = cb;
+                    part2remain -= h->linbits + 1;
+                    y += getbits(h->linbits);
+                    if (get1bit())
+                        *xrpnt++ = -ispow[y] * v;
+                    else
+                        *xrpnt++ = ispow[y] * v;
+                }
+                else if (y) {
+                    max = cb;
+                    if (get1bit())
+                        *xrpnt++ = -ispow[y] * v;
+                    else
+                        *xrpnt++ = ispow[y] * v;
+                    part2remain--;
+                }
+                else
+                    *xrpnt++ = 0.0;
             }
         }
 
@@ -956,7 +956,7 @@ struct gr_info_s *gr_info, int sfreq, int part2bits)
 
 #if 0
 static int III_dequantize_sample_ms(real xr[2][SBLIMIT][SSLIMIT], int *scf,
-struct gr_info_s *gr_info, int sfreq, int part2bits)
+    struct gr_info_s *gr_info, int sfreq, int part2bits)
 {
     int shift = 1 + gr_info->scalefac_scale;
     real *xrpnt = (real *)xr[1];
@@ -1029,83 +1029,83 @@ struct gr_info_s *gr_info, int sfreq, int part2bits)
                         step = 3;
                     }
                 }
-        {
-            register short *val = h->table;
-            while ((y = *val++) < 0) {
-                if (get1bit())
-                    val -= y;
-                part2remain--;
-            }
-            x = y >> 4;
-            y &= 0xf;
-        }
-        if (x == 15) {
-            max[lwin] = cb;
-            part2remain -= h->linbits + 1;
-            x += getbits(h->linbits);
-            if (get1bit()) {
-                real a = ispow[x] * v;
-                *xrpnt = *xr0pnt + a;
-                *xr0pnt -= a;
-            }
-            else {
-                real a = ispow[x] * v;
-                *xrpnt = *xr0pnt - a;
-                *xr0pnt += a;
-            }
-        }
-        else if (x) {
-            max[lwin] = cb;
-            if (get1bit()) {
-                real a = ispow[x] * v;
-                *xrpnt = *xr0pnt + a;
-                *xr0pnt -= a;
-            }
-            else {
-                real a = ispow[x] * v;
-                *xrpnt = *xr0pnt - a;
-                *xr0pnt += a;
-            }
-            part2remain--;
-        }
-        else
-            *xrpnt = *xr0pnt;
-        xrpnt += step;
-        xr0pnt += step;
+                {
+                    register short *val = h->table;
+                    while ((y = *val++) < 0) {
+                        if (get1bit())
+                            val -= y;
+                        part2remain--;
+                    }
+                    x = y >> 4;
+                    y &= 0xf;
+                }
+                if (x == 15) {
+                    max[lwin] = cb;
+                    part2remain -= h->linbits + 1;
+                    x += getbits(h->linbits);
+                    if (get1bit()) {
+                        real a = ispow[x] * v;
+                        *xrpnt = *xr0pnt + a;
+                        *xr0pnt -= a;
+                    }
+                    else {
+                        real a = ispow[x] * v;
+                        *xrpnt = *xr0pnt - a;
+                        *xr0pnt += a;
+                    }
+                }
+                else if (x) {
+                    max[lwin] = cb;
+                    if (get1bit()) {
+                        real a = ispow[x] * v;
+                        *xrpnt = *xr0pnt + a;
+                        *xr0pnt -= a;
+                    }
+                    else {
+                        real a = ispow[x] * v;
+                        *xrpnt = *xr0pnt - a;
+                        *xr0pnt += a;
+                    }
+                    part2remain--;
+                }
+                else
+                    *xrpnt = *xr0pnt;
+                xrpnt += step;
+                xr0pnt += step;
 
-        if (y == 15) {
-            max[lwin] = cb;
-            part2remain -= h->linbits + 1;
-            y += getbits(h->linbits);
-            if (get1bit()) {
-                real a = ispow[y] * v;
-                *xrpnt = *xr0pnt + a;
-                *xr0pnt -= a;
-            }
-            else {
-                real a = ispow[y] * v;
-                *xrpnt = *xr0pnt - a;
-                *xr0pnt += a;
-            }
-        }
-        else if (y) {
-            max[lwin] = cb;
-            if (get1bit()) {
-                real a = ispow[y] * v;
-                *xrpnt = *xr0pnt + a;
-                *xr0pnt -= a;
-            }
-            else {
-                real a = ispow[y] * v;
-                *xrpnt = *xr0pnt - a;
-                *xr0pnt += a;
-            }
-            part2remain--;
-        }
-        else
-            *xrpnt = *xr0pnt;
-        xrpnt += step;
-        xr0pnt += step;
+                if (y == 15) {
+                    max[lwin] = cb;
+                    part2remain -= h->linbits + 1;
+                    y += getbits(h->linbits);
+                    if (get1bit()) {
+                        real a = ispow[y] * v;
+                        *xrpnt = *xr0pnt + a;
+                        *xr0pnt -= a;
+                    }
+                    else {
+                        real a = ispow[y] * v;
+                        *xrpnt = *xr0pnt - a;
+                        *xr0pnt += a;
+                    }
+                }
+                else if (y) {
+                    max[lwin] = cb;
+                    if (get1bit()) {
+                        real a = ispow[y] * v;
+                        *xrpnt = *xr0pnt + a;
+                        *xr0pnt -= a;
+                    }
+                    else {
+                        real a = ispow[y] * v;
+                        *xrpnt = *xr0pnt - a;
+                        *xr0pnt += a;
+                    }
+                    part2remain--;
+                }
+                else
+                    *xrpnt = *xr0pnt;
+                xrpnt += step;
+                xr0pnt += step;
             }
         }
 
@@ -1223,79 +1223,79 @@ struct gr_info_s *gr_info, int sfreq, int part2bits)
                     cb = *m++;
                     v = gr_info->pow2gain[((*scf++) + (*pretab++)) << shift];
                 }
-        {
-            register short *val = h->table;
-            while ((y = *val++) < 0) {
-                if (get1bit())
-                    val -= y;
-                part2remain--;
-            }
-            x = y >> 4;
-            y &= 0xf;
-        }
-        if (x == 15) {
-            max = cb;
-            part2remain -= h->linbits + 1;
-            x += getbits(h->linbits);
-            if (get1bit()) {
-                real a = ispow[x] * v;
-                *xrpnt++ = *xr0pnt + a;
-                *xr0pnt++ -= a;
-            }
-            else {
-                real a = ispow[x] * v;
-                *xrpnt++ = *xr0pnt - a;
-                *xr0pnt++ += a;
-            }
-        }
-        else if (x) {
-            max = cb;
-            if (get1bit()) {
-                real a = ispow[x] * v;
-                *xrpnt++ = *xr0pnt + a;
-                *xr0pnt++ -= a;
-            }
-            else {
-                real a = ispow[x] * v;
-                *xrpnt++ = *xr0pnt - a;
-                *xr0pnt++ += a;
-            }
-            part2remain--;
-        }
-        else
-            *xrpnt++ = *xr0pnt++;
+                {
+                    register short *val = h->table;
+                    while ((y = *val++) < 0) {
+                        if (get1bit())
+                            val -= y;
+                        part2remain--;
+                    }
+                    x = y >> 4;
+                    y &= 0xf;
+                }
+                if (x == 15) {
+                    max = cb;
+                    part2remain -= h->linbits + 1;
+                    x += getbits(h->linbits);
+                    if (get1bit()) {
+                        real a = ispow[x] * v;
+                        *xrpnt++ = *xr0pnt + a;
+                        *xr0pnt++ -= a;
+                    }
+                    else {
+                        real a = ispow[x] * v;
+                        *xrpnt++ = *xr0pnt - a;
+                        *xr0pnt++ += a;
+                    }
+                }
+                else if (x) {
+                    max = cb;
+                    if (get1bit()) {
+                        real a = ispow[x] * v;
+                        *xrpnt++ = *xr0pnt + a;
+                        *xr0pnt++ -= a;
+                    }
+                    else {
+                        real a = ispow[x] * v;
+                        *xrpnt++ = *xr0pnt - a;
+                        *xr0pnt++ += a;
+                    }
+                    part2remain--;
+                }
+                else
+                    *xrpnt++ = *xr0pnt++;
 
-        if (y == 15) {
-            max = cb;
-            part2remain -= h->linbits + 1;
-            y += getbits(h->linbits);
-            if (get1bit()) {
-                real a = ispow[y] * v;
-                *xrpnt++ = *xr0pnt + a;
-                *xr0pnt++ -= a;
-            }
-            else {
-                real a = ispow[y] * v;
-                *xrpnt++ = *xr0pnt - a;
-                *xr0pnt++ += a;
-            }
-        }
-        else if (y) {
-            max = cb;
-            if (get1bit()) {
-                real a = ispow[y] * v;
-                *xrpnt++ = *xr0pnt + a;
-                *xr0pnt++ -= a;
-            }
-            else {
-                real a = ispow[y] * v;
-                *xrpnt++ = *xr0pnt - a;
-                *xr0pnt++ += a;
-            }
-            part2remain--;
-        }
-        else
-            *xrpnt++ = *xr0pnt++;
+                if (y == 15) {
+                    max = cb;
+                    part2remain -= h->linbits + 1;
+                    y += getbits(h->linbits);
+                    if (get1bit()) {
+                        real a = ispow[y] * v;
+                        *xrpnt++ = *xr0pnt + a;
+                        *xr0pnt++ -= a;
+                    }
+                    else {
+                        real a = ispow[y] * v;
+                        *xrpnt++ = *xr0pnt - a;
+                        *xr0pnt++ += a;
+                    }
+                }
+                else if (y) {
+                    max = cb;
+                    if (get1bit()) {
+                        real a = ispow[y] * v;
+                        *xrpnt++ = *xr0pnt + a;
+                        *xr0pnt++ -= a;
+                    }
+                    else {
+                        real a = ispow[y] * v;
+                        *xrpnt++ = *xr0pnt - a;
+                        *xr0pnt++ += a;
+                    }
+                    part2remain--;
+                }
+                else
+                    *xrpnt++ = *xr0pnt++;
             }
         }
 
@@ -1370,7 +1370,7 @@ struct gr_info_s *gr_info, int sfreq, int part2bits)
  * III_stereo: calculate real channel values for Joint-I-Stereo-mode
  */
 static void III_i_stereo(real xr_buf[2][SBLIMIT][SSLIMIT], int *scalefac,
-struct gr_info_s *gr_info, int sfreq, int ms_stereo, int lsf)
+    struct gr_info_s *gr_info, int sfreq, int ms_stereo, int lsf)
 {
     real(*xr)[SBLIMIT*SSLIMIT] = (real(*)[SBLIMIT*SSLIMIT]) xr_buf;
     struct bandInfoStruct *bi = &bandInfo[sfreq];
@@ -1530,24 +1530,24 @@ static void III_antialias(real xr[SBLIMIT][SSLIMIT], struct gr_info_s *gr_info)
     /* 31 alias-reduction operations between each pair of sub-bands */
     /* with 8 butterflies between each pair                         */
 
-   {
-       int sb;
-       real *xr1 = (real *)xr[1];
+    {
+        int sb;
+        real *xr1 = (real *)xr[1];
 
-       for (sb = sblim; sb; sb--, xr1 += 10)
-       {
-           int ss;
-           real *cs = aa_cs, *ca = aa_ca;
-           real *xr2 = xr1;
+        for (sb = sblim; sb; sb--, xr1 += 10)
+        {
+            int ss;
+            real *cs = aa_cs, *ca = aa_ca;
+            real *xr2 = xr1;
 
-           for (ss = 7; ss >= 0; ss--)
-           {       /* upper and lower butterfly inputs */
-               register real bu = *--xr2, bd = *xr1;
-               *xr2 = (bu * (*cs)) - (bd * (*ca));
-               *xr1++ = (bd * (*cs++)) + (bu * (*ca++));
-           }
-       }
-   }
+            for (ss = 7; ss >= 0; ss--)
+            {       /* upper and lower butterfly inputs */
+                register real bu = *--xr2, bd = *xr1;
+                *xr2 = (bu * (*cs)) - (bd * (*ca));
+                *xr1++ = (bd * (*cs++)) + (bu * (*ca++));
+            }
+        }
+    }
 }
 
 /*
@@ -1618,45 +1618,45 @@ static void dct36(real *inbuf, real *o1, real *o2, real *wintab, real *tsbuf)
                 MACRO2(8);
             }
 
-    {
-        real tmp1a, tmp2a, tmp1b, tmp2b;
-        tmp1a = (in[2 * 1 + 0] - in[2 * 5 + 0] - in[2 * 7 + 0]) * c[3];
-        tmp1b = (in[2 * 1 + 1] - in[2 * 5 + 1] - in[2 * 7 + 1]) * c[3];
-        tmp2a = (in[2 * 2 + 0] - in[2 * 4 + 0] - in[2 * 8 + 0]) * c[6] - in[2 * 6 + 0] + in[2 * 0 + 0];
-        tmp2b = (in[2 * 2 + 1] - in[2 * 4 + 1] - in[2 * 8 + 1]) * c[6] - in[2 * 6 + 1] + in[2 * 0 + 1];
+            {
+                real tmp1a, tmp2a, tmp1b, tmp2b;
+                tmp1a = (in[2 * 1 + 0] - in[2 * 5 + 0] - in[2 * 7 + 0]) * c[3];
+                tmp1b = (in[2 * 1 + 1] - in[2 * 5 + 1] - in[2 * 7 + 1]) * c[3];
+                tmp2a = (in[2 * 2 + 0] - in[2 * 4 + 0] - in[2 * 8 + 0]) * c[6] - in[2 * 6 + 0] + in[2 * 0 + 0];
+                tmp2b = (in[2 * 2 + 1] - in[2 * 4 + 1] - in[2 * 8 + 1]) * c[6] - in[2 * 6 + 1] + in[2 * 0 + 1];
 
-        MACRO1(1);
-        MACRO2(7);
-    }
+                MACRO1(1);
+                MACRO2(7);
+            }
 
-    {
-        real tmp1a, tmp2a, tmp1b, tmp2b;
-        tmp1a = in[2 * 1 + 0] * c[5] - ta33 - in[2 * 5 + 0] * c[7] + in[2 * 7 + 0] * c[1];
-        tmp1b = in[2 * 1 + 1] * c[5] - tb33 - in[2 * 5 + 1] * c[7] + in[2 * 7 + 1] * c[1];
-        tmp2a = in[2 * 0 + 0] - in[2 * 2 + 0] * c[8] - in[2 * 4 + 0] * c[2] + ta66 + in[2 * 8 + 0] * c[4];
-        tmp2b = in[2 * 0 + 1] - in[2 * 2 + 1] * c[8] - in[2 * 4 + 1] * c[2] + tb66 + in[2 * 8 + 1] * c[4];
+            {
+                real tmp1a, tmp2a, tmp1b, tmp2b;
+                tmp1a = in[2 * 1 + 0] * c[5] - ta33 - in[2 * 5 + 0] * c[7] + in[2 * 7 + 0] * c[1];
+                tmp1b = in[2 * 1 + 1] * c[5] - tb33 - in[2 * 5 + 1] * c[7] + in[2 * 7 + 1] * c[1];
+                tmp2a = in[2 * 0 + 0] - in[2 * 2 + 0] * c[8] - in[2 * 4 + 0] * c[2] + ta66 + in[2 * 8 + 0] * c[4];
+                tmp2b = in[2 * 0 + 1] - in[2 * 2 + 1] * c[8] - in[2 * 4 + 1] * c[2] + tb66 + in[2 * 8 + 1] * c[4];
 
-        MACRO1(2);
-        MACRO2(6);
-    }
+                MACRO1(2);
+                MACRO2(6);
+            }
 
-    {
-        real tmp1a, tmp2a, tmp1b, tmp2b;
-        tmp1a = in[2 * 1 + 0] * c[7] - ta33 + in[2 * 5 + 0] * c[1] - in[2 * 7 + 0] * c[5];
-        tmp1b = in[2 * 1 + 1] * c[7] - tb33 + in[2 * 5 + 1] * c[1] - in[2 * 7 + 1] * c[5];
-        tmp2a = in[2 * 0 + 0] - in[2 * 2 + 0] * c[4] + in[2 * 4 + 0] * c[8] + ta66 - in[2 * 8 + 0] * c[2];
-        tmp2b = in[2 * 0 + 1] - in[2 * 2 + 1] * c[4] + in[2 * 4 + 1] * c[8] + tb66 - in[2 * 8 + 1] * c[2];
+            {
+                real tmp1a, tmp2a, tmp1b, tmp2b;
+                tmp1a = in[2 * 1 + 0] * c[7] - ta33 + in[2 * 5 + 0] * c[1] - in[2 * 7 + 0] * c[5];
+                tmp1b = in[2 * 1 + 1] * c[7] - tb33 + in[2 * 5 + 1] * c[1] - in[2 * 7 + 1] * c[5];
+                tmp2a = in[2 * 0 + 0] - in[2 * 2 + 0] * c[4] + in[2 * 4 + 0] * c[8] + ta66 - in[2 * 8 + 0] * c[2];
+                tmp2b = in[2 * 0 + 1] - in[2 * 2 + 1] * c[4] + in[2 * 4 + 1] * c[8] + tb66 - in[2 * 8 + 1] * c[2];
 
-        MACRO1(3);
-        MACRO2(5);
-    }
+                MACRO1(3);
+                MACRO2(5);
+            }
 
-    {
-        real sum0, sum1;
-        sum0 = in[2 * 0 + 0] - in[2 * 2 + 0] + in[2 * 4 + 0] - in[2 * 6 + 0] + in[2 * 8 + 0];
-        sum1 = (in[2 * 0 + 1] - in[2 * 2 + 1] + in[2 * 4 + 1] - in[2 * 6 + 1] + in[2 * 8 + 1]) * tfcos36[4];
-        MACRO0(4);
-    }
+            {
+                real sum0, sum1;
+                sum0 = in[2 * 0 + 0] - in[2 * 2 + 0] + in[2 * 4 + 0] - in[2 * 6 + 0] + in[2 * 8 + 0];
+                sum1 = (in[2 * 0 + 1] - in[2 * 2 + 1] + in[2 * 4 + 1] - in[2 * 6 + 1] + in[2 * 8 + 1]) * tfcos36[4];
+                MACRO0(4);
+            }
         }
     }
 }
@@ -1937,7 +1937,7 @@ int do_layer3(struct frame *fr, unsigned char *pcm_sample, int *pcm_point)
 
             if (ms_stereo) {
                 int i;
-                for (i = 0; i<SBLIMIT*SSLIMIT; i++) {
+                for (i = 0; i < SBLIMIT*SSLIMIT; i++) {
                     real tmp0, tmp1;
                     tmp0 = ((real *)hybridIn[0])[i];
                     tmp1 = ((real *)hybridIn[1])[i];

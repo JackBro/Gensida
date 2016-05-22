@@ -3,7 +3,7 @@
  * For conditions of distribution and use, see copyright notice in zlib.h
  */
 
-/* @(#) $Id$ */
+ /* @(#) $Id$ */
 
 #include "zutil.h"
 
@@ -24,8 +24,8 @@ local uLong adler32_combine_ OF((uLong adler1, uLong adler2, z_off64_t len2));
 /* use NO_DIVIDE if your processor does not do division in hardware --
    try it both ways to see which is faster */
 #ifdef NO_DIVIDE
-/* note that this assumes BASE is 65521, where 65536 % 65521 == 15
-   (thank you to John Reiser for pointing this out) */
+   /* note that this assumes BASE is 65521, where 65536 % 65521 == 15
+      (thank you to John Reiser for pointing this out) */
 #  define CHOP(a) \
     do { \
         unsigned long tmp = a >> 16; \
@@ -61,11 +61,11 @@ local uLong adler32_combine_ OF((uLong adler1, uLong adler2, z_off64_t len2));
 #  define MOD63(a) a %= BASE
 #endif
 
-/* ========================================================================= */
+   /* ========================================================================= */
 uLong ZEXPORT adler32(adler, buf, len)
-    uLong adler;
-    const Bytef *buf;
-    uInt len;
+uLong adler;
+const Bytef *buf;
+uInt len;
 {
     unsigned long sum2;
     unsigned n;
@@ -134,9 +134,9 @@ uLong ZEXPORT adler32(adler, buf, len)
 
 /* ========================================================================= */
 local uLong adler32_combine_(adler1, adler2, len2)
-    uLong adler1;
-    uLong adler2;
-    z_off64_t len2;
+uLong adler1;
+uLong adler2;
+z_off64_t len2;
 {
     unsigned long sum1;
     unsigned long sum2;
@@ -163,17 +163,17 @@ local uLong adler32_combine_(adler1, adler2, len2)
 
 /* ========================================================================= */
 uLong ZEXPORT adler32_combine(adler1, adler2, len2)
-    uLong adler1;
-    uLong adler2;
-    z_off_t len2;
+uLong adler1;
+uLong adler2;
+z_off_t len2;
 {
     return adler32_combine_(adler1, adler2, len2);
 }
 
 uLong ZEXPORT adler32_combine64(adler1, adler2, len2)
-    uLong adler1;
-    uLong adler2;
-    z_off64_t len2;
+uLong adler1;
+uLong adler2;
+z_off64_t len2;
 {
     return adler32_combine_(adler1, adler2, len2);
 }

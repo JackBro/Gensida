@@ -981,7 +981,7 @@ LRESULT CALLBACK RamWatchProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
             if (ramw_x > (-width * 2) || ramw_x < (width * 2 + GetSystemMetrics(SM_CYSCREEN)))
                 r.left = ramw_x;	  //This also ignores cases of windows -32000 error codes
             //If ramwindow is for some reason completely off screen, use default instead
-            if (ramw_y >(0 - height * 2) || ramw_y < (height * 2 + GetSystemMetrics(SM_CYSCREEN)))
+            if (ramw_y > (0 - height * 2) || ramw_y < (height * 2 + GetSystemMetrics(SM_CYSCREEN)))
                 r.top = ramw_y;		  //This also ignores cases of windows -32000 error codes
         }
         //-------------------------------------------------------------------------------------
@@ -1088,7 +1088,7 @@ LRESULT CALLBACK RamWatchProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
             return 1;
         }
         }
-	} break;
+    } break;
 
     case WM_COMMAND:
         switch (LOWORD(wParam))

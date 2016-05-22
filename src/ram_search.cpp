@@ -38,7 +38,7 @@
 #include "g_main.h"
 #include <assert.h>
 #include <commctrl.h>
-#include "G_dsound.h"
+#include "g_dsound.h"
 #include "ramwatch.h"
 #include "vdp_ram.h"
 #include "plane_explorer_kmod.h"
@@ -483,14 +483,14 @@ struct DummyType { typedef T t; };
 	: functionName<char, COMMAHACK(sign,type)>(__VA_ARGS__))
 
 // basic comparison functions:
-template <typename T> inline bool LessCmp(T x, T y, T i)        { return x < y; }
-template <typename T> inline bool MoreCmp(T x, T y, T i)        { return x > y; }
-template <typename T> inline bool LessEqualCmp(T x, T y, T i)   { return x <= y; }
-template <typename T> inline bool MoreEqualCmp(T x, T y, T i)   { return x >= y; }
-template <typename T> inline bool EqualCmp(T x, T y, T i)       { return x == y; }
-template <typename T> inline bool UnequalCmp(T x, T y, T i)     { return x != y; }
-template <typename T> inline bool DiffByCmp(T x, T y, T p)      { return x - y == p || y - x == p; }
-template <typename T> inline bool ModIsCmp(T x, T y, T p)       { return p && x % p == y; }
+template <typename T> inline bool LessCmp(T x, T y, T i) { return x < y; }
+template <typename T> inline bool MoreCmp(T x, T y, T i) { return x > y; }
+template <typename T> inline bool LessEqualCmp(T x, T y, T i) { return x <= y; }
+template <typename T> inline bool MoreEqualCmp(T x, T y, T i) { return x >= y; }
+template <typename T> inline bool EqualCmp(T x, T y, T i) { return x == y; }
+template <typename T> inline bool UnequalCmp(T x, T y, T i) { return x != y; }
+template <typename T> inline bool DiffByCmp(T x, T y, T p) { return x - y == p || y - x == p; }
+template <typename T> inline bool ModIsCmp(T x, T y, T p) { return p && x % p == y; }
 
 // compare-to type functions:
 template<typename stepType, typename T>
@@ -1132,7 +1132,7 @@ struct AddrRange
     unsigned int addr;
     unsigned int size;
     unsigned int End() const { return addr + size; }
-    AddrRange(unsigned int a, unsigned int s) : addr(a), size(s){}
+    AddrRange(unsigned int a, unsigned int s) : addr(a), size(s) {}
 };
 
 void signal_new_size()
@@ -1349,7 +1349,7 @@ void Update_RAM_Search() //keeps RAM values up to date in the search and watch w
         for (UINT i = 0; i < HexEditors.size(); i++)
             HexUpdateDialog(HexEditors[i]);
 
-	Redraw_VDP_View();
+    Redraw_VDP_View();
     Update_Plane_Explorer();
     UpdateSprites_KMod();
 }
@@ -1699,7 +1699,7 @@ LRESULT CALLBACK RamSearchProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
             EnableWindow(GetDlgItem(hDlg, IDC_EDIT_MODBY), false);
             if (!SelectingByKeyboard())
                 SelectEditControl(IDC_EDIT_DIFFBY);
-        }	{rv = true; break; }
+        } {rv = true; break; }
         case IDC_MODULO:
         {
             rs_o = '%';
@@ -1707,7 +1707,7 @@ LRESULT CALLBACK RamSearchProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
             EnableWindow(GetDlgItem(hDlg, IDC_EDIT_MODBY), true);
             if (!SelectingByKeyboard())
                 SelectEditControl(IDC_EDIT_MODBY);
-        }	{rv = true; break; }
+        } {rv = true; break; }
         case IDC_PREVIOUSVALUE:
             rs_c = 'r';
             EnableWindow(GetDlgItem(hDlg, IDC_EDIT_COMPAREVALUE), false);
@@ -1732,7 +1732,7 @@ LRESULT CALLBACK RamSearchProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
             EnableWindow(GetDlgItem(hDlg, IDC_EDIT_COMPARECHANGES), false);
             if (!SelectingByKeyboard())
                 SelectEditControl(IDC_EDIT_COMPAREADDRESS);
-        }	{rv = true; break; }
+        } {rv = true; break; }
         case IDC_NUMBEROFCHANGES:
         {
             rs_c = 'n';
@@ -1741,7 +1741,7 @@ LRESULT CALLBACK RamSearchProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
             EnableWindow(GetDlgItem(hDlg, IDC_EDIT_COMPAREADDRESS), false);
             if (!SelectingByKeyboard())
                 SelectEditControl(IDC_EDIT_COMPARECHANGES);
-        }	{rv = true; break; }
+        } {rv = true; break; }
         case IDC_C_ADDCHEAT:
         {
             HWND ramListControl = GetDlgItem(hDlg, IDC_RAMLIST);
@@ -1757,7 +1757,7 @@ LRESULT CALLBACK RamSearchProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
                 //						DialogBoxParam(ghInstance, MAKEINTRESOURCE(IDD_EDITCHEAT), hDlg, (DLGPROC) EditCheatProc,(LPARAM) 0);
                 watchIndex = ListView_GetNextItem(ramListControl, watchIndex, LVNI_SELECTED);
             }
-                    {rv = true; break; }
+            {rv = true; break; }
         }
         case IDC_C_RESET:
         {
@@ -1801,7 +1801,7 @@ LRESULT CALLBACK RamSearchProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
                 ListView_SetSelectionMark(GetDlgItem(hDlg, IDC_RAMLIST), 0);
                 RefreshRamListSelectedCountControlStatus(hDlg);
             }
-                    {rv = true; break; }
+            {rv = true; break; }
         case IDC_C_AUTOSEARCH:
             AutoSearch = SendDlgItemMessage(hDlg, IDC_C_AUTOSEARCH, BM_GETCHECK, 0, 0) != 0;
             AutoSearchAutoRetry = false;
@@ -1828,16 +1828,16 @@ LRESULT CALLBACK RamSearchProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
                 soft_reset_address_info();
             }
 
-                    {rv = true; break; }
+            {rv = true; break; }
 
-                invalid_field:
-                    MessageBox(RamSearchHWnd, "Invalid or out-of-bound entered value.", "Error", MB_OK | MB_ICONSTOP);
-                    if (AutoSearch) // stop autosearch if it just started
-                    {
-                        SendDlgItemMessage(hDlg, IDC_C_AUTOSEARCH, BM_SETCHECK, BST_UNCHECKED, 0);
-                        SendMessage(hDlg, WM_COMMAND, IDC_C_AUTOSEARCH, 0);
-                    }
-                    {rv = true; break; }
+        invalid_field:
+            MessageBox(RamSearchHWnd, "Invalid or out-of-bound entered value.", "Error", MB_OK | MB_ICONSTOP);
+            if (AutoSearch) // stop autosearch if it just started
+            {
+                SendDlgItemMessage(hDlg, IDC_C_AUTOSEARCH, BM_SETCHECK, BST_UNCHECKED, 0);
+                SendMessage(hDlg, WM_COMMAND, IDC_C_AUTOSEARCH, 0);
+            }
+            {rv = true; break; }
         }
         case IDC_C_WATCH:
         {

@@ -2,7 +2,7 @@
 #include <vector>
 #include <map>
 #include "resource.h"
-#include "G_Input.h"
+#include "g_input.h"
 #include "joypads.h"
 #include "g_main.h"
 #include "movie.h"
@@ -1705,9 +1705,6 @@ void SetNextInputCondensed(long long input, long long mask)
     }
 }
 
-#ifdef ECCOBOXHACK
-#include "EccoBoxHack.h"
-#endif
 void Update_Controllers()
 {
     Update_Input();
@@ -1796,10 +1793,6 @@ void Update_Controllers()
         APPLY_AUTOS(Y);
         APPLY_AUTOS(Z);
     }
-
-#ifdef ECCOBOXHACK
-    EccoAutofire();
-#endif
 
     CallRegisteredLuaFunctions(LUACALL_BEFOREEMULATION);
 

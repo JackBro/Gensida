@@ -9,7 +9,7 @@
 #define MAXBITS 15
 
 const char inflate_copyright[] =
-   " inflate 1.2.8 Copyright 1995-2013 Mark Adler ";
+" inflate 1.2.8 Copyright 1995-2013 Mark Adler ";
 /*
   If you use the zlib library in a product, an acknowledgment is welcome
   in the documentation of your product. If for some reason you cannot
@@ -17,18 +17,18 @@ const char inflate_copyright[] =
   copyright string in the executable of your product.
  */
 
-/*
-   Build a set of tables to decode the provided canonical Huffman code.
-   The code lengths are lens[0..codes-1].  The result starts at *table,
-   whose indices are 0..2^bits-1.  work is a writable array of at least
-   lens shorts, which is used as a work area.  type is the type of code
-   to be generated, CODES, LENS, or DISTS.  On return, zero is success,
-   -1 is an invalid code, and +1 means that ENOUGH isn't enough.  table
-   on return points to the next available entry's address.  bits is the
-   requested root table index bits, and on return it is the actual root
-   table index bits.  It will differ if the request is greater than the
-   longest code or if it is less than the shortest code.
- */
+ /*
+    Build a set of tables to decode the provided canonical Huffman code.
+    The code lengths are lens[0..codes-1].  The result starts at *table,
+    whose indices are 0..2^bits-1.  work is a writable array of at least
+    lens shorts, which is used as a work area.  type is the type of code
+    to be generated, CODES, LENS, or DISTS.  On return, zero is success,
+    -1 is an invalid code, and +1 means that ENOUGH isn't enough.  table
+    on return points to the next available entry's address.  bits is the
+    requested root table index bits, and on return it is the actual root
+    table index bits.  It will differ if the request is greater than the
+    longest code or if it is less than the shortest code.
+  */
 int ZLIB_INTERNAL inflate_table(type, lens, codes, table, bits, work)
 codetype type;
 unsigned short FAR *lens;
@@ -55,22 +55,22 @@ unsigned short FAR *work;
     const unsigned short FAR *base;     /* base value table to use */
     const unsigned short FAR *extra;    /* extra bits table to use */
     int end;                    /* use base and extra for symbol > end */
-    unsigned short count[MAXBITS+1];    /* number of codes of each length */
-    unsigned short offs[MAXBITS+1];     /* offsets in table for each length */
+    unsigned short count[MAXBITS + 1];    /* number of codes of each length */
+    unsigned short offs[MAXBITS + 1];     /* offsets in table for each length */
     static const unsigned short lbase[31] = { /* Length codes 257..285 base */
         3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 15, 17, 19, 23, 27, 31,
-        35, 43, 51, 59, 67, 83, 99, 115, 131, 163, 195, 227, 258, 0, 0};
+        35, 43, 51, 59, 67, 83, 99, 115, 131, 163, 195, 227, 258, 0, 0 };
     static const unsigned short lext[31] = { /* Length codes 257..285 extra */
         16, 16, 16, 16, 16, 16, 16, 16, 17, 17, 17, 17, 18, 18, 18, 18,
-        19, 19, 19, 19, 20, 20, 20, 20, 21, 21, 21, 21, 16, 72, 78};
+        19, 19, 19, 19, 20, 20, 20, 20, 21, 21, 21, 21, 16, 72, 78 };
     static const unsigned short dbase[32] = { /* Distance codes 0..29 base */
         1, 2, 3, 4, 5, 7, 9, 13, 17, 25, 33, 49, 65, 97, 129, 193,
         257, 385, 513, 769, 1025, 1537, 2049, 3073, 4097, 6145,
-        8193, 12289, 16385, 24577, 0, 0};
+        8193, 12289, 16385, 24577, 0, 0 };
     static const unsigned short dext[32] = { /* Distance codes 0..29 extra */
         16, 16, 16, 16, 17, 17, 18, 18, 19, 19, 20, 20, 21, 21, 22, 22,
         23, 23, 24, 24, 25, 25, 26, 26, 27, 27,
-        28, 28, 29, 29, 64, 64};
+        28, 28, 29, 29, 64, 64 };
 
     /*
        Process a set of code lengths to create a canonical Huffman code.  The
@@ -103,7 +103,7 @@ unsigned short FAR *work;
        decoding tables.
      */
 
-    /* accumulate lengths for codes (assumes lens[] all in 0..MAXBITS) */
+     /* accumulate lengths for codes (assumes lens[] all in 0..MAXBITS) */
     for (len = 0; len <= MAXBITS; len++)
         count[len] = 0;
     for (sym = 0; sym < codes; sym++)
@@ -177,7 +177,7 @@ unsigned short FAR *work;
        in the rest of the decoding tables with invalid code markers.
      */
 
-    /* set up for code type */
+     /* set up for code type */
     switch (type) {
     case CODES:
         base = extra = work;    /* dummy value--not used */

@@ -119,7 +119,7 @@ extern "C" {
        a single step).
        */
 
-    /* constants */
+       /* constants */
 
 #define Z_NO_FLUSH      0
 #define Z_PARTIAL_FLUSH 1 /* will be removed, use Z_SYNC_FLUSH instead */
@@ -145,7 +145,7 @@ extern "C" {
 #define Z_BEST_SPEED             1
 #define Z_BEST_COMPRESSION       9
 #define Z_DEFAULT_COMPRESSION  (-1)
-    /* compression levels */
+     /* compression levels */
 
 #define Z_FILTERED            1
 #define Z_HUFFMAN_ONLY        2
@@ -174,27 +174,27 @@ extern "C" {
        This check is automatically made by deflateInit and inflateInit.
        */
 
-    /*
-    ZEXTERN int ZEXPORT deflateInit OF((z_streamp strm, int level));
+       /*
+       ZEXTERN int ZEXPORT deflateInit OF((z_streamp strm, int level));
 
-    Initializes the internal stream state for compression. The fields
-    zalloc, zfree and opaque must be initialized before by the caller.
-    If zalloc and zfree are set to Z_NULL, deflateInit updates them to
-    use default allocation functions.
+       Initializes the internal stream state for compression. The fields
+       zalloc, zfree and opaque must be initialized before by the caller.
+       If zalloc and zfree are set to Z_NULL, deflateInit updates them to
+       use default allocation functions.
 
-    The compression level must be Z_DEFAULT_COMPRESSION, or between 0 and 9:
-    1 gives best speed, 9 gives best compression, 0 gives no compression at
-    all (the input data is simply copied a block at a time).
-    Z_DEFAULT_COMPRESSION requests a default compromise between speed and
-    compression (currently equivalent to level 6).
+       The compression level must be Z_DEFAULT_COMPRESSION, or between 0 and 9:
+       1 gives best speed, 9 gives best compression, 0 gives no compression at
+       all (the input data is simply copied a block at a time).
+       Z_DEFAULT_COMPRESSION requests a default compromise between speed and
+       compression (currently equivalent to level 6).
 
-    deflateInit returns Z_OK if success, Z_MEM_ERROR if there was not
-    enough memory, Z_STREAM_ERROR if level is not a valid compression level,
-    Z_VERSION_ERROR if the zlib library version (zlib_version) is incompatible
-    with the version assumed by the caller (ZLIB_VERSION).
-    msg is set to null if there is no error message.  deflateInit does not
-    perform any compression: this will be done by deflate().
-    */
+       deflateInit returns Z_OK if success, Z_MEM_ERROR if there was not
+       enough memory, Z_STREAM_ERROR if level is not a valid compression level,
+       Z_VERSION_ERROR if the zlib library version (zlib_version) is incompatible
+       with the version assumed by the caller (ZLIB_VERSION).
+       msg is set to null if there is no error message.  deflateInit does not
+       perform any compression: this will be done by deflate().
+       */
 
     ZEXTERN int ZEXPORT deflate OF((z_streamp strm, int flush));
     /*
@@ -286,25 +286,25 @@ extern "C" {
          deallocated).
          */
 
-    /*
-    ZEXTERN int ZEXPORT inflateInit OF((z_streamp strm));
+         /*
+         ZEXTERN int ZEXPORT inflateInit OF((z_streamp strm));
 
-    Initializes the internal stream state for decompression. The fields
-    next_in, avail_in, zalloc, zfree and opaque must be initialized before by
-    the caller. If next_in is not Z_NULL and avail_in is large enough (the exact
-    value depends on the compression method), inflateInit determines the
-    compression method from the zlib header and allocates all data structures
-    accordingly; otherwise the allocation will be deferred to the first call of
-    inflate.  If zalloc and zfree are set to Z_NULL, inflateInit updates them to
-    use default allocation functions.
+         Initializes the internal stream state for decompression. The fields
+         next_in, avail_in, zalloc, zfree and opaque must be initialized before by
+         the caller. If next_in is not Z_NULL and avail_in is large enough (the exact
+         value depends on the compression method), inflateInit determines the
+         compression method from the zlib header and allocates all data structures
+         accordingly; otherwise the allocation will be deferred to the first call of
+         inflate.  If zalloc and zfree are set to Z_NULL, inflateInit updates them to
+         use default allocation functions.
 
-    inflateInit returns Z_OK if success, Z_MEM_ERROR if there was not enough
-    memory, Z_VERSION_ERROR if the zlib library version is incompatible with the
-    version assumed by the caller.  msg is set to null if there is no error
-    message. inflateInit does not perform any decompression apart from reading
-    the zlib header if present: this will be done by inflate().  (So next_in and
-    avail_in may be modified, but next_out and avail_out are unchanged.)
-    */
+         inflateInit returns Z_OK if success, Z_MEM_ERROR if there was not enough
+         memory, Z_VERSION_ERROR if the zlib library version is incompatible with the
+         version assumed by the caller.  msg is set to null if there is no error
+         message. inflateInit does not perform any decompression apart from reading
+         the zlib header if present: this will be done by inflate().  (So next_in and
+         avail_in may be modified, but next_out and avail_out are unchanged.)
+         */
 
     ZEXTERN int ZEXPORT inflate OF((z_streamp strm, int flush));
     /*
@@ -385,55 +385,55 @@ extern "C" {
          static string (which must not be deallocated).
          */
 
-    /* Advanced functions */
+         /* Advanced functions */
 
-    /*
-        The following functions are needed only in some special applications.
-        */
+         /*
+             The following functions are needed only in some special applications.
+             */
 
-    /*
-    ZEXTERN int ZEXPORT deflateInit2 OF((z_streamp strm,
-    int  level,
-    int  method,
-    int  windowBits,
-    int  memLevel,
-    int  strategy));
+             /*
+             ZEXTERN int ZEXPORT deflateInit2 OF((z_streamp strm,
+             int  level,
+             int  method,
+             int  windowBits,
+             int  memLevel,
+             int  strategy));
 
-    This is another version of deflateInit with more compression options. The
-    fields next_in, zalloc, zfree and opaque must be initialized before by
-    the caller.
+             This is another version of deflateInit with more compression options. The
+             fields next_in, zalloc, zfree and opaque must be initialized before by
+             the caller.
 
-    The method parameter is the compression method. It must be Z_DEFLATED in
-    this version of the library.
+             The method parameter is the compression method. It must be Z_DEFLATED in
+             this version of the library.
 
-    The windowBits parameter is the base two logarithm of the window size
-    (the size of the history buffer).  It should be in the range 8..15 for this
-    version of the library. Larger values of this parameter result in better
-    compression at the expense of memory usage. The default value is 15 if
-    deflateInit is used instead.
+             The windowBits parameter is the base two logarithm of the window size
+             (the size of the history buffer).  It should be in the range 8..15 for this
+             version of the library. Larger values of this parameter result in better
+             compression at the expense of memory usage. The default value is 15 if
+             deflateInit is used instead.
 
-    The memLevel parameter specifies how much memory should be allocated
-    for the internal compression state. memLevel=1 uses minimum memory but
-    is slow and reduces compression ratio; memLevel=9 uses maximum memory
-    for optimal speed. The default value is 8. See zconf.h for total memory
-    usage as a function of windowBits and memLevel.
+             The memLevel parameter specifies how much memory should be allocated
+             for the internal compression state. memLevel=1 uses minimum memory but
+             is slow and reduces compression ratio; memLevel=9 uses maximum memory
+             for optimal speed. The default value is 8. See zconf.h for total memory
+             usage as a function of windowBits and memLevel.
 
-    The strategy parameter is used to tune the compression algorithm. Use the
-    value Z_DEFAULT_STRATEGY for normal data, Z_FILTERED for data produced by a
-    filter (or predictor), or Z_HUFFMAN_ONLY to force Huffman encoding only (no
-    string match).  Filtered data consists mostly of small values with a
-    somewhat random distribution. In this case, the compression algorithm is
-    tuned to compress them better. The effect of Z_FILTERED is to force more
-    Huffman coding and less string matching; it is somewhat intermediate
-    between Z_DEFAULT and Z_HUFFMAN_ONLY. The strategy parameter only affects
-    the compression ratio but not the correctness of the compressed output even
-    if it is not set appropriately.
+             The strategy parameter is used to tune the compression algorithm. Use the
+             value Z_DEFAULT_STRATEGY for normal data, Z_FILTERED for data produced by a
+             filter (or predictor), or Z_HUFFMAN_ONLY to force Huffman encoding only (no
+             string match).  Filtered data consists mostly of small values with a
+             somewhat random distribution. In this case, the compression algorithm is
+             tuned to compress them better. The effect of Z_FILTERED is to force more
+             Huffman coding and less string matching; it is somewhat intermediate
+             between Z_DEFAULT and Z_HUFFMAN_ONLY. The strategy parameter only affects
+             the compression ratio but not the correctness of the compressed output even
+             if it is not set appropriately.
 
-    deflateInit2 returns Z_OK if success, Z_MEM_ERROR if there was not enough
-    memory, Z_STREAM_ERROR if a parameter is invalid (such as an invalid
-    method). msg is set to null if there is no error message.  deflateInit2 does
-    not perform any compression: this will be done by deflate().
-    */
+             deflateInit2 returns Z_OK if success, Z_MEM_ERROR if there was not enough
+             memory, Z_STREAM_ERROR if a parameter is invalid (such as an invalid
+             method). msg is set to null if there is no error message.  deflateInit2 does
+             not perform any compression: this will be done by deflate().
+             */
 
     ZEXTERN int ZEXPORT deflateSetDictionary OF((z_streamp strm,
         const Bytef *dictionary,
@@ -521,28 +521,28 @@ extern "C" {
          if strm->avail_out was zero.
          */
 
-    /*
-    ZEXTERN int ZEXPORT inflateInit2 OF((z_streamp strm,
-    int  windowBits));
+         /*
+         ZEXTERN int ZEXPORT inflateInit2 OF((z_streamp strm,
+         int  windowBits));
 
-    This is another version of inflateInit with an extra parameter. The
-    fields next_in, avail_in, zalloc, zfree and opaque must be initialized
-    before by the caller.
+         This is another version of inflateInit with an extra parameter. The
+         fields next_in, avail_in, zalloc, zfree and opaque must be initialized
+         before by the caller.
 
-    The windowBits parameter is the base two logarithm of the maximum window
-    size (the size of the history buffer).  It should be in the range 8..15 for
-    this version of the library. The default value is 15 if inflateInit is used
-    instead. If a compressed stream with a larger window size is given as
-    input, inflate() will return with the error code Z_DATA_ERROR instead of
-    trying to allocate a larger window.
+         The windowBits parameter is the base two logarithm of the maximum window
+         size (the size of the history buffer).  It should be in the range 8..15 for
+         this version of the library. The default value is 15 if inflateInit is used
+         instead. If a compressed stream with a larger window size is given as
+         input, inflate() will return with the error code Z_DATA_ERROR instead of
+         trying to allocate a larger window.
 
-    inflateInit2 returns Z_OK if success, Z_MEM_ERROR if there was not enough
-    memory, Z_STREAM_ERROR if a parameter is invalid (such as a negative
-    memLevel). msg is set to null if there is no error message.  inflateInit2
-    does not perform any decompression apart from reading the zlib header if
-    present: this will be done by inflate(). (So next_in and avail_in may be
-    modified, but next_out and avail_out are unchanged.)
-    */
+         inflateInit2 returns Z_OK if success, Z_MEM_ERROR if there was not enough
+         memory, Z_STREAM_ERROR if a parameter is invalid (such as a negative
+         memLevel). msg is set to null if there is no error message.  inflateInit2
+         does not perform any decompression apart from reading the zlib header if
+         present: this will be done by inflate(). (So next_in and avail_in may be
+         modified, but next_out and avail_out are unchanged.)
+         */
 
     ZEXTERN int ZEXPORT inflateSetDictionary OF((z_streamp strm,
         const Bytef *dictionary,
@@ -588,15 +588,15 @@ extern "C" {
          stream state was inconsistent (such as zalloc or state being NULL).
          */
 
-    /* utility functions */
+         /* utility functions */
 
-    /*
-         The following utility functions are implemented on top of the
-         basic stream-oriented functions. To simplify the interface, some
-         default options are assumed (compression level and memory usage,
-         standard memory allocation functions). The source code of these
-         utility functions can easily be modified if you need special options.
-         */
+         /*
+              The following utility functions are implemented on top of the
+              basic stream-oriented functions. To simplify the interface, some
+              default options are assumed (compression level and memory usage,
+              standard memory allocation functions). The source code of these
+              utility functions can easily be modified if you need special options.
+              */
 
     ZEXTERN int ZEXPORT compress OF((Bytef *dest, uLongf *destLen,
         const Bytef *source, uLong sourceLen));
@@ -802,13 +802,13 @@ extern "C" {
          to get the exact error code.
          */
 
-    /* checksum functions */
+         /* checksum functions */
 
-    /*
-         These functions are not related to compression but are exported
-         anyway because they might be useful in applications using the
-         compression library.
-         */
+         /*
+              These functions are not related to compression but are exported
+              anyway because they might be useful in applications using the
+              compression library.
+              */
 
     ZEXTERN uLong ZEXPORT adler32 OF((uLong adler, const Bytef *buf, uInt len));
 
@@ -843,11 +843,11 @@ extern "C" {
          if (crc != original_crc) error();
          */
 
-    /* various hacks, don't look :) */
+         /* various hacks, don't look :) */
 
-    /* deflateInit and inflateInit are macros to allow checking the zlib version
-     * and the compiler's view of z_stream:
-     */
+         /* deflateInit and inflateInit are macros to allow checking the zlib version
+          * and the compiler's view of z_stream:
+          */
     ZEXTERN int ZEXPORT deflateInit_ OF((z_streamp strm, int level,
         const char *version, int stream_size));
     ZEXTERN int ZEXPORT inflateInit_ OF((z_streamp strm,

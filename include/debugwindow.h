@@ -17,23 +17,23 @@ typedef unsigned short ushort;
 
 enum class bp_type
 {
-	BP_PC = 1,
-	BP_READ,
-	BP_WRITE,
+    BP_PC = 1,
+    BP_READ,
+    BP_WRITE,
 };
 
 struct Breakpoint
 {
-	bp_type type;
+    bp_type type;
 
-	uint32 start;
-	uint32 end;
+    uint32 start;
+    uint32 end;
 
     bool enabled;
-	bool is_vdp, is_forbid;
+    bool is_vdp, is_forbid;
 
-	Breakpoint(bp_type _type, uint32 _start, uint32 _end, bool _enabled, bool _is_vdp, bool _is_forbid) :
-		type(_type), start(_start), end(_end), enabled(_enabled), is_vdp(_is_vdp), is_forbid(_is_forbid) {};
+    Breakpoint(bp_type _type, uint32 _start, uint32 _end, bool _enabled, bool _is_vdp, bool _is_forbid) :
+        type(_type), start(_start), end(_end), enabled(_enabled), is_vdp(_is_vdp), is_forbid(_is_forbid) {};
 };
 
 typedef std::vector<Breakpoint> bp_list;
@@ -42,7 +42,7 @@ struct DebugWindow
 {
     DebugWindow();
     std::vector<uint32> callstack;
-	bp_list Breakpoints;
+    bp_list Breakpoints;
 
     bool DebugStop;
 
@@ -53,9 +53,9 @@ struct DebugWindow
     void SetWhyBreak(LPCSTR lpString);
 
     bool BreakPC(int pc);
-	bool BreakRegValue(int pc, unsigned char reg_idx, uint32 value, bool is_vdp);
+    bool BreakRegValue(int pc, unsigned char reg_idx, uint32 value, bool is_vdp);
     bool BreakRead(int pc, uint32 start, uint32 stop, bool is_vdp);
-	bool BreakWrite(int pc, uint32 start, uint32 stop, bool is_vdp);
+    bool BreakWrite(int pc, uint32 start, uint32 stop, bool is_vdp);
 
     virtual void DoStepOver();
     virtual void TracePC(int pc);

@@ -334,7 +334,7 @@ int Update_PCM(int **buf, int Length)
         }
         */
 
-    // for long update
+        // for long update
     for (i = 0; i < 8; i++)
     {
         CH = &(PCM_Chip.Channel[i]);

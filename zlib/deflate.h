@@ -3,12 +3,12 @@
  * For conditions of distribution and use, see copyright notice in zlib.h
  */
 
-/* WARNING: this file should *not* be used by applications. It is
-   part of the implementation of the compression library and is
-   subject to change. Applications should only use zlib.h.
- */
+ /* WARNING: this file should *not* be used by applications. It is
+    part of the implementation of the compression library and is
+    subject to change. Applications should only use zlib.h.
+  */
 
-/* @(#) $Id$ */
+  /* @(#) $Id$ */
 
 #ifndef DEFLATE_H
 #define DEFLATE_H
@@ -23,12 +23,12 @@
 #  define GZIP
 #endif
 
-/* ===========================================================================
- * Internal compression state.
- */
+   /* ===========================================================================
+    * Internal compression state.
+    */
 
 #define LENGTH_CODES 29
-/* number of length codes, not counting the special END_BLOCK code */
+    /* number of length codes, not counting the special END_BLOCK code */
 
 #define LITERALS  256
 /* number of literal bytes 0..255 */
@@ -59,7 +59,6 @@
 #define BUSY_STATE   113
 #define FINISH_STATE 666
 /* Stream status */
-
 
 /* Data structure describing a single value and its code string. */
 typedef struct ct_data_s {
@@ -177,10 +176,10 @@ typedef struct internal_state {
      * levels >= 4.
      */
 #   define max_insert_length  max_lazy_match
-    /* Insert new strings in the hash table only if the match length is not
-     * greater than this length. This saves time but degrades compression.
-     * max_insert_length is used only for compression levels <= 3.
-     */
+     /* Insert new strings in the hash table only if the match length is not
+      * greater than this length. This saves time but degrades compression.
+      * max_insert_length is used only for compression levels <= 3.
+      */
 
     int level;    /* compression level (1..9) */
     int strategy; /* favor or force Huffman coding*/
@@ -193,24 +192,24 @@ typedef struct internal_state {
                 /* used by trees.c: */
     /* Didn't use ct_data typedef below to suppress compiler warning */
     struct ct_data_s dyn_ltree[HEAP_SIZE];   /* literal and length tree */
-    struct ct_data_s dyn_dtree[2*D_CODES+1]; /* distance tree */
-    struct ct_data_s bl_tree[2*BL_CODES+1];  /* Huffman tree for bit lengths */
+    struct ct_data_s dyn_dtree[2 * D_CODES + 1]; /* distance tree */
+    struct ct_data_s bl_tree[2 * BL_CODES + 1];  /* Huffman tree for bit lengths */
 
     struct tree_desc_s l_desc;               /* desc. for literal tree */
     struct tree_desc_s d_desc;               /* desc. for distance tree */
     struct tree_desc_s bl_desc;              /* desc. for bit length tree */
 
-    ush bl_count[MAX_BITS+1];
+    ush bl_count[MAX_BITS + 1];
     /* number of codes at each bit length for an optimal tree */
 
-    int heap[2*L_CODES+1];      /* heap used to build the Huffman trees */
+    int heap[2 * L_CODES + 1];      /* heap used to build the Huffman trees */
     int heap_len;               /* number of elements in the heap */
     int heap_max;               /* element of largest frequency */
     /* The sons of heap[n] are heap[2*n] and heap[2*n+1]. heap[0] is not used.
      * The same heap array is used to build all trees.
      */
 
-    uch depth[2*L_CODES+1];
+    uch depth[2 * L_CODES + 1];
     /* Depth of each subtree used as tie breaker for trees of equal frequency
      */
 
@@ -269,7 +268,6 @@ typedef struct internal_state {
      * longest match routines access bytes past the input.  This is then
      * updated to the new high water mark.
      */
-
 } FAR deflate_state;
 
 /* Output a byte on the stream.
@@ -277,30 +275,29 @@ typedef struct internal_state {
  */
 #define put_byte(s, c) {s->pending_buf[s->pending++] = (c);}
 
-
 #define MIN_LOOKAHEAD (MAX_MATCH+MIN_MATCH+1)
-/* Minimum amount of lookahead, except at the end of the input file.
- * See deflate.c for comments about the MIN_MATCH+1.
- */
+ /* Minimum amount of lookahead, except at the end of the input file.
+  * See deflate.c for comments about the MIN_MATCH+1.
+  */
 
 #define MAX_DIST(s)  ((s)->w_size-MIN_LOOKAHEAD)
-/* In order to simplify the code, particularly on 16 bit machines, match
- * distances are limited to MAX_DIST instead of WSIZE.
- */
+  /* In order to simplify the code, particularly on 16 bit machines, match
+   * distances are limited to MAX_DIST instead of WSIZE.
+   */
 
 #define WIN_INIT MAX_MATCH
-/* Number of bytes after end of data in window to initialize in order to avoid
-   memory checker errors from longest match routines */
+   /* Number of bytes after end of data in window to initialize in order to avoid
+      memory checker errors from longest match routines */
 
-        /* in trees.c */
+      /* in trees.c */
 void ZLIB_INTERNAL _tr_init OF((deflate_state *s));
 int ZLIB_INTERNAL _tr_tally OF((deflate_state *s, unsigned dist, unsigned lc));
 void ZLIB_INTERNAL _tr_flush_block OF((deflate_state *s, charf *buf,
-                        ulg stored_len, int last));
+    ulg stored_len, int last));
 void ZLIB_INTERNAL _tr_flush_bits OF((deflate_state *s));
 void ZLIB_INTERNAL _tr_align OF((deflate_state *s));
 void ZLIB_INTERNAL _tr_stored_block OF((deflate_state *s, charf *buf,
-                        ulg stored_len, int last));
+    ulg stored_len, int last));
 
 #define d_code(dist) \
    ((dist) < 256 ? _dist_code[dist] : _dist_code[256+((dist)>>7)])
@@ -310,14 +307,14 @@ void ZLIB_INTERNAL _tr_stored_block OF((deflate_state *s, charf *buf,
  */
 
 #ifndef DEBUG
-/* Inline versions of _tr_tally for speed: */
+ /* Inline versions of _tr_tally for speed: */
 
 #if defined(GEN_TREES_H) || !defined(STDC)
-  extern uch ZLIB_INTERNAL _length_code[];
-  extern uch ZLIB_INTERNAL _dist_code[];
+extern uch ZLIB_INTERNAL _length_code[];
+extern uch ZLIB_INTERNAL _dist_code[];
 #else
-  extern const uch ZLIB_INTERNAL _length_code[];
-  extern const uch ZLIB_INTERNAL _dist_code[];
+extern const uch ZLIB_INTERNAL _length_code[];
+extern const uch ZLIB_INTERNAL _dist_code[];
 #endif
 
 # define _tr_tally_lit(s, c, flush) \

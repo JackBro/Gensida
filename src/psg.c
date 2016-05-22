@@ -77,7 +77,7 @@ extern unsigned int Sound_Extrapol[312][2];
 extern int Seg_L[882], Seg_R[882];
 extern int VDP_Current_Line;
 extern int disableSound2, Seg_Junk[882];
-static int* LeftAudioBuffer()  { return disableSound2 ? Seg_Junk : Seg_L; }
+static int* LeftAudioBuffer() { return disableSound2 ? Seg_Junk : Seg_L; }
 static int* RightAudioBuffer() { return disableSound2 ? Seg_Junk : Seg_R; }
 
 int PSG_Enable;

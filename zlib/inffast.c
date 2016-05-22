@@ -10,17 +10,17 @@
 
 #ifndef ASMINF
 
-/* Allow machine dependent optimization for post-increment or pre-increment.
-   Based on testing to date,
-   Pre-increment preferred for:
-   - PowerPC G3 (Adler)
-   - MIPS R5000 (Randers-Pehrson)
-   Post-increment preferred for:
-   - none
-   No measurable difference:
-   - Pentium III (Anderson)
-   - M68060 (Nikl)
- */
+ /* Allow machine dependent optimization for post-increment or pre-increment.
+    Based on testing to date,
+    Pre-increment preferred for:
+    - PowerPC G3 (Adler)
+    - MIPS R5000 (Randers-Pehrson)
+    Post-increment preferred for:
+    - none
+    No measurable difference:
+    - Pentium III (Anderson)
+    - M68060 (Nikl)
+  */
 #ifdef POSTINC
 #  define OFF 0
 #  define PUP(a) *(a)++
@@ -29,41 +29,41 @@
 #  define PUP(a) *++(a)
 #endif
 
-/*
-   Decode literal, length, and distance codes and write out the resulting
-   literal and match bytes until either not enough input or output is
-   available, an end-of-block is encountered, or a data error is encountered.
-   When large enough input and output buffers are supplied to inflate(), for
-   example, a 16K input buffer and a 64K output buffer, more than 95% of the
-   inflate execution time is spent in this routine.
+  /*
+     Decode literal, length, and distance codes and write out the resulting
+     literal and match bytes until either not enough input or output is
+     available, an end-of-block is encountered, or a data error is encountered.
+     When large enough input and output buffers are supplied to inflate(), for
+     example, a 16K input buffer and a 64K output buffer, more than 95% of the
+     inflate execution time is spent in this routine.
 
-   Entry assumptions:
+     Entry assumptions:
 
-        state->mode == LEN
-        strm->avail_in >= 6
-        strm->avail_out >= 258
-        start >= strm->avail_out
-        state->bits < 8
+          state->mode == LEN
+          strm->avail_in >= 6
+          strm->avail_out >= 258
+          start >= strm->avail_out
+          state->bits < 8
 
-   On return, state->mode is one of:
+     On return, state->mode is one of:
 
-        LEN -- ran out of enough output space or enough available input
-        TYPE -- reached end of block code, inflate() to interpret next block
-        BAD -- error in block data
+          LEN -- ran out of enough output space or enough available input
+          TYPE -- reached end of block code, inflate() to interpret next block
+          BAD -- error in block data
 
-   Notes:
+     Notes:
 
-    - The maximum input bits used by a length/distance pair is 15 bits for the
-      length code, 5 bits for the length extra, 15 bits for the distance code,
-      and 13 bits for the distance extra.  This totals 48 bits, or six bytes.
-      Therefore if strm->avail_in >= 6, then there is enough input to avoid
-      checking for available input while decoding.
+      - The maximum input bits used by a length/distance pair is 15 bits for the
+        length code, 5 bits for the length extra, 15 bits for the distance code,
+        and 13 bits for the distance extra.  This totals 48 bits, or six bytes.
+        Therefore if strm->avail_in >= 6, then there is enough input to avoid
+        checking for available input while decoding.
 
-    - The maximum bytes that a single length/distance pair can output is 258
-      bytes, which is the maximum length that can be coded.  inflate_fast()
-      requires strm->avail_out >= 258 for each loop to avoid checking for
-      output space.
- */
+      - The maximum bytes that a single length/distance pair can output is 258
+        bytes, which is the maximum length that can be coded.  inflate_fast()
+        requires strm->avail_out >= 258 for each loop to avoid checking for
+        output space.
+   */
 void ZLIB_INTERNAL inflate_fast(strm, start)
 z_streamp strm;
 unsigned start;         /* inflate()'s starting value for strm->avail_out */
@@ -125,15 +125,15 @@ unsigned start;         /* inflate()'s starting value for strm->avail_out */
             bits += 8;
         }
         here = lcode[hold & lmask];
-      dolen:
+    dolen:
         op = (unsigned)(here.bits);
         hold >>= op;
         bits -= op;
         op = (unsigned)(here.op);
         if (op == 0) {                          /* literal */
             Tracevv((stderr, here.val >= 0x20 && here.val < 0x7f ?
-                    "inflate:         literal '%c'\n" :
-                    "inflate:         literal 0x%02x\n", here.val));
+                "inflate:         literal '%c'\n" :
+                "inflate:         literal 0x%02x\n", here.val));
             PUP(out) = (unsigned char)(here.val);
         }
         else if (op & 16) {                     /* length base */
@@ -156,7 +156,7 @@ unsigned start;         /* inflate()'s starting value for strm->avail_out */
                 bits += 8;
             }
             here = dcode[hold & dmask];
-          dodist:
+        dodist:
             op = (unsigned)(here.bits);
             hold >>= op;
             bits -= op;
@@ -317,7 +317,7 @@ unsigned start;         /* inflate()'s starting value for strm->avail_out */
     strm->next_out = out + OFF;
     strm->avail_in = (unsigned)(in < last ? 5 + (last - in) : 5 - (in - last));
     strm->avail_out = (unsigned)(out < end ?
-                                 257 + (end - out) : 257 - (out - end));
+        257 + (end - out) : 257 - (out - end));
     state->hold = hold;
     state->bits = bits;
     return;

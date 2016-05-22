@@ -1,6 +1,6 @@
 /* header created automatically with -DGEN_TREES_H */
 
-local const ct_data static_ltree[L_CODES+2] = {
+local const ct_data static_ltree[L_CODES + 2] = {
 {{ 12},{  8}}, {{140},{  8}}, {{ 76},{  8}}, {{204},{  8}}, {{ 44},{  8}},
 {{172},{  8}}, {{108},{  8}}, {{236},{  8}}, {{ 28},{  8}}, {{156},{  8}},
 {{ 92},{  8}}, {{220},{  8}}, {{ 60},{  8}}, {{188},{  8}}, {{124},{  8}},
@@ -99,7 +99,7 @@ const uch ZLIB_INTERNAL _dist_code[DIST_CODE_LEN] = {
 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29
 };
 
-const uch ZLIB_INTERNAL _length_code[MAX_MATCH-MIN_MATCH+1]= {
+const uch ZLIB_INTERNAL _length_code[MAX_MATCH - MIN_MATCH + 1] = {
  0,  1,  2,  3,  4,  5,  6,  7,  8,  8,  9,  9, 10, 10, 11, 11, 12, 12, 12, 12,
 13, 13, 13, 13, 14, 14, 14, 14, 15, 15, 15, 15, 16, 16, 16, 16, 16, 16, 16, 16,
 17, 17, 17, 17, 17, 17, 17, 17, 18, 18, 18, 18, 18, 18, 18, 18, 19, 19, 19, 19,
@@ -125,4 +125,3 @@ local const int base_dist[D_CODES] = {
    32,    48,    64,    96,   128,   192,   256,   384,   512,   768,
  1024,  1536,  2048,  3072,  4096,  6144,  8192, 12288, 16384, 24576
 };
-

@@ -1,28 +1,28 @@
 #include <stdio.h>
 #include "gens.h"
 #include "g_main.h"
-#include "G_ddraw.h"
-#include "G_dsound.h"
-#include "G_input.h"
+#include "g_ddraw.h"
+#include "g_dsound.h"
+#include "g_input.h"
 #include "rom.h"
 #include "mem_m68k.h"
-#include "mem_S68K.h"
+#include "mem_s68k.h"
 #include "mem_sh2.h"
 #include "ym2612.h"
 #include "psg.h"
 #include "cpu_68k.h"
-#include "Cpu_Z80.h"
-#include "Cpu_SH2.h"
+#include "cpu_z80.h"
+#include "cpu_sh2.h"
 #include "z80.h"
 #include "vdp_io.h"
 #include "vdp_rend.h"
-#include "vdp_32X.h"
+#include "vdp_32x.h"
 #include "joypads.h"
 #include "misc.h"
 #include "save.h"
 #include "ggenie.h"
 #include "cd_sys.h"
-#include "LC89510.h"
+#include "lc89510.h"
 #include "gfx_cd.h"
 #include "wave.h"
 #include "pcm.h"
@@ -89,22 +89,22 @@ bool CompareSaveStates(SaveStateData& data1, SaveStateData& data2)
     firstFailureByte = -1;
     static const int maxFailures = 4000; // print at most this many failure at once
     int numFailures = 0;
-    for(int i = 0; i < CHECKED_STATE_LENGTH; i++)
+    for (int i = 0; i < CHECKED_STATE_LENGTH; i++)
     {
         unsigned char diff = data2.State_Buffer[i] - data1.State_Buffer[i];
         difference.State_Buffer[i] = diff;
-        if(diff)
+        if (diff)
         {
-            char desc [128];
+            char desc[128];
             sprintf(desc, "byte %d (0x%x) was 0x%x is 0x%x\n", i, i, data1.State_Buffer[i], data2.State_Buffer[i]);
             OutputDebugString(desc);
-            if(ok)
+            if (ok)
             {
                 ok = false;
                 firstFailureByte = i;
             }
             numFailures++;
-            if(numFailures > maxFailures)
+            if (numFailures > maxFailures)
                 break;
         }
     }
@@ -113,7 +113,7 @@ bool CompareSaveStates(SaveStateData& data1, SaveStateData& data2)
 
 static SaveStateData tempData;
 
-void DesyncDetection(bool forceCheckingDesync=false, bool forcePart=false)
+void DesyncDetection(bool forceCheckingDesync = false, bool forcePart = false)
 {
 #ifdef TEST_GENESIS_FOR_DESYNCS
     if (!Game) return;
@@ -129,7 +129,7 @@ void DesyncDetection(bool forceCheckingDesync=false, bool forcePart=false)
     // then turn on scroll lock when replaying those frames later to check them
     bool checkingDesync = (GetKeyState(VK_LCONTROL) & 0x8000) != 0;
     int checkingDesyncPart = GetKeyState(VK_SCROLL) ? 1 : 0;
-    if(!forceCheckingDesync)
+    if (!forceCheckingDesync)
         checkingDesync |= !!checkingDesyncPart;
     else
     {
@@ -137,9 +137,9 @@ void DesyncDetection(bool forceCheckingDesync=false, bool forcePart=false)
         checkingDesyncPart = forcePart ? 1 : 0;
     }
 
-    if(checkingDesync)
+    if (checkingDesync)
     {
-        if(checkingDesyncPart == 0)
+        if (checkingDesyncPart == 0)
         {
             // first part: just save states
             static SaveStateData data;
@@ -159,10 +159,10 @@ void DesyncDetection(bool forceCheckingDesync=false, bool forcePart=false)
             memset(dataNow.State_Buffer, 0, sizeof(dataNow.State_Buffer));
             Export_Func(dataNow.State_Buffer);
 
-            if(saveStateDataMap.find(FrameCount) != saveStateDataMap.end())
+            if (saveStateDataMap.find(FrameCount) != saveStateDataMap.end())
             {
                 SaveStateData& dataThen = saveStateDataMap[FrameCount];
-                if(!CompareSaveStates(dataThen, dataNow))
+                if (!CompareSaveStates(dataThen, dataNow))
                 {
                     memset(tempData.State_Buffer, tempData.State_Buffer[firstFailureByte] ? 0 : 0xFF, sizeof(tempData.State_Buffer));
 
@@ -1008,7 +1008,7 @@ void Render_MD_Screen_()
     }
     // fixes for filters
     // bottom row
-	for (int Pixel = 336 * Line + 8; Pixel < 336 * Line + 336; Pixel++)
+    for (int Pixel = 336 * Line + 8; Pixel < 336 * Line + 336; Pixel++)
     {
         if (bits == 32)
             MD_Screen32[Pixel] = 0;
@@ -1175,7 +1175,7 @@ void Render_MD_Screen32X()
 
 int Do_Genesis_Frame(bool fast)
 {
-    struct Scope { Scope(){ Inside_Frame = 1; } ~Scope(){ Inside_Frame = 0; } } scope;
+    struct Scope { Scope() { Inside_Frame = 1; } ~Scope() { Inside_Frame = 0; } } scope;
 
     int *buf[2];
     int HInt_Counter;
@@ -1345,7 +1345,7 @@ DO_FRAME_HEADER(Do_Genesis_Frame_No_VDP, Do_Genesis_Frame_No_VDP)
 
 int Do_VDP_Refresh()
 {
-	int VDP_Current_Line_bak = VDP_Current_Line;
+    int VDP_Current_Line_bak = VDP_Current_Line;
 
     if ((CPU_Mode) && (VDP_Reg.Set2 & 0x8))	VDP_Num_Vis_Lines = 240;
     else VDP_Num_Vis_Lines = 224;
@@ -1373,7 +1373,7 @@ int Do_VDP_Refresh()
         Render_MD_Screen32X();
     }
 
-	VDP_Current_Line = VDP_Current_Line_bak;
+    VDP_Current_Line = VDP_Current_Line_bak;
 
     Update_RAM_Search();
 #ifdef RKABOXHACK
@@ -1674,7 +1674,7 @@ void Reset_32X()
 
 int Do_32X_Frame(bool fast)
 {
-    struct Scope { Scope(){ Inside_Frame = 1; } ~Scope(){ Inside_Frame = 0; } } scope;
+    struct Scope { Scope() { Inside_Frame = 1; } ~Scope() { Inside_Frame = 0; } } scope;
 
     int i, j, k, l, p_i, p_j, p_k, p_l, *buf[2];
     int HInt_Counter, HInt_Counter_32X;
@@ -1805,7 +1805,7 @@ int Do_32X_Frame(bool fast)
         PWM_Update_Timer(PWM_Cycles);
         if (Z80_State == 3) z80_Exec(&M_Z80, Cycles_Z80);
         else z80_Set_Odo(&M_Z80, Cycles_Z80);
-        }
+    }
 
     if (!fast)
     {
@@ -1975,7 +1975,7 @@ int Do_32X_Frame(bool fast)
         Update_RAM_Search();
 
     return 1;
-    }
+}
 
 DO_FRAME_HEADER(Do_32X_Frame, Do_32X_Frame_No_VDP)
 {
@@ -2245,7 +2245,7 @@ void Reset_SegaCD()
 
 int Do_SegaCD_Frame(bool fast)
 {
-    struct Scope { Scope(){ Inside_Frame = 1; } ~Scope(){ Inside_Frame = 0; } } scope;
+    struct Scope { Scope() { Inside_Frame = 1; } ~Scope() { Inside_Frame = 0; } } scope;
 
     int *buf[2];
     int HInt_Counter;
@@ -2427,7 +2427,7 @@ DO_FRAME_HEADER(Do_SegaCD_Frame_No_VDP, Do_SegaCD_Frame_No_VDP)
 
 int Do_SegaCD_Frame_Cycle_Accurate(bool fast)
 {
-    struct Scope { Scope(){ Inside_Frame = 1; } ~Scope(){ Inside_Frame = 0; } } scope;
+    struct Scope { Scope() { Inside_Frame = 1; } ~Scope() { Inside_Frame = 0; } } scope;
 
     int *buf[2], i, j;
     int HInt_Counter;

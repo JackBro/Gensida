@@ -6,7 +6,7 @@
 #include "cdda_mp3.h"
 #include "star_68k.h"
 #include "rom.h"
-#include "mem_S68K.h"
+#include "mem_s68k.h"
 #include <string.h>
 
 struct _file_track Tracks[100];
@@ -201,17 +201,17 @@ int Load_ISO(char *buf, char *iso_name)
                             Cur_LBA += LBA_Deficit;
                         }
 
-                            {
-                                tmp_file = fopen(g_cuefile_TOC_filenames[i], "rb");
-                                if (tmp_file)
-                                    Tracks[i].F = tmp_file;
-                                else
-                                    Tracks[i].F = Tracks[0].F;
-                                Tracks[i].F_decoded = NULL;
+                        {
+                            tmp_file = fopen(g_cuefile_TOC_filenames[i], "rb");
+                            if (tmp_file)
+                                Tracks[i].F = tmp_file;
+                            else
+                                Tracks[i].F = Tracks[0].F;
+                            Tracks[i].F_decoded = NULL;
 
-                                strncpy(Tracks[i].filename, g_cuefile_TOC_filenames[i], 512);
-                                Tracks[i].filename[511] = 0;
-                            }
+                            strncpy(Tracks[i].filename, g_cuefile_TOC_filenames[i], 512);
+                            Tracks[i].filename[511] = 0;
+                        }
                     }
                     break;
                     case TYPE_MP3:
@@ -251,21 +251,21 @@ int Load_ISO(char *buf, char *iso_name)
                             }
 
                             //							if(g_cuefile_TOC_filetype[i] == TYPE_MP3)
-                                {
-                                    // MP3 File
-                                    Tracks[i].Type = TYPE_MP3;
-                                    fs /= (float)(MP3_Get_Bitrate(Tracks[i].F) >> 3);
-                                    fs *= 75;
-                                    Tracks[i].Length = (int)fs - 294; // the mp3 decoder gets unstable at the very end of the song, so subtract a bit to stay on the safe side
-                                    Cur_LBA += Tracks[i].Length;
-                                }
-                                /*							else
-                                                            {
-                                                            // WAV File
-                                                            Tracks[i].Type = TYPE_WAV;
-                                                            Tracks[i].Length = 1000; // probably needs fixing if WAV is really supported...
-                                                            Cur_LBA += Tracks[i].Length;
-                                                            }*/
+                            {
+                                // MP3 File
+                                Tracks[i].Type = TYPE_MP3;
+                                fs /= (float)(MP3_Get_Bitrate(Tracks[i].F) >> 3);
+                                fs *= 75;
+                                Tracks[i].Length = (int)fs - 294; // the mp3 decoder gets unstable at the very end of the song, so subtract a bit to stay on the safe side
+                                Cur_LBA += Tracks[i].Length;
+                            }
+                            /*							else
+                                                        {
+                                                        // WAV File
+                                                        Tracks[i].Type = TYPE_WAV;
+                                                        Tracks[i].Length = 1000; // probably needs fixing if WAV is really supported...
+                                                        Cur_LBA += Tracks[i].Length;
+                                                        }*/
                         }
                         else
                         {

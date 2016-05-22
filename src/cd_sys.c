@@ -3,12 +3,12 @@
 #include "cd_aspi.h"		// this include cd_sys.h
 #include "cd_file.h"
 #include "gens.h"
-#include "G_dsound.h"
+#include "g_dsound.h"
 #include "cdda_mp3.h"
 #include "lc89510.h"
-#include "Star_68k.h"
-#include "Mem_M68K.h"
-#include "Mem_S68K.h"
+#include "star_68k.h"
+#include "mem_m68k.h"
+#include "mem_s68k.h"
 #include "save.h"
 #include "misc.h"
 
@@ -974,15 +974,15 @@ void Write_CD_Audio(short *Buf, int rate, int channel, int _length)
         __asm
         {
             mov edi, CD_Audio_Buffer_Write_Pos
-                mov ebx, Buf
-                xor esi, esi
-                mov ecx, _length_dst
-                xor eax, eax
-                mov edx, pas_src
-                dec ecx
-                jmp short loop_stereo
+            mov ebx, Buf
+            xor esi, esi
+            mov ecx, _length_dst
+            xor eax, eax
+            mov edx, pas_src
+            dec ecx
+            jmp short loop_stereo
 
-                align 16
+            align 16
 
             loop_stereo:
             movsx eax, word ptr[ebx + esi * 4]
@@ -1006,15 +1006,15 @@ void Write_CD_Audio(short *Buf, int rate, int channel, int _length)
         __asm
         {
             mov edi, CD_Audio_Buffer_Write_Pos
-                mov ebx, Buf
-                xor esi, esi
-                mov ecx, _length_dst
-                xor eax, eax
-                mov edx, pas_src
-                dec ecx
-                jmp short loop_mono
+            mov ebx, Buf
+            xor esi, esi
+            mov ecx, _length_dst
+            xor eax, eax
+            mov edx, pas_src
+            dec ecx
+            jmp short loop_mono
 
-                align 16
+            align 16
 
             loop_mono:
             movsx eax, word ptr[ebx + esi * 2]
@@ -1088,9 +1088,9 @@ void Update_CD_Audio(int **buf, int _length)
         __asm
         {
             mov ecx, _length
-                mov esi, CD_Audio_Buffer_Read_Pos
-                mov edi, Buf_L
-                dec ecx
+            mov esi, CD_Audio_Buffer_Read_Pos
+            mov edi, Buf_L
+            dec ecx
 
             loop_L :
             mov eax, CD_Audio_Buffer_L[esi * 4]
@@ -1106,7 +1106,7 @@ void Update_CD_Audio(int **buf, int _length)
                 mov edi, Buf_R
                 dec ecx
 
-            loop_R :
+                loop_R :
             mov eax, CD_Audio_Buffer_R[esi * 4]
                 add[edi], eax
                 inc esi

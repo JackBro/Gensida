@@ -32,10 +32,10 @@
    3. This notice may not be removed or altered from any source distribution.
 
    */
-/* for more info about .ZIP format, see
-      ftp://ftp.cdrom.com/pub/infozip/doc/appnote-970311-iz.zip
-      PkWare has also a specification at :
-      ftp://ftp.pkware.com/probdesc.zip */
+   /* for more info about .ZIP format, see
+         ftp://ftp.cdrom.com/pub/infozip/doc/appnote-970311-iz.zip
+         PkWare has also a specification at :
+         ftp://ftp.pkware.com/probdesc.zip */
 
 #ifndef _unz_H
 #define _unz_H
@@ -154,8 +154,8 @@ extern "C" {
       return the number of byte copied or an error code <0
       */
 
-    /***************************************************************************/
-    /* Unzip package allow you browse the directory of the zipfile */
+      /***************************************************************************/
+      /* Unzip package allow you browse the directory of the zipfile */
 
     extern int ZEXPORT unzGoToFirstFile OF((unzFile file));
     /*
@@ -203,10 +203,10 @@ extern "C" {
       (commentBufferSize is the size of the buffer)
       */
 
-    /***************************************************************************/
-    /* for reading the content of the current zipfile, you can open it, read data
-       from it, and close it (you can close it before reading all the file)
-       */
+      /***************************************************************************/
+      /* for reading the content of the current zipfile, you can open it, read data
+         from it, and close it (you can close it before reading all the file)
+         */
 
     extern int ZEXPORT unzOpenCurrentFile OF((unzFile file));
     /*

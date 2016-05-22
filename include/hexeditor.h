@@ -12,8 +12,8 @@ extern "C" {
 struct HexRegion {
     char Name[12];
     u8*  Array;
-	int Offset;
-	int Size;
+    int Offset;
+    int Size;
     bool Active;
     u8   Swap;
 };

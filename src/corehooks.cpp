@@ -50,10 +50,10 @@ defvramhooks(word)
 void hook_exec()
 {
     hook_pc &= 0xFFFFFF;
-	trace_exec_pc();
+    trace_exec_pc();
 }
 void hook_exec_cd()
 {
     hook_pc_cd &= 0xFFFFFF;
-	trace_exec_pc_cd();
+    trace_exec_pc_cd();
 }

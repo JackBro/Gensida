@@ -540,7 +540,7 @@ void luaG_typeerror(lua_State *L, const TValue *o, const char *op) {
         NULL;
     if (kind)
         luaG_runerror(L, "attempt to %s %s " LUA_QS " (a %s value)",
-        op, kind, name, t);
+            op, kind, name, t);
     else
         luaG_runerror(L, "attempt to %s a %s value", op, t);
 }

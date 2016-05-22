@@ -1,6 +1,6 @@
 #include "m68k_debugwindow.h"
 #include "mem_m68k.h"
-#include "Star_68k.h"
+#include "star_68k.h"
 #include "m68kd.h"
 #include "ram_dump.h"
 #include "resource.h"
@@ -32,12 +32,12 @@ unsigned int Next_Long_T(void);
 
 void M68kDebugWindow::TracePC(int pc)
 {
-	handled_ida_event = false;
-	
-	if (last_pc != 0 && hook_pc != 0 && hook_pc < MAX_ROM_SIZE)
-		g_codemap[hook_pc] = std::pair<uint32, bool>(last_pc, true);
-	
-	prev_pc = last_pc;
+    handled_ida_event = false;
+
+    if (last_pc != 0 && hook_pc != 0 && hook_pc < MAX_ROM_SIZE)
+        g_codemap[hook_pc] = std::pair<uint32, bool>(last_pc, true);
+
+    prev_pc = last_pc;
     last_pc = hook_pc;
 
     Current_PC = last_pc;
@@ -48,15 +48,15 @@ void M68kDebugWindow::TracePC(int pc)
     {
         br = true;
 
-		debug_event_t ev;
-		ev.eid = STEP;
-		ev.pid = 1;
-		ev.tid = 1;
-		ev.ea = hook_pc;
-		ev.handled = true;
-		g_events.enqueue(ev, IN_BACK);
+        debug_event_t ev;
+        ev.eid = STEP;
+        ev.pid = 1;
+        ev.tid = 1;
+        ev.ea = hook_pc;
+        ev.handled = true;
+        g_events.enqueue(ev, IN_BACK);
 
-		handled_ida_event = true;
+        handled_ida_event = true;
     }
 
     if (!br)
@@ -81,7 +81,7 @@ void M68kDebugWindow::TracePC(int pc)
     if ((OPC & 0xFFC0) == 0x4E80 ||//jsr
         (OPC & 0xFF00) == 0x6100)//bsr
     {
-		callstack.push_back(last_pc);
+        callstack.push_back(last_pc);
     }
 
     //(OPC & 0x7)==5 && ((OPC >> 3) & 0x7)==6 && ((OPC >> 6) & 0x3F)==57 && !(OPC & 0x100) && (OPC >> 12)==4
@@ -94,20 +94,20 @@ void M68kDebugWindow::TracePC(int pc)
 
 void M68kDebugWindow::TraceRegValue(uint8 reg_idx, uint32 value, bool is_vdp)
 {
-	handled_ida_event = false;
-	if (BreakRegValue(last_pc, reg_idx, value, is_vdp))
-	{
-		char bwhy[50];
-		sprintf(bwhy, "Reg[%02d] value break: %08X [%s]", reg_idx, value, is_vdp ? "VDP" : "M68K");
-		SetWhyBreak(bwhy);
-		Breakpoint(last_pc);
-	}
+    handled_ida_event = false;
+    if (BreakRegValue(last_pc, reg_idx, value, is_vdp))
+    {
+        char bwhy[50];
+        sprintf(bwhy, "Reg[%02d] value break: %08X [%s]", reg_idx, value, is_vdp ? "VDP" : "M68K");
+        SetWhyBreak(bwhy);
+        Breakpoint(last_pc);
+    }
 }
 
 void M68kDebugWindow::TraceRead(uint32 start, uint32 stop, bool is_vdp)
 {
-	handled_ida_event = false;
-	if (BreakRead(last_pc, start, stop, is_vdp))
+    handled_ida_event = false;
+    if (BreakRead(last_pc, start, stop, is_vdp))
     {
         char bwhy[33];
         sprintf(bwhy, "Read: %08X-%08X", start, stop);
@@ -118,8 +118,8 @@ void M68kDebugWindow::TraceRead(uint32 start, uint32 stop, bool is_vdp)
 
 void M68kDebugWindow::TraceWrite(uint32 start, uint32 stop, bool is_vdp)
 {
-	handled_ida_event = false;
-	if (BreakWrite(last_pc, start, stop, is_vdp))
+    handled_ida_event = false;
+    if (BreakWrite(last_pc, start, stop, is_vdp))
     {
         char bwhy[33];
         sprintf(bwhy, "Write: %08X-%08X", start, stop);

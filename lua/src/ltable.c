@@ -133,7 +133,7 @@ static int findindex(lua_State *L, Table *t, StkId key) {
             /* key may be dead already, but it is ok to use it in `next' */
             if (luaO_rawequalObj(key2tval(n), key) ||
                 (ttype(gkey(n)) == LUA_TDEADKEY && iscollectable(key) &&
-                gcvalue(gkey(n)) == gcvalue(key))) {
+                    gcvalue(gkey(n)) == gcvalue(key))) {
                 i = cast_int(n - gnode(t, 0));  /* key index in hash table */
                 /* hash elements are numbered after array ones */
                 return i + t->sizearray;
@@ -261,7 +261,7 @@ static void setnodevector(lua_State *L, Table *t, int size) {
             luaG_runerror(L, "table overflow");
         size = twoto(lsize);
         t->node = luaM_newvector(L, size, Node);
-        for (i = 0; i<size; i++) {
+        for (i = 0; i < size; i++) {
             Node *n = gnode(t, i);
             gnext(n) = NULL;
             setnilvalue(gkey(n));

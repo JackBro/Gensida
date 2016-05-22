@@ -43,8 +43,8 @@ extern "C" {
         char start_from, ready, status;
         } gm2;*/
 
-    //delim_str functions
-    //*_resize() : return resized size or 0 on failure
+        //delim_str functions
+        //*_resize() : return resized size or 0 on failure
     int ds_resize(delim_str**, int);
     int ds_set(delim_str**, const char*, int);
     void ds_print(delim_str**);

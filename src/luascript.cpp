@@ -2,7 +2,7 @@
 #include "gens.h"
 #include "save.h"
 #include "g_main.h"
-#include "G_ddraw.h"
+#include "g_ddraw.h"
 #include "misc.h"
 #include "guidraw.h"
 #include "movie.h"
@@ -1151,12 +1151,12 @@ static void toCStringConverter(lua_State* L, int i, char*& ptr, int& remaining)
             if (parentNum > 1)
                 APPENDPRINT "%s:parent^%d", luaL_typename(L, i), parentNum END
             else
-            APPENDPRINT "%s:parent", luaL_typename(L, i) END
+                APPENDPRINT "%s:parent", luaL_typename(L, i) END
         }
         else
         {
             s_tableAddressStack.push_back(lua_topointer(L, i));
-            struct Scope { ~Scope(){ s_tableAddressStack.pop_back(); } } scope;
+            struct Scope { ~Scope() { s_tableAddressStack.pop_back(); } } scope;
 
             APPENDPRINT "{" END
 
@@ -1186,17 +1186,17 @@ static void toCStringConverter(lua_State* L, int i, char*& ptr, int& remaining)
                         if (keyIsString)
                             APPENDPRINT "['" END
                         else
-                        APPENDPRINT "[" END
+                            APPENDPRINT "[" END
 
-                        toCStringConverter(L, keyIndex, ptr, remaining); // key
+                            toCStringConverter(L, keyIndex, ptr, remaining); // key
 
                     if (invalidLuaIdentifier)
                         if (keyIsString)
                             APPENDPRINT "']=" END
                         else
-                        APPENDPRINT "]=" END
+                            APPENDPRINT "]=" END
                     else
-                    APPENDPRINT "=" END
+                            APPENDPRINT "=" END
                 }
 
                 bool valueIsString = (lua_type(L, valueIndex) == LUA_TSTRING);
@@ -1476,9 +1476,9 @@ DEFINE_LUA_FUNCTION(bit_bnot, "x") { BRET(~barg(L, 1)) }
 #define BIT_OP(func, opr) \
   DEFINE_LUA_FUNCTION(func, "x1 [,x2...]") { int i; UBits b = barg(L, 1); \
     for (i = lua_gettop(L); i > 1; i--) b opr barg(L, i); BRET(b) }
-BIT_OP(bit_band, &= )
-BIT_OP(bit_bor, |= )
-BIT_OP(bit_bxor, ^= )
+BIT_OP(bit_band, &=)
+BIT_OP(bit_bor, |=)
+BIT_OP(bit_bxor, ^=)
 
 #define bshl(b, n)  (b << n)
 #define bshr(b, n)  (b >> n)
@@ -2293,7 +2293,7 @@ DEFINE_LUA_FUNCTION(state_save, "location[,option]")
         else if (!stricmp(option, "scriptdataonly"))
             g_onlyCallSavestateCallbacks = true;
     }
-    struct Scope { ~Scope(){ g_disableStatestateWarnings = false; g_onlyCallSavestateCallbacks = false; } } scope; // needs to run even if the following code throws an exception... maybe I should have put this in a "finally" block instead, but this project seems to have something against using the "try" statement
+    struct Scope { ~Scope() { g_disableStatestateWarnings = false; g_onlyCallSavestateCallbacks = false; } } scope; // needs to run even if the following code throws an exception... maybe I should have put this in a "finally" block instead, but this project seems to have something against using the "try" statement
 
     if (!g_onlyCallSavestateCallbacks && FailVerifyAtFrameBoundary(L, "savestate.save", 2, 2))
         return 0;
@@ -2338,7 +2338,7 @@ DEFINE_LUA_FUNCTION(state_load, "location[,option]")
         else if (!stricmp(option, "scriptdataonly"))
             g_onlyCallSavestateCallbacks = true;
     }
-    struct Scope { ~Scope(){ g_disableStatestateWarnings = false; g_onlyCallSavestateCallbacks = false; } } scope; // needs to run even if the following code throws an exception... maybe I should have put this in a "finally" block instead, but this project seems to have something against using the "try" statement
+    struct Scope { ~Scope() { g_disableStatestateWarnings = false; g_onlyCallSavestateCallbacks = false; } } scope; // needs to run even if the following code throws an exception... maybe I should have put this in a "finally" block instead, but this project seems to have something against using the "try" statement
 
     if (!g_onlyCallSavestateCallbacks && FailVerifyAtFrameBoundary(L, "savestate.load", 2, 2))
         return 0;
@@ -3246,9 +3246,9 @@ DEFINE_LUA_FUNCTION(gui_gdscreenshot, "")
     *ptr++ = (65534 >> 8) & 0xFF;
     *ptr++ = (65534) & 0xFF;
     *ptr++ = (width >> 8) & 0xFF;
-    *ptr++ = (width)& 0xFF;
+    *ptr++ = (width) & 0xFF;
     *ptr++ = (height >> 8) & 0xFF;
-    *ptr++ = (height)& 0xFF;
+    *ptr++ = (height) & 0xFF;
     *ptr++ = 1;
     *ptr++ = 255;
     *ptr++ = 255;
@@ -4473,7 +4473,7 @@ void RunLuaScriptFile(int uid, const char* filenameCStr)
 
 #ifdef USE_INFO_STACK
     infoStack.insert(infoStack.begin(), &info);
-    struct Scope { ~Scope(){ infoStack.erase(infoStack.begin()); } } scope; // doing it like this makes sure that the info stack gets cleaned up even if an exception is thrown
+    struct Scope { ~Scope() { infoStack.erase(infoStack.begin()); } } scope; // doing it like this makes sure that the info stack gets cleaned up even if an exception is thrown
 #endif
 
     info.nextFilename = filenameCStr;
@@ -4689,7 +4689,7 @@ void CallExitFunction(int uid)
 
 #ifdef USE_INFO_STACK
         infoStack.insert(infoStack.begin(), &info);
-        struct Scope { ~Scope(){ infoStack.erase(infoStack.begin()); } } scope;
+        struct Scope { ~Scope() { infoStack.erase(infoStack.begin()); } } scope;
 #endif
 
         lua_settop(L, 0);
@@ -4947,7 +4947,7 @@ static void CallRegisteredLuaMemHook_LuaMatch(unsigned int address, int size, un
             {
 #ifdef USE_INFO_STACK
                 infoStack.insert(infoStack.begin(), &info);
-                struct Scope { ~Scope(){ infoStack.erase(infoStack.begin()); } } scope;
+                struct Scope { ~Scope() { infoStack.erase(infoStack.begin()); } } scope;
 #endif
                 lua_settop(L, 0);
                 lua_getfield(L, LUA_REGISTRYINDEX, luaMemHookTypeStrings[hookType]);
@@ -5014,7 +5014,7 @@ void CallRegisteredLuaFunctions(LuaCallID calltype)
         {
 #ifdef USE_INFO_STACK
             infoStack.insert(infoStack.begin(), &info);
-            struct Scope { ~Scope(){ infoStack.erase(infoStack.begin()); } } scope;
+            struct Scope { ~Scope() { infoStack.erase(infoStack.begin()); } } scope;
 #endif
             // handle deferred GUI function calls and disabling deferring when unnecessary
             if (calltype == LUACALL_AFTEREMULATIONGUI || calltype == LUACALL_AFTEREMULATION)
@@ -5063,7 +5063,7 @@ void CallRegisteredLuaSaveFunctions(int savestateNumber, LuaSaveData& saveData)
         {
 #ifdef USE_INFO_STACK
             infoStack.insert(infoStack.begin(), &info);
-            struct Scope { ~Scope(){ infoStack.erase(infoStack.begin()); } } scope;
+            struct Scope { ~Scope() { infoStack.erase(infoStack.begin()); } } scope;
 #endif
 
             lua_settop(L, 0);
@@ -5107,7 +5107,7 @@ void CallRegisteredLuaLoadFunctions(int savestateNumber, const LuaSaveData& save
         {
 #ifdef USE_INFO_STACK
             infoStack.insert(infoStack.begin(), &info);
-            struct Scope { ~Scope(){ infoStack.erase(infoStack.begin()); } } scope;
+            struct Scope { ~Scope() { infoStack.erase(infoStack.begin()); } } scope;
 #endif
 
             lua_settop(L, 0);
@@ -5328,7 +5328,7 @@ static void LuaStackToBinaryConverter(lua_State* L, int i, std::vector<unsigned 
         if (lua_checkstack(L, 4) && std::find(s_tableAddressStack.begin(), s_tableAddressStack.end(), lua_topointer(L, i)) == s_tableAddressStack.end())
         {
             s_tableAddressStack.push_back(lua_topointer(L, i));
-            struct Scope { ~Scope(){ s_tableAddressStack.pop_back(); } } scope;
+            struct Scope { ~Scope() { s_tableAddressStack.pop_back(); } } scope;
 
             bool wasnil = false;
             int nilcount = 0;

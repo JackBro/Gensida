@@ -21,8 +21,8 @@ extern "C" {
 
     void hook_dma();
 
-	void trace_exec_pc();
-	void trace_exec_pc_cd();
+    void trace_exec_pc();
+    void trace_exec_pc_cd();
 }
 
 void InitDebug();

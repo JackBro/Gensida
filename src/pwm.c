@@ -1,6 +1,6 @@
 #include "pwm.h"
 
-#include "SH2.h"
+#include "sh2.h"
 #include "mem_sh2.h"
 #include <memory.h>
 

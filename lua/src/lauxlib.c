@@ -43,7 +43,7 @@ LUALIB_API int luaL_argerror(lua_State *L, int narg, const char *extramsg) {
         narg--;  /* do not count `self' */
         if (narg == 0)  /* error is in the self argument itself? */
             return luaL_error(L, "calling " LUA_QS " on bad self (%s)",
-            ar.name, extramsg);
+                ar.name, extramsg);
     }
     if (ar.name == NULL)
         ar.name = "?";

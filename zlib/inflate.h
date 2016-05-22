@@ -3,20 +3,20 @@
  * For conditions of distribution and use, see copyright notice in zlib.h
  */
 
-/* WARNING: this file should *not* be used by applications. It is
-   part of the implementation of the compression library and is
-   subject to change. Applications should only use zlib.h.
- */
+ /* WARNING: this file should *not* be used by applications. It is
+    part of the implementation of the compression library and is
+    subject to change. Applications should only use zlib.h.
+  */
 
-/* define NO_GZIP when compiling if you want to disable gzip header and
-   trailer decoding by inflate().  NO_GZIP would be used to avoid linking in
-   the crc code when it is not needed.  For shared libraries, gzip decoding
-   should be left enabled. */
+  /* define NO_GZIP when compiling if you want to disable gzip header and
+     trailer decoding by inflate().  NO_GZIP would be used to avoid linking in
+     the crc code when it is not needed.  For shared libraries, gzip decoding
+     should be left enabled. */
 #ifndef NO_GZIP
 #  define GUNZIP
 #endif
 
-/* Possible inflate modes between inflate() calls */
+     /* Possible inflate modes between inflate() calls */
 typedef enum {
     HEAD,       /* i: waiting for magic header */
     FLAGS,      /* i: waiting for method and flags (gzip) */
@@ -29,21 +29,21 @@ typedef enum {
     HCRC,       /* i: waiting for header crc (gzip) */
     DICTID,     /* i: waiting for dictionary check value */
     DICT,       /* waiting for inflateSetDictionary() call */
-        TYPE,       /* i: waiting for type bits, including last-flag bit */
-        TYPEDO,     /* i: same, but skip check to exit inflate on new block */
-        STORED,     /* i: waiting for stored size (length and complement) */
-        COPY_,      /* i/o: same as COPY below, but only first time in */
-        COPY,       /* i/o: waiting for input or output to copy stored block */
-        TABLE,      /* i: waiting for dynamic block table lengths */
-        LENLENS,    /* i: waiting for code length code lengths */
-        CODELENS,   /* i: waiting for length/lit and distance code lengths */
-            LEN_,       /* i: same as LEN below, but only first time in */
-            LEN,        /* i: waiting for length/lit/eob code */
-            LENEXT,     /* i: waiting for length extra bits */
-            DIST,       /* i: waiting for distance code */
-            DISTEXT,    /* i: waiting for distance extra bits */
-            MATCH,      /* o: waiting for output space to copy string */
-            LIT,        /* o: waiting for output space to write literal */
+    TYPE,       /* i: waiting for type bits, including last-flag bit */
+    TYPEDO,     /* i: same, but skip check to exit inflate on new block */
+    STORED,     /* i: waiting for stored size (length and complement) */
+    COPY_,      /* i/o: same as COPY below, but only first time in */
+    COPY,       /* i/o: waiting for input or output to copy stored block */
+    TABLE,      /* i: waiting for dynamic block table lengths */
+    LENLENS,    /* i: waiting for code length code lengths */
+    CODELENS,   /* i: waiting for length/lit and distance code lengths */
+    LEN_,       /* i: same as LEN below, but only first time in */
+    LEN,        /* i: waiting for length/lit/eob code */
+    LENEXT,     /* i: waiting for length extra bits */
+    DIST,       /* i: waiting for distance code */
+    DISTEXT,    /* i: waiting for distance extra bits */
+    MATCH,      /* o: waiting for output space to copy string */
+    LIT,        /* o: waiting for output space to write literal */
     CHECK,      /* i: waiting for 32-bit check value */
     LENGTH,     /* i: waiting for 32-bit length (gzip) */
     DONE,       /* finished check, done -- remain here until reset */
@@ -77,7 +77,7 @@ typedef enum {
         CHECK -> LENGTH -> DONE
  */
 
-/* state maintained between inflate() calls.  Approximately 10K bytes. */
+ /* state maintained between inflate() calls.  Approximately 10K bytes. */
 struct inflate_state {
     inflate_mode mode;          /* current inflate mode */
     int last;                   /* true if processing last block */

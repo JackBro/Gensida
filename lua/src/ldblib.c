@@ -48,7 +48,7 @@ static int db_setfenv(lua_State *L) {
     lua_settop(L, 2);
     if (lua_setfenv(L, 1) == 0)
         luaL_error(L, LUA_QL("setfenv")
-        " cannot change environment of given object");
+            " cannot change environment of given object");
     return 1;
 }
 
@@ -335,7 +335,7 @@ static int db_errorfb(lua_State *L) {
                 lua_pushliteral(L, " ?");  /* C function or tail call */
             else
                 lua_pushfstring(L, " in function <%s:%d>",
-                ar.short_src, ar.linedefined);
+                    ar.short_src, ar.linedefined);
         }
         lua_concat(L, lua_gettop(L) - arg);
     }

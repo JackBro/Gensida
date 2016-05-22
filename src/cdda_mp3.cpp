@@ -566,7 +566,7 @@ extern "C" {
         int forceNoDecode = 0;
 
         int& where_read = *pWhere_read;
-        where_read = (lba)* 588 * 4 + 16;
+        where_read = (lba) * 588 * 4 + 16;
         if (where_read < 0) where_read = 0;
 
 #ifdef _WIN32

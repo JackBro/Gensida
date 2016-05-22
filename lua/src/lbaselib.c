@@ -35,7 +35,7 @@ static int luaB_print(lua_State *L) {
         s = lua_tostring(L, -1);  /* get result */
         if (s == NULL)
             return luaL_error(L, LUA_QL("tostring") " must return a string to "
-            LUA_QL("print"));
+                LUA_QL("print"));
         if (i > 1) fputs("\t", stdout);
         fputs(s, stdout);
         lua_pop(L, 1);  /* pop result */
@@ -115,7 +115,7 @@ static void getfunc(lua_State *L, int opt) {
         lua_getinfo(L, "f", &ar);
         if (lua_isnil(L, -1))
             luaL_error(L, "no function environment for tail call at level %d",
-            level);
+                level);
     }
 }
 
@@ -141,7 +141,7 @@ static int luaB_setfenv(lua_State *L) {
     }
     else if (lua_iscfunction(L, -2) || lua_setfenv(L, -2) == 0)
         luaL_error(L,
-        LUA_QL("setfenv") " cannot change environment of given object");
+            LUA_QL("setfenv") " cannot change environment of given object");
     return 1;
 }
 

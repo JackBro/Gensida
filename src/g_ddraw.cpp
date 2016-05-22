@@ -666,8 +666,8 @@ void DrawInformationOnTheScreen()
             {
                 for (i = 0; i < 9; i++, m++, n++)
                 {
-                    if (RCircle[m]>0) MD_Screen[n] = RCircle[m];
-                    if (RCircle32[m]>0) MD_Screen32[n] = RCircle32[m];
+                    if (RCircle[m] > 0) MD_Screen[n] = RCircle[m];
+                    if (RCircle32[m] > 0) MD_Screen32[n] = RCircle32[m];
                 }
             }
         }
@@ -724,7 +724,7 @@ void DrawInformationOnTheScreen()
                 {
                     for (i = 0; i < 6; i++, n++)
                     {
-                        if (j>0 && j < 6)
+                        if (j > 0 && j < 6)
                         {
                             if (Bits32) MD_Screen32[n] = FCDigit32[m++] & (drawRed ? 0xFF0000 : 0xFFFFFF);
                             else MD_Screen[n] = FCDigit[m++] & (drawRed ? 0xF800 : 0xFFFF);
@@ -768,7 +768,7 @@ void DrawInformationOnTheScreen()
                 {
                     for (i = 0; i < 6; i++, n++)
                     {
-                        if (j>0 && j < 6)
+                        if (j > 0 && j < 6)
                         {
                             if (Bits32) MD_Screen32[n] = FCDigit32[m++] & 0xFF0000;
                             else MD_Screen[n] = FCDigit[m++] & 0xF800;
@@ -856,7 +856,7 @@ void DrawInformationOnTheScreen()
             {
                 for (i = 0; i < 4; i++, n++)
                 {
-                    if (j>0 && j < 6) {
+                    if (j > 0 && j < 6) {
                         if (Controller_1_Type & 0x10)
                         {
                             if (Bits32) MD_Screen32[n] = (FCDigit32[l[0]++] & FCColor32[0]) | (FCDigit32[l[1]++] & FCColor32[1]) | (FCDigit32[l[2]++] & FCColor32[2]); //Upthmodif - three player display support - three player mode

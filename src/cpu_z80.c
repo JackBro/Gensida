@@ -1,9 +1,9 @@
 #include <stdio.h>
 #include <windows.h>
 #include "z80.h"
-#include "Cpu_Z80.h"
-#include "Mem_M68K.h"
-#include "Mem_Z80.h"
+#include "cpu_z80.h"
+#include "mem_m68k.h"
+#include "mem_z80.h"
 
 /*** Z80_Reset - reset z80 sub-unit ***/
 

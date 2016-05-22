@@ -37,7 +37,7 @@ int WaveCreateFile(
     WAVEFORMATEX *pwfxDest, // (IN)
     MMCKINFO *pckOut, // (OUT)
     MMCKINFO *pckOutRIFF // (OUT)
-    )
+)
 {
     int nError; // Return value.
     DWORD dwFactChunk; // Contains the actual fact chunk. Garbage until WaveCloseWriteFile.
@@ -169,7 +169,7 @@ ERROR_CANNOT_WRITE:
     // Maybe delete the half-written file? Ah forget it for now, its good to leave the
     // file there for debugging...
 
-DONE_CREATE :
+DONE_CREATE:
     return(nError);
 }
 
@@ -181,7 +181,7 @@ int WaveStartDataWrite(
     HMMIO *phmmioOut, // (IN)
     MMCKINFO *pckOut, // (IN)
     MMIOINFO *pmmioinfoOut // (OUT)
-    )
+)
 {
     int nError;
 
@@ -206,7 +206,7 @@ int WaveStartDataWrite(
 
 ERROR_CANNOT_WRITE:
 
-CLEANUP :
+CLEANUP:
     return(nError);
 }
 
@@ -228,7 +228,7 @@ int WaveWriteFile(
     MMCKINFO *pckOut, // (IN)
     UINT *cbActualWrite, // (OUT)
     MMIOINFO *pmmioinfoOut // (IN)
-    )
+)
 {
     int nError;
     UINT cT;
@@ -279,7 +279,7 @@ int WaveCloseWriteFile(
     MMCKINFO *pckOutRIFF, // (IN)
     MMIOINFO *pmmioinfoOut, // (IN)
     DWORD cSamples // (IN)
-    )
+)
 {
     int nError;
 
@@ -510,7 +510,7 @@ int WaveSaveFile(
     DWORD cSamples, // (IN)
     WAVEFORMATEX *pwfxDest, // (IN)
     BYTE *pbData // (IN)
-    )
+)
 {
     HMMIO hmmioOut;
     MMCKINFO ckOut;
@@ -549,7 +549,7 @@ int GYMCreateFile(
     WAVEFORMATEX *pwfxDest, // (IN)
     MMCKINFO *pckOut, // (OUT)
     MMCKINFO *pckOutRIFF // (OUT)
-    )
+)
 {
     int nError; // Return value.
     DWORD dwFactChunk; // Contains the actual fact chunk. Garbage until WaveCloseWriteFile.
@@ -681,6 +681,6 @@ ERROR_CANNOT_WRITE:
     // Maybe delete the half-written file? Ah forget it for now, its good to leave the
     // file there for debugging...
 
-DONE_CREATE :
+DONE_CREATE:
     return(nError);
 }

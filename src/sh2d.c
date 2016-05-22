@@ -230,11 +230,11 @@ void SH2Disasm(char *cdeb, unsigned v_addr, unsigned short op, int mode)
                 if ((op & 0xf000) == 0x1000)
                     sprintf(s_op, tab[i].mnem, (op >> 4) & 0xf,
                     (op & 0xf) * 4,
-                    (op >> 8) & 0xf);
+                        (op >> 8) & 0xf);
                 else
                     sprintf(s_op, tab[i].mnem, (op & 0xf) * 4,
                     (op >> 4) & 0xf,
-                    (op >> 8) & 0xf);
+                        (op >> 8) & 0xf);
             }
             else if (tab[i].format == D_F)
             {
@@ -249,19 +249,19 @@ void SH2Disasm(char *cdeb, unsigned v_addr, unsigned short op, int mode)
                     else
                         sprintf(s_op, tab[i].mnem,
                         (op & 0xff) *
-                        tab[i].dat);
+                            tab[i].dat);
                 }
                 else
                 {
                     if (op & 0x80)  /* sign extend */
                         sprintf(s_op, tab[i].mnem,
                         (((op & 0xff) +
-                        0xffffff00) * 2) +
-                        v_addr + 4);
+                            0xffffff00) * 2) +
+                            v_addr + 4);
                     else
                         sprintf(s_op, tab[i].mnem,
                         ((op & 0xff) * 2) +
-                        v_addr + 4);
+                            v_addr + 4);
                 }
             }
             else if (tab[i].format == D12_F)
@@ -269,10 +269,10 @@ void SH2Disasm(char *cdeb, unsigned v_addr, unsigned short op, int mode)
                 if (op & 0x800)         /* sign extend */
                     sprintf(s_op, tab[i].mnem,
                     ((op & 0xfff) + 0xfffff000) * 2
-                    + v_addr + 4);
+                        + v_addr + 4);
                 else
                     sprintf(s_op, tab[i].mnem, (op & 0xfff) * 2 +
-                    v_addr + 4);
+                        v_addr + 4);
             }
             else if (tab[i].format == ND8_F)
             {
@@ -293,7 +293,7 @@ void SH2Disasm(char *cdeb, unsigned v_addr, unsigned short op, int mode)
                 sprintf(s_op, tab[i].mnem, op & 0xff);
             else if (tab[i].format == NI_F)
                 sprintf(s_op, tab[i].mnem, op & 0xff, (op >> 8) &
-                0xf);
+                    0xf);
             else
                 sprintf(s_op, "unrecognized");
 

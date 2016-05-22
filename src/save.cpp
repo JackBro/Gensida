@@ -10,18 +10,18 @@
 #include "cd_aspi.h"
 #include "gens.h"
 #include "g_main.h"
-#include "G_ddraw.h"
-#include "G_dsound.h"
-#include "G_input.h"
+#include "g_ddraw.h"
+#include "g_dsound.h"
+#include "g_input.h"
 #include "gfx_cd.h"
 #include "vdp_io.h"
 #include "vdp_rend.h"
-#include "vdp_32X.h"
+#include "vdp_32x.h"
 #include "rom.h"
 #include "mem_m68k.h"
-#include "mem_S68K.h"
+#include "mem_s68k.h"
 #include "mem_sh2.h"
-#include "mem_Z80.h"
+#include "mem_z80.h"
 #include "ym2612.h"
 #include "psg.h"
 #include "pcm.h"
@@ -872,10 +872,10 @@ int Import_Genesis(unsigned char * Data)
 
     InBaseGenesis = 1;
 
-	for (i = 0; i < 0x40; i++)
-	{
-		CRam[i] = (Data[i * 2 + 0x112 + 1] << 8) | Data[i * 2 + 0x112 + 0];
-	}
+    for (i = 0; i < 0x40; i++)
+    {
+        CRam[i] = (Data[i * 2 + 0x112 + 1] << 8) | Data[i * 2 + 0x112 + 0];
+    }
 
     ImportData(VSRam, Data, 0x192, 0x50);
     ImportData(Ram_Z80, Data, 0x474, 0x2000);
@@ -1350,11 +1350,11 @@ void Export_Genesis(unsigned char * Data)
 
     ExportData(&Bank_Z80, Data, 0x43C, 4);
 
-	for (i = 0; i < 0x40; i++)
-	{
-		Data[i * 2 + 0x112 + 1] = ((CRam[i] >> 8) & 0xFF);
-		Data[i * 2 + 0x112 + 0] = ((CRam[i] >> 0) & 0xFF);
-	}
+    for (i = 0; i < 0x40; i++)
+    {
+        Data[i * 2 + 0x112 + 1] = ((CRam[i] >> 8) & 0xFF);
+        Data[i * 2 + 0x112 + 0] = ((CRam[i] >> 0) & 0xFF);
+    }
 
     ExportData(VSRam, Data, 0x192, 0x50);
     ExportData(Ram_Z80, Data, 0x474, 0x2000);
