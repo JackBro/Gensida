@@ -217,6 +217,10 @@ static int idaapi hook_idp(void *user_data, int notification_code, va_list va)
             {
                 opinf->ea = op.addr;
             } break;
+			case o_imm:
+			{
+				opinf->ea = op.value;
+			} break;
             case o_phrase:
             case o_reg:
             {
