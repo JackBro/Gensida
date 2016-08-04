@@ -6,7 +6,7 @@
 2. Use **Visual Studio 2015** or newer to compile.
 
 ## How to use
-1. It's recommended to use **[smd_ida_tools](https://github.com/DrMefistO/smd_ida_tools)**;
+1. It's recommended to use **[smd_ida_tools](https://github.com/lab313ru/smd_ida_tools)**;
 2. Remove (if any) **Messida** plugin!;
 3. Put **plw**-file into **IDA**'s (version >= *6.8*) **plugins** directory;
 4. Open your **ROM** in **IDA**, and select **GensIDA**;
