@@ -32,6 +32,7 @@ extern debugger_t debugger;
 
 static bool plugin_inited;
 static bool dbg_started;
+static bool my_dbg;
 
 static int idaapi hook_dbg(void *user_data, int notification_code, va_list va)
 {
@@ -135,63 +136,66 @@ static int idaapi hook_idp(void *user_data, int notification_code, va_list va)
         opinf->value.ival = 0;
         opinf->value_size = 4;
 
-        if (decode_insn(ea) && dbg_started)
+        if (decode_insn(ea))
         {
             insn_t _cmd = cmd;
             op_t op = _cmd.Operands[n];
 
 #ifdef _DEBUG
-            msg("cs=%x, ", _cmd.cs);
-            msg("ip=%x, ", _cmd.ip);
-            msg("ea=%x, ", _cmd.ea);
-            msg("itype=%x, ", _cmd.itype);
-            msg("size=%x, ", _cmd.size);
-            msg("auxpref=%x, ", _cmd.auxpref);
-            msg("segpref=%x, ", _cmd.segpref);
-            msg("insnpref=%x, ", _cmd.insnpref);
-            msg("insnpref=%x, ", _cmd.insnpref);
+            if (my_dbg)
+            {
+                msg("cs=%x, ", _cmd.cs);
+                msg("ip=%x, ", _cmd.ip);
+                msg("ea=%x, ", _cmd.ea);
+                msg("itype=%x, ", _cmd.itype);
+                msg("size=%x, ", _cmd.size);
+                msg("auxpref=%x, ", _cmd.auxpref);
+                msg("segpref=%x, ", _cmd.segpref);
+                msg("insnpref=%x, ", _cmd.insnpref);
+                msg("insnpref=%x, ", _cmd.insnpref);
 
-            msg("flags[");
-            if (_cmd.flags & INSN_MACRO)
-                msg("INSN_MACRO|");
-            if (_cmd.flags & INSN_MODMAC)
-                msg("OF_OUTER_DISP");
-            msg("]\n");
+                msg("flags[");
+                if (_cmd.flags & INSN_MACRO)
+                    msg("INSN_MACRO|");
+                if (_cmd.flags & INSN_MODMAC)
+                    msg("OF_OUTER_DISP");
+                msg("]\n");
 
-            msg("type[%s], ", optype_names[op.type]);
+                msg("type[%s], ", optype_names[op.type]);
 
-            msg("flags[");
-            if (op.flags & OF_NO_BASE_DISP)
-                msg("OF_NO_BASE_DISP|");
-            if (op.flags & OF_OUTER_DISP)
-                msg("OF_OUTER_DISP|");
-            if (op.flags & PACK_FORM_DEF)
-                msg("PACK_FORM_DEF|");
-            if (op.flags & OF_NUMBER)
-                msg("OF_NUMBER|");
-            if (op.flags & OF_SHOW)
-                msg("OF_SHOW");
-            msg("], ");
+                msg("flags[");
+                if (op.flags & OF_NO_BASE_DISP)
+                    msg("OF_NO_BASE_DISP|");
+                if (op.flags & OF_OUTER_DISP)
+                    msg("OF_OUTER_DISP|");
+                if (op.flags & PACK_FORM_DEF)
+                    msg("PACK_FORM_DEF|");
+                if (op.flags & OF_NUMBER)
+                    msg("OF_NUMBER|");
+                if (op.flags & OF_SHOW)
+                    msg("OF_SHOW");
+                msg("], ");
 
-            msg("dtyp[%s], ", dtyp_names[op.dtyp]);
+                msg("dtyp[%s], ", dtyp_names[op.dtyp]);
 
-            if (op.type == o_reg)
-                msg("reg=%x, ", op.reg);
-            else if (op.type == o_displ || op.type == o_phrase)
-                msg("phrase=%x, ", op.phrase);
-            else
-                msg("reg_phrase=%x, ", op.phrase);
+                if (op.type == o_reg)
+                    msg("reg=%x, ", op.reg);
+                else if (op.type == o_displ || op.type == o_phrase)
+                    msg("phrase=%x, ", op.phrase);
+                else
+                    msg("reg_phrase=%x, ", op.phrase);
 
-            msg("addr=%x, ", op.addr);
+                msg("addr=%x, ", op.addr);
 
-            msg("value=%x, ", op.value);
+                msg("value=%x, ", op.value);
 
-            msg("specval=%x, ", op.specval);
+                msg("specval=%x, ", op.specval);
 
-            msg("specflag1=%x, ", op.specflag1);
-            msg("specflag2=%x, ", op.specflag2);
-            msg("specflag3=%x, ", op.specflag3);
-            msg("specflag4=%x\n", op.specflag4);
+                msg("specflag1=%x, ", op.specflag1);
+                msg("specflag2=%x, ", op.specflag2);
+                msg("specflag3=%x, ", op.specflag3);
+                msg("specflag4=%x\n", op.specflag4);
+            }
 #endif
 
             int size = 0;
@@ -217,10 +221,10 @@ static int idaapi hook_idp(void *user_data, int notification_code, va_list va)
             {
                 opinf->ea = op.addr;
             } break;
-			case o_imm:
-			{
-				opinf->ea = op.value;
-			} break;
+            case o_imm:
+            {
+                opinf->ea = op.value;
+            } break;
             case o_phrase:
             case o_reg:
             {
@@ -313,14 +317,100 @@ static int idaapi hook_idp(void *user_data, int notification_code, va_list va)
             } break;
             }
 
+            opinf->ea &= 0xFFFFFF;
+
             return -1;
         }
     } break;
-    default:
-        if (dbg_started)
+    case processor_t::idp_notify::custom_ana:
+    {
+        (*ph.u_ana)();
+
+#ifdef _DEBUG
+        if (my_dbg)
         {
-            //msg("msg = %x\n", notification_code);
+            msg("cs=%x, ", cmd.cs);
+            msg("ip=%x, ", cmd.ip);
+            msg("ea=%x, ", cmd.ea);
+            msg("itype=%x, ", cmd.itype);
+            msg("size=%x, ", cmd.size);
+            msg("auxpref=%x, ", cmd.auxpref);
+            msg("segpref=%x, ", cmd.segpref);
+            msg("insnpref=%x, ", cmd.insnpref);
+            msg("insnpref=%x, ", cmd.insnpref);
+
+            msg("flags[");
+            if (cmd.flags & INSN_MACRO)
+                msg("INSN_MACRO|");
+            if (cmd.flags & INSN_MODMAC)
+                msg("OF_OUTER_DISP");
+            msg("]\n");
         }
+#endif
+
+        for (int i = 0; i < UA_MAXOP; ++i)
+        {
+            op_t &op = cmd.Operands[i];
+
+#ifdef _DEBUG
+            if (my_dbg)
+            {
+                msg("type[%s], ", optype_names[op.type]);
+
+                msg("flags[");
+                if (op.flags & OF_NO_BASE_DISP)
+                    msg("OF_NO_BASE_DISP|");
+                if (op.flags & OF_OUTER_DISP)
+                    msg("OF_OUTER_DISP|");
+                if (op.flags & PACK_FORM_DEF)
+                    msg("PACK_FORM_DEF|");
+                if (op.flags & OF_NUMBER)
+                    msg("OF_NUMBER|");
+                if (op.flags & OF_SHOW)
+                    msg("OF_SHOW");
+                msg("], ");
+
+                msg("dtyp[%s], ", dtyp_names[op.dtyp]);
+
+                if (op.type == o_reg)
+                    msg("reg=%x, ", op.reg);
+                else if (op.type == o_displ || op.type == o_phrase)
+                    msg("phrase=%x, ", op.phrase);
+                else
+                    msg("reg_phrase=%x, ", op.phrase);
+
+                msg("addr=%x, ", op.addr);
+
+                msg("value=%x, ", op.value);
+
+                msg("specval=%x, ", op.specval);
+
+                msg("specflag1=%x, ", op.specflag1);
+                msg("specflag2=%x, ", op.specflag2);
+                msg("specflag3=%x, ", op.specflag3);
+                msg("specflag4=%x\n", op.specflag4);
+            }
+#endif
+
+            switch (op.type)
+            {
+            case o_mem:
+            case o_displ:
+            {
+                op.addr &= 0xFFFFFF;
+            } break;
+            }
+        }
+
+        return cmd.size;
+    } break;
+    default:
+#ifdef _DEBUG
+        if (my_dbg)
+        {
+            msg("msg = %d\n", notification_code);
+        }
+#endif
         break;
     }
     return 0;
@@ -353,6 +443,7 @@ static int idaapi init(void)
         dbg = &debugger;
         plugin_inited = true;
         dbg_started = false;
+        my_dbg = false;
 
         hook_to_notification_point(HT_DBG, hook_dbg, NULL);
         hook_to_notification_point(HT_IDP, hook_idp, NULL);
@@ -407,8 +498,8 @@ plugin_t PLUGIN =
     run, // invoke plugin
 
     comment, // long comment about the plugin
-    // it could appear in the status line
-    // or as a hint
+             // it could appear in the status line
+             // or as a hint
 
     help, // multiline help about the plugin
 
