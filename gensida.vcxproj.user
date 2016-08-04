@@ -5,8 +5,18 @@
     <LocalDebuggerWorkingDirectory>$(IDA_DIR)\</LocalDebuggerWorkingDirectory>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug64|Win32'">
+    <LocalDebuggerCommand>$(IDA_DIR)\idaq64.exe</LocalDebuggerCommand>
+    <LocalDebuggerWorkingDirectory>$(IDA_DIR)\</LocalDebuggerWorkingDirectory>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LocalDebuggerCommand>$(IDA_DIR)\idaq.exe</LocalDebuggerCommand>
+    <LocalDebuggerWorkingDirectory>$(IDA_DIR)\</LocalDebuggerWorkingDirectory>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release64|Win32'">
+    <LocalDebuggerCommand>$(IDA_DIR)\idaq64.exe</LocalDebuggerCommand>
     <LocalDebuggerWorkingDirectory>$(IDA_DIR)\</LocalDebuggerWorkingDirectory>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
