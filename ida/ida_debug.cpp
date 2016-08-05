@@ -422,7 +422,7 @@ static int idaapi prepare_to_pause_process(void)
 // In this mode, all other events will be automatically handled and process will be resumed.
 // 1-ok, 0-failed, -1-network error
 // This function is called from debthread
-static int idaapi mess_exit_process(void)
+static int idaapi gens_exit_process(void)
 {
     CHECK_FOR_START(1);
     allow0_breaks = allow1_breaks = 0;
@@ -1017,7 +1017,7 @@ debugger_t debugger =
     NULL, // detach_process,
     rebase_if_required_to,
     prepare_to_pause_process,
-    mess_exit_process,
+    gens_exit_process,
 
     get_debug_event,
     continue_after_event,
