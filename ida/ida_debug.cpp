@@ -555,9 +555,9 @@ static int idaapi read_registers(thid_t tid, int clsmask, regval_t *values)
         values[R_A4].ival = main68k_context.areg[R_A4 - R_A0];
         values[R_A5].ival = main68k_context.areg[R_A5 - R_A0];
         values[R_A6].ival = main68k_context.areg[R_A6 - R_A0];
-        values[R_A7].ival = main68k_context.areg[R_A7 - R_A0];
+        values[R_A7].ival = main68k_context.areg[R_A7 - R_A0] & 0xFFFFFF;
 
-        values[R_PC].ival = M68kDW.last_pc;
+        values[R_PC].ival = M68kDW.last_pc & 0xFFFFFF;
         values[R_SR].ival = main68k_context.sr;
 
         values[R_VDP_DMA_LEN].ival = (BYTE)(VDP_Reg.regs[R_DR19 - R_DR00]) | ((BYTE)(VDP_Reg.regs[R_DR20 - R_DR00]) << 8);
@@ -569,6 +569,8 @@ static int idaapi read_registers(thid_t tid, int clsmask, regval_t *values)
         else
             values[R_VDP_DMA_SRC].ival |= ((BYTE)(VDP_Reg.regs[R_DR23 - R_DR00] & mask(0, 6)) << 16);
         values[R_VDP_DMA_SRC].ival <<= 1;
+
+        values[R_VDP_DMA_SRC].ival &= 0xFFFFFF;
 
         values[R_VDP_WRITE_ADDR].ival = BREAKPOINTS_BASE;
         switch (Ctrl.Access)
@@ -617,10 +619,15 @@ static int idaapi write_register(thid_t tid, int regidx, const regval_t *value)
     else if (regidx >= R_A0 && regidx <= R_A7)
     {
         main68k_context.areg[regidx - R_A0] = (uint32)value->ival;
+
+        if (regidx == R_A7)
+        {
+            main68k_context.areg[regidx - R_A0] &= 0xFFFFFF;
+        }
     }
     else if (regidx == R_PC)
     {
-        main68k_context.pc = (uint32)value->ival;
+        main68k_context.pc = (uint32)value->ival & 0xFFFFFF;
     }
     else if (regidx == R_SR)
     {
